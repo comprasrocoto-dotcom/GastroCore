@@ -12,12 +12,18 @@ const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
 const fcPct = (n: number) => ((Number(n) || 0) * 100).toFixed(1) + '%';
 
-const FC_OBJ = 0.35;
+const FC_OBJ = 0.35; // Food Cost objetivo FIJO 35%
+const INC = 0.08; // Impuesto al Consumo 8%
+// Precio de venta necesario para volver al Food Cost objetivo (con INC incluido).
+function precioSugeridoObjetivo(costoPorcion: number) {
+  const base = FC_OBJ > 0 ? (Number(costoPorcion) || 0) / FC_OBJ : 0;
+  return base * (1 + INC);
+}
 
 function semaforo(fc: number) {
   const v = Number(fc) || 0;
-  if (v <= 0.35) return { color: '#16A34A', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
-  if (v <= 0.40) return { color: '#F59E0B', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
+  if (v <= 0.33) return { color: '#16A34A', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
+  if (v <= 0.35) return { color: '#F59E0B', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
   return { color: '#DC2626', text: 'text-[#DC2626]', bg: 'bg-[#FEE2E2]', border: 'border-[#FECACA]', label: 'Critico' };
 }
 
@@ -37,6 +43,27 @@ export default function RecetarioClient() {
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  async function toggleActivo(r: Receta) {
+    const nuevo = !(r.activo === true || r.activo === 'TRUE' || r.activo === 'VERDADERO' || r.activo === '' || r.activo === undefined);
+    setSavingId(r.id);
+    setRecetas((prev) => prev.map((x) => (x.id === r.id ? { ...x, activo: nuevo } : x)));
+    try {
+      const res = await fetch('/api/recetas', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: r.id, activo: nuevo }),
+      });
+      const j = await res.json();
+      if (!j.ok) throw new Error(j.error || 'No se pudo actualizar el estado');
+    } catch (e: any) {
+      setRecetas((prev) => prev.map((x) => (x.id === r.id ? { ...x, activo: r.activo } : x)));
+      setError(e?.message || 'Error al cambiar el estado');
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   const [q, setQ] = useState('');
   const [famSel, setFamSel] = useState('');
@@ -50,7 +77,7 @@ export default function RecetarioClient() {
       try {
         setLoading(true);
         const [rR, rS, rF] = await Promise.all([
-          fetch('/api/recetas', { cache: 'no-store' }).then((r) => r.json()),
+          fetch('/api/recetas?all=true', { cache: 'no-store' }).then((r) => r.json()),
           fetch('/api/subfamilias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ data: [] })),
           fetch('/api/familias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ data: [] })),
         ]);
@@ -105,9 +132,9 @@ export default function RecetarioClient() {
       if (estadoSel === 'activos' && !esActivo(r)) return false;
       if (estadoSel === 'inactivos' && esActivo(r)) return false;
       const fc = Number(r.food_cost) || 0;
-      if (fcSel === 'verde' && !(fc <= 0.35)) return false;
-      if (fcSel === 'amarillo' && !(fc > 0.35 && fc <= 0.40)) return false;
-      if (fcSel === 'rojo' && !(fc > 0.40)) return false;
+      if (fcSel === 'verde' && !(fc <= 0.33)) return false;
+      if (fcSel === 'amarillo' && !(fc > 0.33 && fc <= 0.35)) return false;
+      if (fcSel === 'rojo' && !(fc > 0.35)) return false;
       return true;
     });
   }, [recetas, q, subSel, famSel, estadoSel, fcSel, subMap]);
@@ -257,18 +284,22 @@ export default function RecetarioClient() {
                         <th className="!text-right">Costo porcion</th>
                         <th className="!text-right">Precio venta</th>
                         <th className="!text-center">Food Cost</th>
+                        <th className="!text-right">Precio sugerido</th>
                         <th className="!text-center">Estado</th>
+                        <th className="!text-center">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map((r) => (
-                        <tr key={r.id}>
+                        <tr key={r.id} className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}>
                           <td className="font-medium"><Link href={`/recetas/${r.id}`} className="text-[#2563EB] hover:underline">{r.nombre}</Link></td>
                           <td className="font-mono text-xs text-muted">{r.id}</td>
                           <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
                           <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
                           <td className="text-center">{Number(r.food_cost) > 0 ? <Semaforo fc={Number(r.food_cost)} /> : <span className="text-xs text-slate-400">-</span>}</td>
+                          <td className="text-right fin-value">{Number(r.food_cost) > 0.35 ? (<span className="font-semibold text-[#DC2626]">{money(precioSugeridoObjetivo(Number(r.costo_porcion)))}</span>) : (<span className="text-[#16A34A]" title="El precio actual cumple el objetivo">✓</span>)}</td>
                           <td className="text-center">{esActivo(r) ? <span className="chip chip-success">Activo</span> : <span className="text-xs text-slate-400">Inactivo</span>}</td>
+                          <td className="text-center">{esActivo(r) ? (<button type="button" onClick={() => toggleActivo(r)} disabled={savingId === r.id} className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-[#DC2626] transition hover:bg-[#FEE2E2] disabled:opacity-50">Desactivar</button>) : (<button type="button" onClick={() => toggleActivo(r)} disabled={savingId === r.id} className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-[#16A34A] transition hover:bg-[#DCFCE7] disabled:opacity-50">Activar</button>)}</td>
                         </tr>
                       ))}
                     </tbody>
