@@ -1,11 +1,10 @@
 /**
  * GastroCore — Cliente de la API de Google Apps Script.
  *
- * IMPORTANTE (seguridad): este módulo SOLO debe ejecutarse en el servidor
- * (Server Components, Route Handlers). El token nunca se envía al navegador.
- * Las credenciales se leen de variables de entorno (Vercel / .env.local).
+ * IMPORTANTE (seguridad): este modulo SOLO debe ejecutarse en el servidor
+ * (Server Components, Route Handlers). El token nunca se envia al navegador.
  */
-// server-only: este modulo solo debe usarse en el servidor (Server Components / Route Handlers)
+// server-only
 
 const API_URL = process.env.GASTROCORE_API_URL;
 const API_TOKEN = process.env.GASTROCORE_API_TOKEN;
@@ -27,6 +26,20 @@ export type Insumo = {
   coste: number;
 };
 
+export type IngredienteReceta = {
+  id?: string;
+  receta_id?: string;
+  tipo_item: 'insumo' | 'subreceta';
+  item_id: string;
+  cantidad: number;
+  unidad_id: string;
+  merma_pct: number;
+  costo_unitario?: number;
+  costo_linea?: number;
+  orden?: number;
+  nombre_item?: string;
+};
+
 export type Receta = {
   id: string;
   nombre: string;
@@ -42,48 +55,38 @@ export type Receta = {
   precio_real: number;
   margen_objetivo: number;
   activo: boolean | string;
+  creado_en?: string;
+  actualizado_en?: string;
+  creado_por?: string;
+  actualizado_por?: string;
   ingredientes?: IngredienteReceta[];
 };
 
-export type IngredienteReceta = {
-  id?: string;
-  receta_id?: string;
-  tipo_item: 'insumo' | 'subreceta';
-  item_id: string;
-  cantidad: number;
-  unidad_id: string;
-  merma_pct: number;
-  costo_unitario?: number;
-  costo_linea?: number;
-  orden?: number;
-};
+export type Familia = { id: string; nombre: string; activo: boolean | string };
+export type Subfamilia = { id: string; familia_id: string; nombre: string; activo: boolean | string };
+export type Unidad = { id: string; codigo: string; nombre: string; tipo: string; activo: boolean | string };
 
 function assertConfig(): void {
   if (!API_URL || !API_TOKEN) {
-    throw new Error(
-      'Faltan GASTROCORE_API_URL o GASTROCORE_API_TOKEN en las variables de entorno.'
-    );
+    throw new Error('Faltan GASTROCORE_API_URL o GASTROCORE_API_TOKEN en las variables de entorno.');
   }
 }
 
-/** Lectura (GET). Revalida cada 30s por defecto para reflejar cambios del Sheet. */
 async function apiGet<T>(
   resource: string,
   params: Record<string, string> = {},
-  revalidate = 30
+  revalidate = 15
 ): Promise<ApiResponse<T>> {
   assertConfig();
   const url = new URL(API_URL as string);
   url.searchParams.set('resource', resource);
   url.searchParams.set('token', API_TOKEN as string);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-
   const res = await fetch(url.toString(), { next: { revalidate } });
   if (!res.ok) throw new Error('Error de red al consultar la API: ' + res.status);
   return (await res.json()) as ApiResponse<T>;
 }
 
-/** Escritura (POST). Emula create/update/delete. */
 async function apiPost<T>(
   resource: string,
   action: 'create' | 'update' | 'delete',
@@ -105,12 +108,10 @@ export async function getInsumos(): Promise<Insumo[]> {
   const r = await apiGet<Insumo[]>('insumos');
   return r.ok ? r.data : [];
 }
-
 export async function getInsumo(id: string): Promise<Insumo | null> {
   const r = await apiGet<Insumo>('insumos', { id });
   return r.ok ? r.data : null;
 }
-
 export async function actualizarCosteInsumo(id: string, coste: number) {
   return apiPost<Insumo>('insumos', 'update', { id, data: { coste } });
 }
@@ -122,25 +123,46 @@ export async function getRecetas(): Promise<Receta[]> {
 }
 
 export async function getReceta(id: string): Promise<Receta | null> {
-  const r = await apiGet<Receta>('recetas', { id });
-  return r.ok ? r.data : null;
+  // Traemos todas y buscamos por id (el backend no filtra por id de forma fiable),
+  // y adjuntamos sus ingredientes desde el recurso 'ingredientes'.
+  const [recetas, ings, insumos] = await Promise.all([
+    getRecetas(),
+    getIngredientesReceta(id),
+    getInsumos(),
+  ]);
+  const receta = recetas.find((x) => x.id === id);
+  if (!receta) return null;
+  const mapaInsumo = new Map(insumos.map((i) => [i.id, i.articulo]));
+  receta.ingredientes = ings.map((g) => ({
+    ...g,
+    nombre_item: mapaInsumo.get(g.item_id) || g.item_id,
+  }));
+  return receta;
+}
+
+export async function getIngredientesReceta(recetaId: string): Promise<IngredienteReceta[]> {
+  const r = await apiGet<IngredienteReceta[]>('ingredientes', { receta_id: recetaId });
+  const arr = r.ok && Array.isArray(r.data) ? r.data : [];
+  return arr.filter((g) => !recetaId || g.receta_id === recetaId);
 }
 
 export async function crearReceta(data: Partial<Receta>) {
   return apiPost<Receta>('recetas', 'create', { data });
 }
-
 export async function actualizarReceta(id: string, data: Partial<Receta>) {
   return apiPost<Receta>('recetas', 'update', { id, data });
 }
 
-// ---------- CATÁLOGOS ----------
-export async function getFamilias() {
-  return (await apiGet<any[]>('familias')).data ?? [];
+// ---------- CATALOGOS ----------
+export async function getFamilias(): Promise<Familia[]> {
+  const r = await apiGet<Familia[]>('familias');
+  return r.ok && Array.isArray(r.data) ? r.data : [];
 }
-export async function getSubfamilias() {
-  return (await apiGet<any[]>('subfamilias')).data ?? [];
+export async function getSubfamilias(): Promise<Subfamilia[]> {
+  const r = await apiGet<Subfamilia[]>('subfamilias');
+  return r.ok && Array.isArray(r.data) ? r.data : [];
 }
-export async function getUnidades() {
-  return (await apiGet<any[]>('unidades')).data ?? [];
+export async function getUnidades(): Promise<Unidad[]> {
+  const r = await apiGet<Unidad[]>('unidades');
+  return r.ok && Array.isArray(r.data) ? r.data : [];
 }
