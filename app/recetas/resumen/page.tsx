@@ -110,7 +110,7 @@ export default function ResumenClient() {
           <h1 className="font-display text-2xl font-bold text-ambar-700">Resumen de Costos</h1>
           <p className="text-sm text-salvia-600">Tablero ejecutivo del costeo de recetas, sincronizado con la base.</p>
         </div>
-        <Link href="/recetas" className="rounded-md border border-salvia-200 px-3 py-2 text-sm font-medium text-salvia-700 hover:bg-salvia-50">Volver al recetario</Link>
+        <Link href="/recetas" className="btn-secondary">Volver al recetario</Link>
       </header>
 
       {loading ? (
@@ -118,10 +118,10 @@ export default function ResumenClient() {
       ) : (
         <>
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card label="Recetas activas" value={String(activos.length)} />
-            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} />
-            <Card label="Utilidad potencial" value={money(utilidadTotal)} accent="text-emerald-700" />
-            <Card label="Fuera de objetivo" value={String(rows.filter((x) => x.fc > 0.35).length)} accent="text-red-700" />
+            <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="📘" />
+            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊" />
+            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰" />
+            <Card label="Fuera de objetivo" value={String(rows.filter((x) => x.fc > 0.35).length)} tone="red" icon="⚠" />
           </section>
 
           <section className="mb-6 grid gap-6 lg:grid-cols-3">
@@ -142,7 +142,7 @@ export default function ResumenClient() {
             </Panel>
           </section>
 
-          <section className="rounded-lg border border-salvia-100 bg-white">
+          <section className="card">
             <div className="border-b border-salvia-100 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Detalle por receta</div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
@@ -179,18 +179,29 @@ export default function ResumenClient() {
   );
 }
 
-function Card({ label, value, accent }: { label: string; value: string; accent?: string }) {
+const RTONES: Record<string, { bg: string; ring: string; icon: string; val: string }> = {
+  neutral: { bg: 'bg-white', ring: 'border-line', icon: 'bg-slate-100 text-slate-500', val: 'text-ink' },
+  blue: { bg: 'bg-[#EFF6FF]', ring: 'border-[#DBEAFE]', icon: 'bg-[#DBEAFE] text-[#2563EB]', val: 'text-[#1E3A5F]' },
+  green: { bg: 'bg-[#ECFDF5]', ring: 'border-[#D1FAE5]', icon: 'bg-[#DCFCE7] text-[#16A34A]', val: 'text-[#16A34A]' },
+  red: { bg: 'bg-[#FEF2F2]', ring: 'border-[#FEE2E2]', icon: 'bg-[#FEE2E2] text-[#DC2626]', val: 'text-[#DC2626]' },
+};
+
+function Card({ label, value, tone = 'neutral', icon }: { label: string; value: string; tone?: string; icon?: string }) {
+  const t = RTONES[tone] || RTONES.neutral;
   return (
-    <div className="rounded-lg border border-salvia-100 bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-salvia-400">{label}</p>
-      <p className={`mt-1 text-xl font-bold ${accent || 'text-salvia-800'}`}>{value}</p>
+    <div className={`card-hover rounded-xl border ${t.ring} ${t.bg} p-4 shadow-card`}>
+      <div className="flex items-start justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
+        {icon && <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${t.icon}`}>{icon}</span>}
+      </div>
+      <p className={`mt-2 text-2xl font-bold tabular-nums tracking-tight ${t.val}`}>{value}</p>
     </div>
   );
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-salvia-100 bg-white p-4">
+    <div className="card p-4">
       <h3 className="mb-3 text-sm font-semibold text-salvia-700">{title}</h3>
       <div className="space-y-2">{children}</div>
     </div>
