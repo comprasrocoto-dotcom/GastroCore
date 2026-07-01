@@ -222,20 +222,20 @@ export default function FamiliasRecetasPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <form onSubmit={crearFamilia} className="rounded-lg border border-salvia-100 bg-white p-4">
+        <form onSubmit={crearFamilia} className="card p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Nueva familia</h2>
           <input
             value={nuevaFamilia}
             onChange={(e) => setNuevaFamilia(e.target.value)}
             placeholder="Ej: Entradas, Fondos, Postres…"
-            className="mb-3 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none"
+            className="mb-3 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
           />
           <button type="submit" disabled={guardandoFam} className="btn-primary w-full disabled:opacity-50">
             {guardandoFam ? 'Creando…' : 'Crear familia'}
           </button>
         </form>
 
-        <form onSubmit={crearSubfamilia} className="rounded-lg border border-salvia-100 bg-white p-4">
+        <form onSubmit={crearSubfamilia} className="card p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Nueva subfamilia</h2>
           <div className="mb-2">
             <SearchableSelect
@@ -252,7 +252,7 @@ export default function FamiliasRecetasPage() {
             value={nuevaSub}
             onChange={(e) => setNuevaSub(e.target.value)}
             placeholder="Ej: Ceviches, Tiraditos…"
-            className="mb-3 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none"
+            className="mb-3 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
           />
           <button type="submit" disabled={guardandoSub || !familias.length} className="btn-primary w-full disabled:opacity-50">
             {guardandoSub ? 'Creando…' : 'Crear subfamilia'}
@@ -260,7 +260,7 @@ export default function FamiliasRecetasPage() {
         </form>
       </div>
 
-      <section className="mt-6 rounded-lg border border-salvia-100 bg-white p-4">
+      <section className="mt-6 card p-4">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Familias existentes</h2>
         {cargando ? (
           <p className="text-sm text-salvia-400">Cargando…</p>
