@@ -77,28 +77,28 @@ export async function GET(req: NextRequest) {
     const html = '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">' +
       '<title>Receta ' + esc(receta.nombre) + '</title>' +
       '<style>' +
-      '*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#1f2a24;margin:0;padding:32px;font-size:12px}' +
-      '.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #b45309;padding-bottom:12px;margin-bottom:16px}' +
-      '.logo{width:56px;height:56px;border-radius:8px;background:#b45309;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;margin-right:12px}' +
-      '.brand{display:flex;align-items:center}.rest{font-size:13px;color:#6b7c72;font-weight:bold}' +
-      'h1{font-size:20px;margin:2px 0;color:#b45309}.meta{text-align:right;font-size:11px;color:#6b7c72;line-height:1.5}' +
+      '*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#0F172A;margin:0;padding:32px;font-size:12px}' +
+      '.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1E3A5F;padding-bottom:12px;margin-bottom:16px}' +
+      '.logo{width:56px;height:56px;border-radius:8px;background:#1E3A5F;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:20px;margin-right:12px}' +
+      '.brand{display:flex;align-items:center}.rest{font-size:13px;color:#64748B;font-weight:bold}' +
+      'h1{font-size:20px;margin:2px 0;color:#1E3A5F}.meta{text-align:right;font-size:11px;color:#64748B;line-height:1.5}' +
       '.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}' +
-      '.cell{border:1px solid #e3e8e5;border-radius:6px;padding:8px}.cell .k{font-size:9px;text-transform:uppercase;color:#8a978f;letter-spacing:.5px}.cell .v{font-size:12px;font-weight:bold;margin-top:2px}' +
-      'h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#6b7c72;border-bottom:1px solid #e3e8e5;padding-bottom:4px;margin:18px 0 8px}' +
-      'table{width:100%;border-collapse:collapse}th,td{padding:6px 8px;border-bottom:1px solid #eef2f0;text-align:left}th{background:#f6f8f7;font-size:10px;text-transform:uppercase;color:#6b7c72}' +
+      '.cell{border:1px solid #E2E8F0;border-radius:6px;padding:8px}.cell .k{font-size:9px;text-transform:uppercase;color:#94A3B8;letter-spacing:.5px}.cell .v{font-size:12px;font-weight:bold;margin-top:2px}' +
+      'h2{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#64748B;border-bottom:1px solid #E2E8F0;padding-bottom:4px;margin:18px 0 8px}' +
+      'table{width:100%;border-collapse:collapse}th,td{padding:6px 8px;border-bottom:1px solid #F1F5F9;text-align:left}th{background:#F8FAFC;font-size:10px;text-transform:uppercase;color:#64748B}' +
       '.r{text-align:right;font-variant-numeric:tabular-nums}' +
       '.two{display:grid;grid-template-columns:1.3fr 1fr;gap:20px}' +
-      '.tot td{font-weight:bold;border-top:2px solid #cbd5cf}' +
+      '.tot td{font-weight:bold;border-top:2px solid #CBD5E1}' +
       '.sem{display:inline-block;padding:6px 12px;border-radius:6px;color:#fff;font-weight:bold;font-size:13px}' +
-      '.notas{border:1px dashed #cbd5cf;border-radius:6px;min-height:80px;padding:10px;color:#8a978f}' +
-      '.foot{margin-top:24px;border-top:1px solid #e3e8e5;padding-top:8px;font-size:10px;color:#8a978f;display:flex;justify-content:space-between}' +
+      '.notas{border:1px dashed #CBD5E1;border-radius:6px;min-height:80px;padding:10px;color:#94A3B8}' +
+      '.foot{margin-top:24px;border-top:1px solid #E2E8F0;padding-top:8px;font-size:10px;color:#94A3B8;display:flex;justify-content:space-between}' +
       '@media print{body{padding:12px}.noprint{display:none}}' +
       '@page{margin:14mm;size:A4}' +
-      '.btn{background:#b45309;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}' +
+      '.btn{background:#1E3A5F;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}' +
       '</style></head><body>' +
       '<div class="noprint" style="text-align:right;margin-bottom:10px"><button class="btn" onclick="window.print()">Imprimir / Guardar PDF</button></div>' +
       '<div class="hdr"><div class="brand"><div class="logo">GC</div><div><div class="rest">GastroCore &mdash; Restaurante</div>' +
-      '<h1>' + esc(receta.nombre) + '</h1><div style="font-size:11px;color:#6b7c72">' + esc(receta.id) + ' &middot; ' + esc((fam ? fam.nombre : 'General')) + ' / ' + esc((sub ? sub.nombre : 'Sin clasificar')) + '</div></div></div>' +
+      '<h1>' + esc(receta.nombre) + '</h1><div style="font-size:11px;color:#64748B">' + esc(receta.id) + ' &middot; ' + esc((fam ? fam.nombre : 'General')) + ' / ' + esc((sub ? sub.nombre : 'Sin clasificar')) + '</div></div></div>' +
       '<div class="meta">Fecha de impresion: ' + esc(ahora) + '<br>Version de la receta: v' + version + '</div></div>' +
 
       '<h2>Informacion general</h2><div class="grid">' +
@@ -127,7 +127,7 @@ export async function GET(req: NextRequest) {
       row('Rentabilidad', precioReal <= 0 ? 'Sin precio' : (fcPct <= 35 ? 'Rentable' : 'Revisar precio')) +
       '</table></div><div><h2>Indicador de Food Cost</h2>' +
       '<p><span class="sem" style="background:' + sem.color + '">' + esc(sem.label) + ' &middot; ' + fcPct.toFixed(2) + '%</span></p>' +
-      '<p style="font-size:10px;color:#8a978f">Verde: hasta 30% &middot; Amarillo: 30% a 35% &middot; Rojo: superior a 35%.</p>' +
+      '<p style="font-size:10px;color:#94A3B8">Verde: hasta 30% &middot; Amarillo: 30% a 35% &middot; Rojo: superior a 35%.</p>' +
       '<h2>Observaciones</h2><div class="notas">Espacio para notas, instrucciones de preparacion o recomendaciones.</div>' +
       '</div></div>' +
 
