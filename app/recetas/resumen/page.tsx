@@ -97,7 +97,7 @@ export default function ResumenClient() {
     return (
       <th className="px-3 py-2 font-medium">
         <button onClick={() => { if (active) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(key); setDir('desc'); } }} className={`inline-flex items-center gap-1 ${active ? 'text-ambar-700' : 'text-salvia-600 hover:text-salvia-800'}`}>
-          {label}<span className=\"text-[10px]\">{active ? (dir === 'asc' ? ' \u25B2' : ' \u25BC') : ''}</span>
+          {label}<span className="text-[10px]">{active ? (dir === 'asc' ? ' ▲' : ' ▼') : ''}</span>
         </button>
       </th>
     );
