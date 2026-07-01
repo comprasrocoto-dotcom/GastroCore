@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -14,7 +14,7 @@ const num = (n: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigit
 
 const UNIDADES = ['GRAMOS', 'KILOS', 'ML', 'LITROS', 'ONZA', 'COPA', 'UNIDADES'];
 
-export default function NuevaRecetaPage() {
+function NuevaRecetaInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
@@ -315,5 +315,13 @@ export default function NuevaRecetaPage() {
         </aside>
       </div>
     </main>
+  );
+}
+
+export default function NuevaRecetaPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-salvia-500">Cargando...</div>}>
+      <NuevaRecetaInner />
+    </Suspense>
   );
 }
