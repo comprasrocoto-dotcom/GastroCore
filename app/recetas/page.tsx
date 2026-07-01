@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import SearchableSelect from '@/components/SearchableSelect';
 
 type Receta = any;
-type Subfamilia = { id: string; familia_id: string; nombre: string; activo: any };
-type Familia = { id: string; nombre: string; activo: any };
+type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: any };
+type Familia = { id: string; nombre: string; tipo?: string; activo: any };
 
 const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
@@ -70,6 +71,16 @@ export default function RecetarioClient() {
   const subMap = useMemo(() => new Map(subfamilias.map((s) => [s.id, s])), [subfamilias]);
   const famMap = useMemo(() => new Map(familias.map((f) => [f.id, f])), [familias]);
 
+  const esReceta = (t?: string) => String(t || '').toLowerCase() === 'receta';
+  const famRecetas = useMemo(
+    () => familias.filter((f) => esReceta(f.tipo) || (!f.tipo && f.id !== 'FAM-000001')),
+    [familias]
+  );
+  const subRecetas = useMemo(
+    () => subfamilias.filter((s) => esReceta(s.tipo) || (!s.tipo && s.familia_id !== 'FAM-000001')),
+    [subfamilias]
+  );
+
   function subNombre(r: Receta) {
     const s = subMap.get(r.subfamilia_id);
     return s ? s.nombre : 'Sin clasificar';
@@ -127,6 +138,12 @@ export default function RecetarioClient() {
 
   const familiasSidebar = useMemo(() => {
     const m = new Map<string, { fam: Familia | null; subs: Map<string, { sub: Subfamilia | null; count: number }> }>();
+    for (const f of famRecetas) {
+      m.set(f.id, { fam: f, subs: new Map() });
+      for (const s of subRecetas.filter((x) => String(x.familia_id) === String(f.id))) {
+        m.get(f.id)!.subs.set(s.id, { sub: s, count: 0 });
+      }
+    }
     for (const r of recetas.filter(esActivo)) {
       const s = subMap.get(r.subfamilia_id) || null;
       const f = s ? famMap.get(s.familia_id) || null : null;
@@ -138,7 +155,7 @@ export default function RecetarioClient() {
       grp.subs.get(skey)!.count++;
     }
     return Array.from(m.values());
-  }, [recetas, subMap, famMap]);
+  }, [recetas, subMap, famMap, famRecetas, subRecetas]);
 
   return (
     <div className="flex min-h-screen">
@@ -187,14 +204,26 @@ export default function RecetarioClient() {
 
         <section className="mb-4 flex flex-wrap items-center gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar receta..." className="w-56 rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
-          <select value={famSel} onChange={(e) => { setFamSel(e.target.value); setSubSel(''); }} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
-            <option value="">Todas las familias</option>
-            {familias.map((f) => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-          </select>
-          <select value={subSel} onChange={(e) => setSubSel(e.target.value)} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
-            <option value="">Todas las subfamilias</option>
-            {subfamilias.filter((s) => !famSel || s.familia_id === famSel).map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-          </select>
+          <div className="w-44">
+              <SearchableSelect
+                value={famSel}
+                onChange={(v) => { setFamSel(v); setSubSel(''); }}
+                options={famRecetas.map((f) => ({ value: f.id, label: f.nombre }))}
+                placeholder="Todas las familias"
+                searchPlaceholder="Buscar familia…"
+                clearLabel="Todas las familias"
+              />
+            </div>
+          <div className="w-44">
+              <SearchableSelect
+                value={subSel}
+                onChange={(v) => setSubSel(v)}
+                options={subRecetas.filter((s) => !famSel || String(s.familia_id) === String(famSel)).map((s) => ({ value: s.id, label: s.nombre }))}
+                placeholder="Todas las subfamilias"
+                searchPlaceholder="Buscar subfamilia…"
+                clearLabel="Todas las subfamilias"
+              />
+            </div>
           <select value={fcSel} onChange={(e) => setFcSel(e.target.value)} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
             <option value="">Food Cost: todos</option>
             <option value="verde">Verde (&lt;=35%)</option>
