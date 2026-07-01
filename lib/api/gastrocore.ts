@@ -140,8 +140,8 @@ export async function actualizarCosteInsumo(id: string, coste: number) {
 }
 
 // ---------- RECETAS ----------
-export async function getRecetas(): Promise<Receta[]> {
-  const r = await apiGet<Receta[]>('recetas');
+export async function getRecetas(all = false): Promise<Receta[]> {
+  const r = await apiGet<Receta[]>('recetas', all ? { all: 'true' } : {});
   return r.ok ? r.data : [];
 }
 
@@ -149,7 +149,7 @@ export async function getReceta(id: string): Promise<Receta | null> {
   // Traemos todas y buscamos por id (el backend no filtra por id de forma fiable),
   // y adjuntamos sus ingredientes desde el recurso 'ingredientes'.
   const [recetas, ings, insumos, historial] = await Promise.all([
-    getRecetas(),
+    getRecetas(true),
     getIngredientesReceta(id),
     getInsumos(),
     getHistorialReceta(id).catch(() => []),
