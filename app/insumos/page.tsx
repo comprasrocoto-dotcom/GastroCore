@@ -4,7 +4,7 @@ import { InsumosTabla } from './InsumosTabla';
 export const dynamic = 'force-dynamic';
 
 export default async function InsumosPage() {
-  let insumos = [];
+  let insumos: any[] = [];
   let error: string | null = null;
   try {
     insumos = await getInsumos();
