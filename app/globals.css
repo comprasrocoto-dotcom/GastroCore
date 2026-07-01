@@ -3,66 +3,114 @@
 @tailwind utilities;
 
 :root {
-  --color-ambar: #C2660E;
-  --color-salvia: #3F6B4F;
-  --color-base-light: #F5F6F3;
-  --color-base-dark: #1B1C19;
+  --brand: #1E3A5F;
+  --brand-hover: #16324D;
+  --accent: #2563EB;
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #DC2626;
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --line: #E2E8F0;
+  --ink: #0F172A;
+  --muted: #64748B;
 }
 
 @layer base {
   html {
-    @apply bg-base-light text-base-dark;
+    background-color: var(--bg);
+    color: var(--ink);
   }
   body {
     @apply font-sans antialiased;
+    background-color: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 {
     @apply font-display;
+    color: var(--ink);
+    letter-spacing: -0.01em;
   }
+  ::selection { background: #DBEAFE; }
 }
 
 @layer components {
-  /* Panel de costeo con estetica de "ticket de cocina" */
-  .ticket-panel {
-    @apply bg-base-light border border-dashed border-ambar-300 font-mono text-sm text-base-dark;
-    position: relative;
-    padding: 1.25rem 1rem;
-    box-shadow: 0 2px 8px rgba(27, 28, 25, 0.08);
-    background-image: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 1.6rem,
-      rgba(194, 102, 14, 0.06) 1.6rem,
-      rgba(194, 102, 14, 0.06) calc(1.6rem + 1px)
-    );
+  .card {
+    @apply bg-white rounded-xl border;
+    border-color: var(--line);
+    box-shadow: 0 2px 8px rgba(15,23,42,.05);
   }
-
-  /* Borde superior dentado tipo ticket */
-  .ticket-panel::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 0;
-    right: 0;
-    height: 8px;
-    background: radial-gradient(circle at 6px 8px, transparent 6px, var(--color-base-light) 6px);
-    background-size: 12px 8px;
-  }
-
-  .ticket-row {
-    @apply flex items-baseline justify-between py-1 border-b border-dotted border-ambar-200/60;
-  }
-
-  .ticket-total {
-    @apply flex items-baseline justify-between pt-2 mt-1 font-semibold text-ambar-700;
-    border-top: 2px solid var(--color-ambar);
+  .card-hover { transition: box-shadow .15s ease, transform .15s ease; }
+  .card-hover:hover {
+    box-shadow: 0 6px 20px rgba(15,23,42,.08);
+    transform: translateY(-1px);
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-ambar px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-ambar-600 focus:outline-none focus:ring-2 focus:ring-ambar-400;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors;
+    background-color: var(--brand);
   }
+  .btn-primary:hover { background-color: var(--brand-hover); }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md bg-salvia px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-salvia-600 focus:outline-none focus:ring-2 focus:ring-salvia-400;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold bg-white transition-colors;
+    color: var(--accent);
+    border: 1px solid #BFDBFE;
   }
+  .btn-secondary:hover { background-color: #EFF6FF; }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors;
+    color: var(--danger);
+    background-color: #FEF2F2;
+  }
+  .btn-danger:hover { background-color: #FEE2E2; }
+
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-wider;
+    color: var(--muted);
+  }
+
+  .fin-value {
+    @apply font-semibold tabular-nums;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .erp-table { @apply w-full text-sm; border-collapse: separate; border-spacing: 0; }
+  .erp-table thead th {
+    @apply text-left text-[11px] font-semibold uppercase tracking-wider px-4 py-3;
+    color: var(--muted);
+    background-color: #F1F5F9;
+    border-bottom: 1px solid var(--line);
+  }
+  .erp-table tbody td {
+    @apply px-4 py-3;
+    border-bottom: 1px solid #F1F5F9;
+    color: var(--ink);
+  }
+  .erp-table tbody tr:hover { background-color: #F8FAFC; }
+  .erp-table tbody tr.is-selected { background-color: #DBEAFE; }
+
+  .progress-track {
+    @apply w-full rounded-full overflow-hidden;
+    height: 8px;
+    background-color: #E2E8F0;
+  }
+  .progress-fill { @apply h-full rounded-full; transition: width .4s ease; }
+
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold; }
+  .chip-success { color: #16A34A; background-color: #DCFCE7; }
+  .chip-warning { color: #B45309; background-color: #FEF3C7; }
+  .chip-danger { color: #DC2626; background-color: #FEE2E2; }
+
+  .ticket-panel {
+    @apply bg-white rounded-xl border p-5 text-sm;
+    border-color: var(--line);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(15,23,42,.05);
+  }
+  .ticket-panel::before, .ticket-panel::after { display: none !important; content: none !important; }
 }
