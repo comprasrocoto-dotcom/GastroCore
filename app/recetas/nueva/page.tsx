@@ -211,25 +211,25 @@ function NuevaRecetaInner() {
         <Link href="/recetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
       </div>
 
-      <div className="mb-4 grid gap-3 rounded-lg border border-salvia-100 bg-white p-4 sm:grid-cols-3">
+      <div className="mb-4 grid gap-3 card p-4 sm:grid-cols-3">
         <label className="block sm:col-span-1">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Nombre de la receta</span>
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Ceviche clasico"
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Rendimiento (porciones)</span>
           <input type="number" min={1} value={rendimiento} onChange={(e) => setRendimiento(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Desvio mercancia (%)</span>
           <input type="number" step="0.1" value={desvioPct} onChange={(e) => setDesvioPct(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
       </div>
 
-      <div className="mb-4 rounded-lg border border-salvia-100 bg-white p-4">
+      <div className="mb-4 card p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Clasificacion</h2>
           <Link href="/recetas/familias" className="text-xs font-medium text-ambar-600 hover:underline">Administrar familias</Link>
@@ -263,23 +263,23 @@ function NuevaRecetaInner() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <section className="rounded-lg border border-salvia-100 bg-white">
+        <section className="card">
           <div className="flex items-center justify-between border-b border-salvia-100 px-4 py-3">
             <h2 className="font-display text-base font-semibold text-salvia-800">Ingredientes</h2>
             <button onClick={addLinea} className="btn-primary text-xs">+ Agregar ingrediente</button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="erp-table">
               <thead>
-                <tr className="border-b border-salvia-100 bg-salvia-50 text-left text-xs uppercase tracking-wide text-salvia-600">
-                  <th className="px-3 py-2 font-medium">Insumo</th>
-                  <th className="px-2 py-2 font-medium">Unidad</th>
-                  <th className="px-2 py-2 text-right font-medium">Cantidad</th>
-                  <th className="px-2 py-2 text-right font-medium">% Merma</th>
-                  <th className="px-2 py-2 text-right font-medium">Cant. real</th>
-                  <th className="px-2 py-2 text-right font-medium">C. unitario</th>
-                  <th className="px-2 py-2 text-right font-medium">C. total</th>
-                  <th className="px-2 py-2 text-center font-medium">Accion</th>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Unidad</th>
+                  <th className="!text-right">Cantidad</th>
+                  <th className="!text-right">% Merma</th>
+                  <th className="!text-right">Cant. real</th>
+                  <th className="!text-right">C. unitario</th>
+                  <th className="!text-right">C. total</th>
+                  <th className="!text-center">Accion</th>
                 </tr>
               </thead>
               <tbody>
@@ -340,7 +340,7 @@ function NuevaRecetaInner() {
 
         <aside className="space-y-4">
           <div className="ticket-panel">
-            <p className="mb-2 text-center font-semibold uppercase tracking-wide text-ambar-700">Costeo</p>
+            <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[#1E3A5F]">Resumen de costeo</p>
             <div className="ticket-row"><span>Costo ingredientes</span><span>{money(costeo.costoIngredientes)}</span></div>
             <div className="ticket-row"><span>Desvio mercancia</span><span>{money(costeo.desvio)}</span></div>
             <div className="ticket-row"><span>Costo final</span><span>{money(costeo.costoFinal)}</span></div>
@@ -358,23 +358,23 @@ function NuevaRecetaInner() {
             <div className={'ticket-total ' + fcBadge(costeo.foodCostReal)}><span>Food cost real (sobre base)</span><span>{pct(costeo.foodCostReal)}</span></div>
           </div>
 
-          <div className="rounded-lg border border-salvia-100 bg-white p-4 space-y-3">
+          <div className="card p-4 space-y-3">
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Food cost objetivo</span>
               <input type="number" step="0.01" min={0} max={1} value={foodCostObjetivo} onChange={(e) => setFoodCostObjetivo(Number(e.target.value))}
-                className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
               <span className="text-[11px] text-salvia-400">Ej: 0.30 = 30%</span>
             </label>
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">IVA del producto (%)</span>
               <input type="number" step="1" min={0} max={100} value={iva} onChange={(e) => setIva(Number(e.target.value))}
-                className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
               <span className="text-[11px] text-salvia-400">Ej: 19 = 19%. Usa 0 si no aplica IVA.</span>
             </label>
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Precio real de venta</span>
               <input type="number" min={0} value={precioReal} onChange={(e) => setPrecioReal(Number(e.target.value))}
-                className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
             </label>
           </div>
 
