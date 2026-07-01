@@ -16,16 +16,16 @@ const FC_OBJ = 0.35;
 
 function semaforo(fc: number) {
   const v = Number(fc) || 0;
-  if (v <= 0.35) return { color: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', label: 'Optimo' };
-  if (v <= 0.40) return { color: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50', label: 'Alerta' };
-  return { color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', label: 'Critico' };
+  if (v <= 0.35) return { color: '#16A34A', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
+  if (v <= 0.40) return { color: '#F59E0B', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
+  return { color: '#DC2626', text: 'text-[#DC2626]', bg: 'bg-[#FEE2E2]', border: 'border-[#FECACA]', label: 'Critico' };
 }
 
 function Semaforo({ fc }: { fc: number }) {
   const s = semaforo(fc);
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${s.bg} ${s.text}`}>
-      <span className={`h-2 w-2 rounded-full ${s.color}`} />
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${s.bg} ${s.text}`}>
+      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
       {fcPct(fc)}
     </span>
   );
@@ -186,20 +186,20 @@ export default function RecetarioClient() {
             <p className="text-sm text-salvia-600">Consulta y administra tus recetas por familia, con costeo en tiempo real.</p>
           </div>
           <div className="flex gap-2">
-            <Link href="/recetas/familias" className="rounded-md border border-salvia-200 px-3 py-2 text-sm font-medium text-salvia-700 hover:bg-salvia-50">Familias</Link>
-            <Link href="/recetas/resumen" className="rounded-md border border-salvia-200 px-3 py-2 text-sm font-medium text-salvia-700 hover:bg-salvia-50">Panel ejecutivo</Link>
+            <Link href="/recetas/familias" className="btn-secondary">Familias</Link>
+            <Link href="/recetas/resumen" className="btn-secondary">Panel ejecutivo</Link>
             <Link href="/recetas/nueva" className="btn-primary">+ Nueva receta</Link>
           </div>
         </header>
 
-        <section className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
-          <Card label="Total recetas" value={String(stats.n)} />
-          <Card label="Costo prom." value={money(stats.costoProm)} />
-          <Card label="Food Cost prom." value={fcPct(stats.fcProm)} accent={semaforo(stats.fcProm).text} />
-          <Card label="Rentables" value={String(stats.rentables)} accent="text-emerald-700" />
-          <Card label="Fuera de objetivo" value={String(stats.fuera)} accent="text-red-700" />
-          <Card label="Sin precio" value={String(stats.sinPrecio)} accent="text-amber-700" />
-          <Card label="Actualizadas hoy" value={String(stats.actualizadasHoy)} />
+        <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+          <Card label="Total recetas" value={String(stats.n)} tone="indigo" icon="📘" />
+          <Card label="Costo promedio" value={money(stats.costoProm)} tone="blue" icon="💰" />
+          <FoodCostCard fc={stats.fcProm} />
+          <Card label="Rentables" value={String(stats.rentables)} tone="green" icon="✓" />
+          <Card label="Fuera de objetivo" value={String(stats.fuera)} tone="red" icon="⚠" />
+          <Card label="Sin precio" value={String(stats.sinPrecio)} tone="amber" icon="🏷" />
+          <Card label="Actualizadas hoy" value={String(stats.actualizadasHoy)} tone="neutral" icon="🕒" />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2">
@@ -248,27 +248,27 @@ export default function RecetarioClient() {
             {grupos.map(([sub, items]) => (
               <div key={sub}>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-salvia-700"><span>{sub}</span><span className="rounded-full bg-salvia-100 px-2 text-xs text-salvia-500">{items.length}</span></h3>
-                <div className="overflow-x-auto rounded-lg border border-salvia-100">
-                  <table className="w-full border-collapse text-sm">
+                <div className="card overflow-hidden">
+                  <table className="erp-table">
                     <thead>
-                      <tr className="bg-salvia-50 text-left text-salvia-600">
-                        <th className="px-3 py-2 font-medium">Receta</th>
-                        <th className="px-3 py-2 font-medium">Codigo</th>
-                        <th className="px-3 py-2 text-right font-medium">Costo porcion</th>
-                        <th className="px-3 py-2 text-right font-medium">Precio venta</th>
-                        <th className="px-3 py-2 text-center font-medium">Food Cost</th>
-                        <th className="px-3 py-2 text-center font-medium">Estado</th>
+                      <tr>
+                        <th>Receta</th>
+                        <th>Codigo</th>
+                        <th className="!text-right">Costo porcion</th>
+                        <th className="!text-right">Precio venta</th>
+                        <th className="!text-center">Food Cost</th>
+                        <th className="!text-center">Estado</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map((r) => (
-                        <tr key={r.id} className="border-t border-salvia-50 hover:bg-ambar-50/40">
-                          <td className="px-3 py-2 font-medium"><Link href={`/recetas/${r.id}`} className="text-ambar-700 hover:underline">{r.nombre}</Link></td>
-                          <td className="px-3 py-2 font-mono text-xs text-salvia-500">{r.id}</td>
-                          <td className="px-3 py-2 text-right font-mono">{money(Number(r.costo_porcion))}</td>
-                          <td className="px-3 py-2 text-right font-mono">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-amber-500">sin precio</span>}</td>
-                          <td className="px-3 py-2 text-center">{Number(r.food_cost) > 0 ? <Semaforo fc={Number(r.food_cost)} /> : <span className="text-xs text-salvia-400">-</span>}</td>
-                          <td className="px-3 py-2 text-center">{esActivo(r) ? <span className="text-xs text-emerald-600">Activo</span> : <span className="text-xs text-salvia-400">Inactivo</span>}</td>
+                        <tr key={r.id}>
+                          <td className="font-medium"><Link href={`/recetas/${r.id}`} className="text-[#2563EB] hover:underline">{r.nombre}</Link></td>
+                          <td className="font-mono text-xs text-muted">{r.id}</td>
+                          <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
+                          <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
+                          <td className="text-center">{Number(r.food_cost) > 0 ? <Semaforo fc={Number(r.food_cost)} /> : <span className="text-xs text-slate-400">-</span>}</td>
+                          <td className="text-center">{esActivo(r) ? <span className="chip chip-success">Activo</span> : <span className="text-xs text-slate-400">Inactivo</span>}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -283,11 +283,46 @@ export default function RecetarioClient() {
   );
 }
 
-function Card({ label, value, accent }: { label: string; value: string; accent?: string }) {
+const TONES: Record<string, { bg: string; ring: string; icon: string; val: string }> = {
+  neutral: { bg: 'bg-white', ring: 'border-line', icon: 'bg-slate-100 text-slate-500', val: 'text-ink' },
+  blue: { bg: 'bg-[#EFF6FF]', ring: 'border-[#DBEAFE]', icon: 'bg-[#DBEAFE] text-[#2563EB]', val: 'text-[#1E3A5F]' },
+  indigo: { bg: 'bg-[#EEF2FF]', ring: 'border-[#E0E7FF]', icon: 'bg-[#E0E7FF] text-[#1E3A5F]', val: 'text-[#1E3A5F]' },
+  green: { bg: 'bg-[#ECFDF5]', ring: 'border-[#D1FAE5]', icon: 'bg-[#DCFCE7] text-[#16A34A]', val: 'text-[#16A34A]' },
+  amber: { bg: 'bg-[#FFFBEB]', ring: 'border-[#FEF3C7]', icon: 'bg-[#FEF3C7] text-[#B45309]', val: 'text-[#B45309]' },
+  red: { bg: 'bg-[#FEF2F2]', ring: 'border-[#FEE2E2]', icon: 'bg-[#FEE2E2] text-[#DC2626]', val: 'text-[#DC2626]' },
+};
+
+function Card({ label, value, tone = 'neutral', icon }: { label: string; value: string; tone?: string; icon?: string }) {
+  const t = TONES[tone] || TONES.neutral;
   return (
-    <div className="rounded-lg border border-salvia-100 bg-white p-3 shadow-sm">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-salvia-400">{label}</p>
-      <p className={`mt-1 text-lg font-bold ${accent || 'text-salvia-800'}`}>{value}</p>
+    <div className={`card-hover rounded-xl border ${t.ring} ${t.bg} p-4 shadow-card`}>
+      <div className="flex items-start justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
+        {icon && <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${t.icon}`}>{icon}</span>}
+      </div>
+      <p className={`mt-2 text-2xl font-bold tabular-nums tracking-tight ${t.val}`}>{value}</p>
+    </div>
+  );
+}
+
+function FoodCostCard({ fc }: { fc: number }) {
+  const pct = Math.max(0, Math.min(1, fc));
+  const s = semaforo(fc);
+  const color = fc <= 0.35 ? '#16A34A' : fc <= 0.40 ? '#F59E0B' : '#DC2626';
+  const bg = fc <= 0.35 ? '#ECFDF5' : fc <= 0.40 ? '#FFFBEB' : '#FEF2F2';
+  const ring = fc <= 0.35 ? '#D1FAE5' : fc <= 0.40 ? '#FEF3C7' : '#FEE2E2';
+  return (
+    <div className="card-hover rounded-xl border p-4 shadow-card sm:col-span-2" style={{ backgroundColor: bg, borderColor: ring }}>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">Food Cost prom.</p>
+        <span className="text-[11px] font-semibold" style={{ color }}>{s.label}</span>
+      </div>
+      <div className="mt-2 flex items-end gap-3">
+        <p className="text-3xl font-bold tabular-nums tracking-tight" style={{ color }}>{fcPct(fc)}</p>
+      </div>
+      <div className="progress-track mt-3">
+        <div className="progress-fill" style={{ width: `${(pct * 100).toFixed(0)}%`, backgroundColor: color }} />
+      </div>
     </div>
   );
 }
