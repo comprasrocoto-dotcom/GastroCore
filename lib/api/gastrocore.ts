@@ -77,8 +77,8 @@ export type HistorialReceta = {
   cambios: string;
 };
 
-export type Familia = { id: string; nombre: string; activo: boolean | string };
-export type Subfamilia = { id: string; familia_id: string; nombre: string; activo: boolean | string };
+export type Familia = { id: string; nombre: string; tipo?: string; activo: boolean | string };
+export type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: boolean | string };
 export type Unidad = { id: string; codigo: string; nombre: string; tipo: string; activo: boolean | string };
 
 function assertConfig(): void {
@@ -176,6 +176,13 @@ export async function crearReceta(data: Partial<Receta>) {
 }
 export async function actualizarReceta(id: string, data: Partial<Receta>) {
   return apiPost<Receta>('recetas', 'update', { id, data });
+}
+
+export async function crearFamilia(data: { nombre: string; tipo?: string; activo?: boolean }) {
+  return apiPost<Familia>('familias', 'create', { data: { tipo: 'receta', activo: true, ...data } });
+}
+export async function crearSubfamilia(data: { familia_id: string; nombre: string; tipo?: string; activo?: boolean }) {
+  return apiPost<Subfamilia>('subfamilias', 'create', { data: { tipo: 'receta', activo: true, ...data } });
 }
 
 // ---------- CATALOGOS ----------
