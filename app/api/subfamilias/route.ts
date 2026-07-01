@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSubfamilias, crearSubfamilia } from '@/lib/api/gastrocore';
+import { getSubfamilias, crearSubfamilia, actualizarSubfamilia } from '@/lib/api/gastrocore';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +22,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Nombre y familia son obligatorios' }, { status: 400 });
     }
     const r = await crearSubfamilia({ familia_id, nombre, tipo: 'receta' });
+    return NextResponse.json(r);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error';
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
+}
+
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const id = String(body.id || '').trim();
+    if (!id) return NextResponse.json({ ok: false, error: 'El id es obligatorio' }, { status: 400 });
+    const data: { nombre?: string; familia_id?: string; activo?: boolean } = {};
+    if (typeof body.nombre === 'string') data.nombre = body.nombre.trim();
+    if (typeof body.familia_id === 'string') data.familia_id = body.familia_id.trim();
+    if (typeof body.activo === 'boolean') data.activo = body.activo;
+    const r = await actualizarSubfamilia(id, data);
     return NextResponse.json(r);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error';
