@@ -76,6 +76,13 @@ export type HistorialReceta = {
   food_cost: number;
   precio_real: number;
   cambios: string;
+  version?: number;
+  origen?: string;
+  campo?: string;
+  valor_anterior?: string | number;
+  valor_nuevo?: string | number;
+  observaciones?: string;
+  snapshot?: string;
 };
 
 export type Familia = { id: string; nombre: string; tipo?: string; activo: boolean | string };
@@ -177,6 +184,10 @@ export async function crearReceta(data: Partial<Receta>) {
 }
 export async function actualizarReceta(id: string, data: Partial<Receta>) {
   return apiPost<Receta>('recetas', 'update', { id, data });
+}
+
+export async function restaurarVersion(id: string, version: number, usuario?: string) {
+  return apiPost<Receta>('recetas', 'restaurar', { data: { id, version, usuario: usuario || 'Sistema', _origen: 'Web' } });
 }
 
 export async function crearFamilia(data: { nombre: string; tipo?: string; activo?: boolean }) {
