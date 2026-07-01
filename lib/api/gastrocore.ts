@@ -54,6 +54,7 @@ export type Receta = {
   precio_sugerido: number;
   precio_real: number;
   margen_objetivo: number;
+  iva?: number;
   activo: boolean | string;
   creado_en?: string;
   actualizado_en?: string;
