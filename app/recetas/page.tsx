@@ -169,6 +169,7 @@ export default function RecetarioClient() {
             <p className="text-sm text-salvia-600">Consulta y administra tus recetas por familia, con costeo en tiempo real.</p>
           </div>
           <div className="flex gap-2">
+            <Link href="/recetas/familias" className="rounded-md border border-salvia-200 px-3 py-2 text-sm font-medium text-salvia-700 hover:bg-salvia-50">Familias</Link>
             <Link href="/recetas/resumen" className="rounded-md border border-salvia-200 px-3 py-2 text-sm font-medium text-salvia-700 hover:bg-salvia-50">Panel ejecutivo</Link>
             <Link href="/recetas/nueva" className="btn-primary">+ Nueva receta</Link>
           </div>
