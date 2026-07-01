@@ -20,8 +20,8 @@ function fecha(s?: string) {
 
 function semaforo(fc: number) {
   const v = Number(fc) || 0;
-  if (v <= 0.35) return { hex: '#16A34A', color: 'bg-[#16A34A]', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
-  if (v <= 0.4) return { hex: '#F59E0B', color: 'bg-[#F59E0B]', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
+  if (v <= 0.33) return { hex: '#16A34A', color: 'bg-[#16A34A]', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
+  if (v <= 0.35) return { hex: '#F59E0B', color: 'bg-[#F59E0B]', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
   return { hex: '#DC2626', color: 'bg-[#DC2626]', text: 'text-[#DC2626]', bg: 'bg-[#FEE2E2]', border: 'border-[#FECACA]', label: 'Critico' };
 }
 
