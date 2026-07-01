@@ -20,9 +20,9 @@ function fecha(s?: string) {
 
 function semaforo(fc: number) {
   const v = Number(fc) || 0;
-  if (v <= 0.35) return { color: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', label: 'Optimo' };
-  if (v <= 0.4) return { color: 'bg-amber-400', text: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', label: 'En alerta' };
-  return { color: 'bg-red-500', text: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', label: 'Critico' };
+  if (v <= 0.35) return { hex: '#16A34A', color: 'bg-[#16A34A]', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
+  if (v <= 0.4) return { hex: '#F59E0B', color: 'bg-[#F59E0B]', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
+  return { hex: '#DC2626', color: 'bg-[#DC2626]', text: 'text-[#DC2626]', bg: 'bg-[#FEE2E2]', border: 'border-[#FECACA]', label: 'Critico' };
 }
 
 export default async function RecetaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -78,7 +78,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
           <p className="mt-1 font-mono text-xs text-salvia-500">{receta.id}</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/recetas" className="rounded-md border border-salvia-200 px-3 py-2 text-sm font-medium text-salvia-700 hover:bg-salvia-50">Volver</Link>
+          <Link href="/recetas" className="btn-secondary">Volver</Link>
           <Link href={`/recetas/nueva?edit=${receta.id}`} className="btn-primary">Editar receta</Link>
         </div>
       </header>
@@ -100,16 +100,16 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
           <section className="rounded-lg border border-salvia-100 bg-white p-0 overflow-hidden">
             <h2 className="border-b border-salvia-100 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Ingredientes ({ingredientes.length})</h2>
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+              <table className="erp-table">
                 <thead>
-                  <tr className="bg-salvia-50 text-left text-xs uppercase tracking-wide text-salvia-500">
-                    <th className="px-3 py-2 font-medium">Insumo</th>
-                    <th className="px-3 py-2 font-medium">Unidad</th>
-                    <th className="px-3 py-2 text-right font-medium">Cantidad</th>
-                    <th className="px-3 py-2 text-right font-medium">% Merma</th>
-                    <th className="px-3 py-2 text-right font-medium">Cant. real</th>
-                    <th className="px-3 py-2 text-right font-medium">Costo unit.</th>
-                    <th className="px-3 py-2 text-right font-medium">Costo total</th>
+                  <tr>
+                    <th>Insumo</th>
+                    <th>Unidad</th>
+                    <th className="!text-right">Cantidad</th>
+                    <th className="!text-right">% Merma</th>
+                    <th className="!text-right">Cant. real</th>
+                    <th className="!text-right">Costo unit.</th>
+                    <th className="!text-right">Costo total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -148,8 +148,8 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Historial</h2>
               <div className="flex items-center gap-2">
-                <a href={`/api/recetas/pdf?id=${receta.id}`} target="_blank" rel="noopener noreferrer" className="rounded-md border border-salvia-200 px-3 py-1.5 text-xs font-medium text-salvia-700 hover:bg-salvia-50">📄 Descargar PDF</a>
-                <Link href={`/recetas/${receta.id}/trazabilidad`} className="rounded-md bg-ambar-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-ambar-700">📋 Ver trazabilidad completa</Link>
+                <a href={`/api/recetas/pdf?id=${receta.id}`} target="_blank" rel="noopener noreferrer" className="btn-secondary !px-3 !py-1.5 !text-xs">📄 Descargar PDF</a>
+                <Link href={`/recetas/${receta.id}/trazabilidad`} className="btn-primary !px-3 !py-1.5 !text-xs">📋 Ver trazabilidad completa</Link>
               </div>
             </div>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
@@ -162,13 +162,46 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
         </div>
 
         <aside className="space-y-4">
-          <section className={`rounded-lg border-2 p-4 ${s.border} ${s.bg}`}>
-            <p className="text-xs font-medium uppercase tracking-wide text-salvia-500">Food Cost real</p>
-            <p className={`mt-1 text-3xl font-bold ${s.text}`}>{fcPct(foodCost)}</p>
-            <div className="mt-2 flex items-center gap-2 text-xs">
-              <span className={`h-2.5 w-2.5 rounded-full ${s.color}`} />
-              <span className={s.text}>{s.label} - objetivo {fcPct(margenObj)}</span>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="card-hover rounded-xl border border-[#DBEAFE] bg-[#EFF6FF] p-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <p className="eyebrow">Costo del plato</p>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#DBEAFE] text-sm text-[#2563EB]">{'\uD83D\uDCB0'}</span>
+              </div>
+              <p className="mt-2 text-xl font-bold tabular-nums tracking-tight text-[#1E3A5F]">{money(costoFinal)}</p>
             </div>
+            <div className="card-hover rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] p-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <p className="eyebrow">Precio sugerido</p>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#DCFCE7] text-sm text-[#16A34A]">{'\uD83C\uDFF7'}</span>
+              </div>
+              <p className="mt-2 text-xl font-bold tabular-nums tracking-tight text-[#16A34A]">{money(precioSugerido)}</p>
+            </div>
+            <div className="card-hover rounded-xl border border-[#E0E7FF] bg-[#EEF2FF] p-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <p className="eyebrow">Precio real</p>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E0E7FF] text-sm text-[#1E3A5F]">{'\uD83D\uDCB5'}</span>
+              </div>
+              <p className="mt-2 text-xl font-bold tabular-nums tracking-tight text-[#1E3A5F]">{precioReal > 0 ? money(precioReal) : 'Sin precio'}</p>
+            </div>
+            <div className={`card-hover rounded-xl border p-4 shadow-card ${utilidad > 0 ? 'border-[#D1FAE5] bg-[#DCFCE7]' : 'border-[#FEE2E2] bg-[#FEF2F2]'}`}>
+              <div className="flex items-center justify-between">
+                <p className="eyebrow">Utilidad</p>
+                <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${utilidad > 0 ? 'bg-[#BBF7D0] text-[#16A34A]' : 'bg-[#FECACA] text-[#DC2626]'}`}>{'\uD83D\uDCC8'}</span>
+              </div>
+              <p className={`mt-2 text-xl font-bold tabular-nums tracking-tight ${utilidad > 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>{money(utilidad)}</p>
+            </div>
+          </div>
+          <section className={`card-hover rounded-xl border p-5 ${s.border} ${s.bg}`}>
+            <div className="flex items-center justify-between">
+              <p className="eyebrow">Food Cost real</p>
+              <span className={`chip ${s.bg} ${s.text}`}>{s.label}</span>
+            </div>
+            <p className={`mt-2 text-4xl font-bold tabular-nums tracking-tight ${s.text}`}>{fcPct(foodCost)}</p>
+            <div className="progress-track mt-4">
+              <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(0, foodCost * 100)).toFixed(0)}%`, backgroundColor: s.hex }} />
+            </div>
+            <p className="mt-2 text-xs text-muted">Objetivo {fcPct(margenObj)}</p>
           </section>
 
           <section className="rounded-lg border border-salvia-100 bg-white p-4">
