@@ -35,6 +35,7 @@ function NuevaRecetaInner() {
         setRendimiento(Number(rec.rendimiento) || 1);
         setDesvioPct(Number(rec.desvio_pct) || 0);
         setPrecioReal(Number(rec.precio_real) || 0);
+        setIva(rec.iva !== undefined && rec.iva !== null && rec.iva !== '' ? Number(rec.iva) : 19);
         setFoodCostObjetivo(Number(rec.margen_objetivo) || 0.3);
         if (rec.subfamilia_id) setSubfamiliaId(String(rec.subfamilia_id));
         const ings = Array.isArray(rec.ingredientes) ? rec.ingredientes : [];
@@ -56,6 +57,7 @@ function NuevaRecetaInner() {
   const [desvioPct, setDesvioPct] = useState(0);
   const [precioReal, setPrecioReal] = useState(0);
   const [foodCostObjetivo, setFoodCostObjetivo] = useState(0.3);
+  const [iva, setIva] = useState(19);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -112,12 +114,17 @@ function NuevaRecetaInner() {
     const desvio = costoIngredientes * (desvioPct / 100);
     const costoFinal = costoIngredientes + desvio;
     const costoPorcion = costoFinal / (rendimiento || 1);
-    const precioSugerido = foodCostObjetivo > 0 ? costoPorcion / foodCostObjetivo : 0;
-    const foodCostReal = precioReal > 0 ? (costoPorcion / precioReal) * 100 : 0;
-    const utilidad = precioReal - costoPorcion;
-    const margenBruto = precioReal > 0 ? (utilidad / precioReal) * 100 : 0;
-    return { costoIngredientes, desvio, costoFinal, costoPorcion, precioSugerido, foodCostReal, utilidad, margenBruto };
-  }, [filas, desvioPct, rendimiento, foodCostObjetivo, precioReal]);
+    const fcObj = foodCostObjetivo > 1 ? foodCostObjetivo / 100 : foodCostObjetivo;
+    const precioBaseSugerido = fcObj > 0 ? costoPorcion / fcObj : 0;
+    const ivaSugerido = precioBaseSugerido * ((Number(iva) || 0) / 100);
+    const precioSugerido = precioBaseSugerido + ivaSugerido;
+    const ivaFactor = 1 + (Number(iva) || 0) / 100;
+    const precioRealBase = precioReal > 0 ? precioReal / ivaFactor : 0;
+    const foodCostReal = precioRealBase > 0 ? (costoPorcion / precioRealBase) * 100 : 0;
+    const utilidad = precioRealBase - costoPorcion;
+    const margenBruto = precioRealBase > 0 ? (utilidad / precioRealBase) * 100 : 0;
+    return { costoIngredientes, desvio, costoFinal, costoPorcion, precioBaseSugerido, ivaSugerido, precioSugerido, precioRealBase, foodCostReal, utilidad, margenBruto };
+  }, [filas, desvioPct, rendimiento, foodCostObjetivo, precioReal, iva]);
 
   const addLinea = () =>
     setLineas((p) => [...p, { item_id: '', unidad: '', cantidad: 1, merma_pct: 0 }]);
@@ -162,6 +169,7 @@ function NuevaRecetaInner() {
         desvio_pct: desvioPct,
         precio_real: precioReal,
         margen_objetivo: foodCostObjetivo,
+        iva: Number(iva) || 0,
         subfamilia_id: subfamiliaId,
         ingredientes: lineas.map((l, idx) => ({
           tipo_item: 'insumo',
@@ -336,13 +344,18 @@ function NuevaRecetaInner() {
             <div className="ticket-row"><span>Costo ingredientes</span><span>{money(costeo.costoIngredientes)}</span></div>
             <div className="ticket-row"><span>Desvio mercancia</span><span>{money(costeo.desvio)}</span></div>
             <div className="ticket-row"><span>Costo final</span><span>{money(costeo.costoFinal)}</span></div>
-            <div className="ticket-row"><span>Costo x porcion</span><span>{money(costeo.costoPorcion)}</span></div>
-            <div className="ticket-row"><span>Food cost objetivo</span><span>{pct(foodCostObjetivo * 100)}</span></div>
-            <div className="ticket-row"><span>Precio sugerido</span><span>{money(costeo.precioSugerido)}</span></div>
-            <div className="ticket-row"><span>Precio real</span><span>{money(precioReal)}</span></div>
+            <div className="ticket-row"><span>Costo del plato x porcion (sin IVA)</span><span>{money(costeo.costoPorcion)}</span></div>
+            <div className="ticket-row"><span>Food cost objetivo</span><span>{pct(foodCostObjetivo > 1 ? foodCostObjetivo : foodCostObjetivo * 100)}</span></div>
+            <div className="my-1 border-t border-dashed border-salvia-200" />
+            <div className="ticket-row"><span>Precio base sugerido (sin IVA)</span><span>{money(costeo.precioBaseSugerido)}</span></div>
+            <div className="ticket-row"><span>IVA aplicado ({iva}%)</span><span>{money(costeo.ivaSugerido)}</span></div>
+            <div className="ticket-row font-semibold text-ambar-700"><span>Precio sugerido final (con IVA)</span><span>{money(costeo.precioSugerido)}</span></div>
+            <div className="my-1 border-t border-dashed border-salvia-200" />
+            <div className="ticket-row"><span>Precio real de venta (con IVA)</span><span>{money(precioReal)}</span></div>
+            <div className="ticket-row"><span>Precio real base (sin IVA)</span><span>{money(costeo.precioRealBase)}</span></div>
             <div className="ticket-row"><span>Utilidad</span><span>{money(costeo.utilidad)}</span></div>
             <div className="ticket-row"><span>Margen bruto</span><span>{pct(costeo.margenBruto)}</span></div>
-            <div className={'ticket-total ' + fcBadge(costeo.foodCostReal)}><span>Food cost real</span><span>{pct(costeo.foodCostReal)}</span></div>
+            <div className={'ticket-total ' + fcBadge(costeo.foodCostReal)}><span>Food cost real (sobre base)</span><span>{pct(costeo.foodCostReal)}</span></div>
           </div>
 
           <div className="rounded-lg border border-salvia-100 bg-white p-4 space-y-3">
@@ -351,6 +364,12 @@ function NuevaRecetaInner() {
               <input type="number" step="0.01" min={0} max={1} value={foodCostObjetivo} onChange={(e) => setFoodCostObjetivo(Number(e.target.value))}
                 className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
               <span className="text-[11px] text-salvia-400">Ej: 0.30 = 30%</span>
+            </label>
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">IVA del producto (%)</span>
+              <input type="number" step="1" min={0} max={100} value={iva} onChange={(e) => setIva(Number(e.target.value))}
+                className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+              <span className="text-[11px] text-salvia-400">Ej: 19 = 19%. Usa 0 si no aplica IVA.</span>
             </label>
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Precio real de venta</span>
