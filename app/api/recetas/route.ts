@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
       if (!receta) return NextResponse.json({ ok: false, error: 'No encontrada' }, { status: 404 });
       return NextResponse.json({ ok: true, data: receta });
     }
-    const recetas = await getRecetas();
+    const all = req.nextUrl.searchParams.get('all') === 'true';
+    const recetas = await getRecetas(all);
     return NextResponse.json({ ok: true, data: recetas });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error';
