@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import SearchableSelect from '@/components/SearchableSelect';
+import InsumoAutocomplete from '@/components/InsumoAutocomplete';
 
 type Insumo = { id: string; articulo: string; unidad: string; coste: number };
 type Linea = { item_id: string; unidad: string; cantidad: number; merma_pct: number };
@@ -58,6 +59,7 @@ function NuevaRecetaInner() {
   const foodCostObjetivo = 0.35; // Food Cost objetivo FIJO 35% (no editable)
   const [iva, setIva] = useState(8);
   const [lineas, setLineas] = useState<Linea[]>([]);
+  const cantRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [errores, setErrores] = useState<string[]>([]);
@@ -285,13 +287,13 @@ function NuevaRecetaInner() {
                 {lineas.map((l, i) => (
                   <tr key={i} className="border-b border-salvia-50 last:border-0">
                     <td className="px-3 py-2">
-                      <select value={l.item_id} onChange={(e) => onInsumo(i, e.target.value)}
-                        className="w-full min-w-[200px] rounded-md border border-salvia-200 px-2 py-1.5 text-sm focus:border-ambar-400 focus:outline-none">
-                        <option value="">Selecciona insumo...</option>
-                        {insumos.map((ins) => (
-                          <option key={ins.id} value={ins.id}>{ins.articulo}</option>
-                        ))}
-                      </select>
+                      <InsumoAutocomplete
+                        value={l.item_id}
+                        insumos={insumos}
+                        existingIds={lineas.filter((_, idx) => idx !== i).map((x) => x.item_id).filter(Boolean)}
+                        onSelect={(ins) => onInsumo(i, ins.id)}
+                        onCommit={() => cantRefs.current[i]?.focus()}
+                      />
                     </td>
                     <td className="px-2 py-2">
                       <select value={l.unidad} onChange={(e) => updLinea(i, { unidad: e.target.value })}
@@ -302,7 +304,9 @@ function NuevaRecetaInner() {
                       </select>
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <input type="number" min={0} value={l.cantidad} onChange={(e) => updLinea(i, { cantidad: Number(e.target.value) })}
+                      <input type="number" min={0} value={l.cantidad}
+                        ref={(el) => { cantRefs.current[i] = el; }}
+                        onChange={(e) => updLinea(i, { cantidad: Number(e.target.value) })}
                         className="w-20 rounded-md border border-salvia-200 px-2 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
                     <td className="px-2 py-2 text-right">
