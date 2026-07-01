@@ -35,12 +35,12 @@ export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por articulo o referencia..."
-          className="flex-1 min-w-[220px] rounded-md border border-salvia-200 bg-white px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none focus:ring-2 focus:ring-ambar-100"
+          className="flex-1 min-w-[220px] rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
         />
         <select
           value={sub}
           onChange={(e) => setSub(e.target.value)}
-          className="rounded-md border border-salvia-200 bg-white px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none"
+          className="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
         >
           <option value="">Todas las subfamilias</option>
           {subfamilias.map((s) => (
@@ -51,27 +51,27 @@ export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
 
       <p className="mb-2 text-xs text-salvia-600">{filtrados.length} resultados</p>
 
-      <div className="overflow-x-auto rounded-lg border border-salvia-100">
-        <table className="w-full border-collapse text-sm">
+      <div className="card overflow-hidden">
+        <table className="erp-table">
           <thead>
-            <tr className="bg-salvia-50 text-left text-salvia-700">
-              <th className="px-3 py-2 font-medium">Referencia</th>
-              <th className="px-3 py-2 font-medium">Articulo</th>
-              <th className="px-3 py-2 font-medium">Unidad</th>
-              <th className="px-3 py-2 font-medium">Subfamilia</th>
-              <th className="px-3 py-2 text-right font-medium">Coste</th>
+            <tr>
+              <th>Referencia</th>
+              <th>Articulo</th>
+              <th>Unidad</th>
+              <th>Subfamilia</th>
+              <th className="!text-right">Coste</th>
             </tr>
           </thead>
           <tbody>
             {filtrados.map((i) => (
-              <tr key={i.id} className="border-t border-salvia-50 hover:bg-ambar-50/40">
-                <td className="px-3 py-2 font-mono text-xs text-salvia-600">{i.referencia}</td>
-                <td className="px-3 py-2">{i.articulo}</td>
-                <td className="px-3 py-2 text-salvia-600">{i.unidad}</td>
-                <td className="px-3 py-2">
-                  <span className="rounded bg-salvia-50 px-2 py-0.5 text-xs text-salvia-700">{i.subfamilia}</span>
+              <tr key={i.id}>
+                <td className="font-mono text-xs text-muted">{i.referencia}</td>
+                <td className="font-medium">{i.articulo}</td>
+                <td className="text-muted">{i.unidad}</td>
+                <td>
+                  <span className="chip bg-slate-100 text-slate-600">{i.subfamilia}</span>
                 </td>
-                <td className="px-3 py-2 text-right font-mono text-ambar-700">{money(i.coste)}</td>
+                <td className="text-right fin-value text-[#1E3A5F]">{money(i.coste)}</td>
               </tr>
             ))}
             {filtrados.length === 0 && (
