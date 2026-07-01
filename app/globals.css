@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-ambar: #C2660E;
+  --color-salvia: #3F6B4F;
+  --color-base-light: #F5F6F3;
+  --color-base-dark: #1B1C19;
+}
+
+@layer base {
+  html {
+    @apply bg-base-light text-base-dark;
+  }
+  body {
+    @apply font-sans antialiased;
+  }
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Panel de costeo con estetica de "ticket de cocina" */
+  .ticket-panel {
+    @apply bg-base-light border border-dashed border-ambar-300 font-mono text-sm text-base-dark;
+    position: relative;
+    padding: 1.25rem 1rem;
+    box-shadow: 0 2px 8px rgba(27, 28, 25, 0.08);
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1.6rem,
+      rgba(194, 102, 14, 0.06) 1.6rem,
+      rgba(194, 102, 14, 0.06) calc(1.6rem + 1px)
+    );
+  }
+
+  /* Borde superior dentado tipo ticket */
+  .ticket-panel::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: radial-gradient(circle at 6px 8px, transparent 6px, var(--color-base-light) 6px);
+    background-size: 12px 8px;
+  }
+
+  .ticket-row {
+    @apply flex items-baseline justify-between py-1 border-b border-dotted border-ambar-200/60;
+  }
+
+  .ticket-total {
+    @apply flex items-baseline justify-between pt-2 mt-1 font-semibold text-ambar-700;
+    border-top: 2px solid var(--color-ambar);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-ambar px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-ambar-600 focus:outline-none focus:ring-2 focus:ring-ambar-400;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md bg-salvia px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-salvia-600 focus:outline-none focus:ring-2 focus:ring-salvia-400;
+  }
+}
