@@ -60,6 +60,21 @@ export type Receta = {
   creado_por?: string;
   actualizado_por?: string;
   ingredientes?: IngredienteReceta[];
+  historial?: HistorialReceta[];
+};
+
+export type HistorialReceta = {
+  id: string;
+  receta_id: string;
+  accion: string;
+  usuario: string;
+  fecha: string;
+  nombre: string;
+  costo_total: number;
+  costo_porcion: number;
+  food_cost: number;
+  precio_real: number;
+  cambios: string;
 };
 
 export type Familia = { id: string; nombre: string; activo: boolean | string };
@@ -125,10 +140,11 @@ export async function getRecetas(): Promise<Receta[]> {
 export async function getReceta(id: string): Promise<Receta | null> {
   // Traemos todas y buscamos por id (el backend no filtra por id de forma fiable),
   // y adjuntamos sus ingredientes desde el recurso 'ingredientes'.
-  const [recetas, ings, insumos] = await Promise.all([
+  const [recetas, ings, insumos, historial] = await Promise.all([
     getRecetas(),
     getIngredientesReceta(id),
     getInsumos(),
+    getHistorialReceta(id).catch(() => []),
   ]);
   const receta = recetas.find((x) => x.id === id);
   if (!receta) return null;
@@ -137,7 +153,16 @@ export async function getReceta(id: string): Promise<Receta | null> {
     ...g,
     nombre_item: mapaInsumo.get(g.item_id) || g.item_id,
   }));
+  receta.historial = historial;
   return receta;
+}
+
+export async function getHistorialReceta(recetaId: string): Promise<HistorialReceta[]> {
+  const r = await apiGet<HistorialReceta[]>('historialRecetas', { receta_id: recetaId });
+  const arr = r.ok && Array.isArray(r.data) ? r.data : [];
+  return arr
+    .filter((h) => String(h.receta_id) === String(recetaId))
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 }
 
 export async function getIngredientesReceta(recetaId: string): Promise<IngredienteReceta[]> {
