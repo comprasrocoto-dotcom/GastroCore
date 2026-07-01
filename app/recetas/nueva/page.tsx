@@ -36,7 +36,6 @@ function NuevaRecetaInner() {
         setDesvioPct(Number(rec.desvio_pct) || 0);
         setPrecioReal(Number(rec.precio_real) || 0);
         setIva(rec.iva !== undefined && rec.iva !== null && rec.iva !== '' ? Number(rec.iva) : 8);
-        setFoodCostObjetivo(Number(rec.margen_objetivo) || 0.3);
         if (rec.subfamilia_id) setSubfamiliaId(String(rec.subfamilia_id));
         const ings = Array.isArray(rec.ingredientes) ? rec.ingredientes : [];
         if (ings.length) {
@@ -56,7 +55,7 @@ function NuevaRecetaInner() {
   const [rendimiento, setRendimiento] = useState(1);
   const [desvioPct, setDesvioPct] = useState(0);
   const [precioReal, setPrecioReal] = useState(0);
-  const [foodCostObjetivo, setFoodCostObjetivo] = useState(0.3);
+  const foodCostObjetivo = 0.35; // Food Cost objetivo FIJO 35% (no editable)
   const [iva, setIva] = useState(8);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [guardando, setGuardando] = useState(false);
@@ -356,12 +355,6 @@ function NuevaRecetaInner() {
           </div>
 
           <div className="card p-4 space-y-3">
-            <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Food cost objetivo</span>
-              <input type="number" step="0.01" min={0} max={1} value={foodCostObjetivo} onChange={(e) => setFoodCostObjetivo(Number(e.target.value))}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
-              <span className="text-[11px] text-salvia-400">Ej: 0.30 = 30%</span>
-            </label>
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Precio real de venta</span>
               <input type="number" min={0} value={precioReal} onChange={(e) => setPrecioReal(Number(e.target.value))}
