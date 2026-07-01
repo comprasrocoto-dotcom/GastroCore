@@ -6,11 +6,17 @@ import Link from 'next/link';
 const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n) || 0);
 const fcPct = (n: number) => ((Number(n) || 0) * 100).toFixed(1) + '%';
+const FC_OBJ = 0.35; // Food Cost objetivo FIJO 35%
+const INC = 0.08; // Impuesto al Consumo 8%
+function precioSugeridoObjetivo(costoPorcion: number) {
+  const base = FC_OBJ > 0 ? (Number(costoPorcion) || 0) / FC_OBJ : 0;
+  return base * (1 + INC);
+}
 
 function sem(fc: number) {
   const v = Number(fc) || 0;
-  if (v <= 0.35) return { dot: 'bg-emerald-500', text: 'text-emerald-700', emoji: 'Optimo' };
-  if (v <= 0.4) return { dot: 'bg-amber-400', text: 'text-amber-700', emoji: 'Alerta' };
+  if (v <= 0.33) return { dot: 'bg-emerald-500', text: 'text-emerald-700', emoji: 'Optimo' };
+  if (v <= 0.35) return { dot: 'bg-amber-400', text: 'text-amber-700', emoji: 'Alerta' };
   return { dot: 'bg-red-500', text: 'text-red-700', emoji: 'Critico' };
 }
 
@@ -23,6 +29,7 @@ export default function ResumenClient() {
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<Sort>('food_cost');
   const [dir, setDir] = useState<'asc' | 'desc'>('desc');
+  const [mostrarFuera, setMostrarFuera] = useState(false);
 
   useEffect(() => {
     let cancel = false;
@@ -89,6 +96,10 @@ export default function ResumenClient() {
   const topRentables = useMemo(() => [...rows].filter((x) => x.precio > 0).sort((a, b) => b.rent - a.rent).slice(0, 10), [rows]);
   const topFoodCost = useMemo(() => [...rows].filter((x) => x.fc > 0).sort((a, b) => b.fc - a.fc).slice(0, 10), [rows]);
   const utilidadTotal = useMemo(() => rows.reduce((a, x) => a + (x.rent > 0 ? x.rent : 0), 0), [rows]);
+  const fueraPrecio = useMemo(() => rows.filter((x) => x.fc > 0.35).map((x) => {
+    const sugerido = precioSugeridoObjetivo(x.costo);
+    return { ...x, sugerido, diff: sugerido - x.precio };
+  }).sort((a, b) => b.fc - a.fc), [rows]);
   const maxRent = topRentables[0]?.rent || 1;
   const maxFc = topFoodCost[0]?.fc || 1;
 
@@ -121,8 +132,45 @@ export default function ResumenClient() {
             <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="📘" />
             <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊" />
             <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰" />
-            <Card label="Fuera de objetivo" value={String(rows.filter((x) => x.fc > 0.35).length)} tone="red" icon="⚠" />
+            <button type="button" onClick={() => setMostrarFuera((v) => !v)} className="text-left focus:outline-none">
+            <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="⚠" />
+          </button>
           </section>
+
+        {mostrarFuera && (
+          <section className="card mb-6">
+            <div className="flex items-center justify-between border-b border-salvia-100 px-4 py-3">
+              <div className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Recetas fuera de precio ({fueraPrecio.length})</div>
+              <button type="button" onClick={() => setMostrarFuera(false)} className="text-xs text-salvia-500 hover:text-ink">Cerrar</button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-salvia-50 text-left text-salvia-600">
+                    <th className="px-3 py-2 font-medium">Receta</th>
+                    <th className="px-3 py-2 text-right font-medium">Precio actual</th>
+                    <th className="px-3 py-2 text-right font-medium">Precio sugerido</th>
+                    <th className="px-3 py-2 text-right font-medium">Diferencia</th>
+                    <th className="px-3 py-2 text-center font-medium">Food Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fueraPrecio.length === 0 ? (
+                    <tr><td colSpan={5} className="px-3 py-6 text-center text-salvia-400">No hay recetas fuera de precio. Todas cumplen el objetivo del 35%.</td></tr>
+                  ) : fueraPrecio.map((x) => (
+                    <tr key={x.r.id} className="border-t border-salvia-100">
+                      <td className="px-3 py-2"><Link href={`/recetas/${x.r.id}`} className="text-[#2563EB] hover:underline">{x.r.nombre}</Link></td>
+                      <td className="px-3 py-2 text-right fin-value">{x.precio > 0 ? money(x.precio) : <span className="text-[#B45309]">sin precio</span>}</td>
+                      <td className="px-3 py-2 text-right fin-value font-semibold text-[#16A34A]">{money(x.sugerido)}</td>
+                      <td className="px-3 py-2 text-right fin-value font-semibold text-[#DC2626]">{x.precio > 0 ? '+' + money(x.diff) : money(x.sugerido)}</td>
+                      <td className="px-3 py-2 text-center"><span className={`font-semibold ${sem(x.fc).text}`}>{fcPct(x.fc)}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
           <section className="mb-6 grid gap-6 lg:grid-cols-3">
             <Panel title="Food Cost promedio por familia">
