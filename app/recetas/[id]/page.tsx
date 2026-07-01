@@ -151,7 +151,49 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
               <Info label="Fecha de creacion" value={fecha(receta.creado_en)} />
               <Info label="Ultima modificacion" value={fecha(receta.actualizado_en)} />
             </dl>
-            <p className="mt-3 text-xs text-salvia-400">El versionado historico se registra en la base de datos del Trial en cada guardado.</p>
+            {receta.historial && receta.historial.length > 0 ? (
+              <div className="mt-4">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-salvia-400">Versiones anteriores</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-salvia-100 text-salvia-500">
+                        <th className="py-1.5 pr-3 font-medium">Fecha</th>
+                        <th className="py-1.5 pr-3 font-medium">Accion</th>
+                        <th className="py-1.5 pr-3 font-medium">Usuario</th>
+                        <th className="py-1.5 pr-3 text-right font-medium">Costo total</th>
+                        <th className="py-1.5 pr-3 text-right font-medium">Costo porcion</th>
+                        <th className="py-1.5 text-right font-medium">Food Cost</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {receta.historial.map((h, i) => {
+                        const fc = Number(h.precio_real) > 0 ? (Number(h.costo_porcion) / Number(h.precio_real)) * 100 : 0;
+                        const badge =
+                          h.accion === 'creacion'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700';
+                        return (
+                          <tr key={h.id || i} className="border-b border-salvia-50 last:border-0">
+                            <td className="py-1.5 pr-3 text-salvia-600">{fecha(h.fecha)}</td>
+                            <td className="py-1.5 pr-3">
+                              <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium capitalize ${badge}`}>{h.accion || 'edicion'}</span>
+                            </td>
+                            <td className="py-1.5 pr-3 text-salvia-600">{h.usuario || 'Sistema'}</td>
+                            <td className="py-1.5 pr-3 text-right">{money(Number(h.costo_total))}</td>
+                            <td className="py-1.5 pr-3 text-right">{money(Number(h.costo_porcion))}</td>
+                            <td className="py-1.5 text-right">{fc > 0 ? `${fc.toFixed(1)}%` : '-'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-[11px] text-salvia-400">{receta.historial.length} version(es) registradas en la base de datos del Trial.</p>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-salvia-400">Aun no hay versiones registradas. Cada guardado creara una entrada de historial.</p>
+            )}
           </section>
         </div>
 
