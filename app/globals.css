@@ -113,4 +113,16 @@
     box-shadow: 0 2px 8px rgba(15,23,42,.05);
   }
   .ticket-panel::before, .ticket-panel::after { display: none !important; content: none !important; }
+
+  .ticket-row {
+    @apply flex items-center justify-between py-1 text-sm;
+    color: var(--ink);
+  }
+  .ticket-row span:first-child { color: var(--muted); }
+  .ticket-row span:last-child { @apply font-semibold tabular-nums; }
+
+  .ticket-total {
+    @apply mt-2 flex items-center justify-between rounded-lg px-3 py-2 text-base font-bold tabular-nums;
+    background-color: #F1F5F9;
+  }
 }
