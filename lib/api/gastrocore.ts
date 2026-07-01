@@ -185,6 +185,19 @@ export async function crearSubfamilia(data: { familia_id: string; nombre: string
   return apiPost<Subfamilia>('subfamilias', 'create', { data: { tipo: 'receta', activo: true, ...data } });
 }
 
+export async function actualizarFamilia(id: string, data: { nombre?: string; activo?: boolean }) {
+  return apiPost<Familia>('familias', 'update', { id, data });
+}
+export async function desactivarFamilia(id: string) {
+  return apiPost<Familia>('familias', 'update', { id, data: { activo: false } });
+}
+export async function actualizarSubfamilia(id: string, data: { nombre?: string; familia_id?: string; activo?: boolean }) {
+  return apiPost<Subfamilia>('subfamilias', 'update', { id, data });
+}
+export async function desactivarSubfamilia(id: string) {
+  return apiPost<Subfamilia>('subfamilias', 'update', { id, data: { activo: false } });
+}
+
 // ---------- CATALOGOS ----------
 export async function getFamilias(): Promise<Familia[]> {
   const r = await apiGet<Familia[]>('familias');
