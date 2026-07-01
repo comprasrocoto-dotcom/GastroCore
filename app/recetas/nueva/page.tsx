@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import SearchableSelect from '@/components/SearchableSelect';
 
 type Insumo = { id: string; articulo: string; unidad: string; coste: number };
 type Linea = { item_id: string; unidad: string; cantidad: number; merma_pct: number };
@@ -228,19 +229,26 @@ function NuevaRecetaInner() {
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-salvia-500">Familia</span>
-            <select value={familiaId} onChange={(e) => { setFamiliaId(e.target.value); setSubfamiliaId(''); }}
-              className="w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-500 focus:outline-none">
-              <option value="">Sin clasificar</option>
-              {familias.map((f) => (<option key={f.id} value={f.id}>{f.nombre}</option>))}
-            </select>
+            <SearchableSelect
+                  value={familiaId}
+                  onChange={(v) => { setFamiliaId(v); setSubfamiliaId(''); }}
+                  options={familias.map((f) => ({ value: f.id, label: f.nombre }))}
+                  placeholder="Sin clasificar"
+                  searchPlaceholder="Buscar familia…"
+                  clearLabel="Sin clasificar"
+                />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-salvia-500">Subfamilia</span>
-            <select value={subfamiliaId} onChange={(e) => setSubfamiliaId(e.target.value)} disabled={!familiaId}
-              className="w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-500 focus:outline-none disabled:bg-salvia-50">
-              <option value="">{familiaId ? 'Sin subfamilia' : 'Elige una familia primero'}</option>
-              {subfamilias.filter((s) => String(s.familia_id) === String(familiaId)).map((s) => (<option key={s.id} value={s.id}>{s.nombre}</option>))}
-            </select>
+            <SearchableSelect
+                  value={subfamiliaId}
+                  onChange={(v) => setSubfamiliaId(v)}
+                  options={subfamilias.filter((s) => String(s.familia_id) === String(familiaId)).map((s) => ({ value: s.id, label: s.nombre }))}
+                  placeholder={familiaId ? 'Sin subfamilia' : 'Elige una familia primero'}
+                  searchPlaceholder="Buscar subfamilia…"
+                  clearLabel="Sin subfamilia"
+                  disabled={!familiaId}
+                />
           </label>
         </div>
         {familias.length === 0 && (<p className="mt-2 text-xs text-salvia-400">Aun no hay familias de platos de venta. <Link href="/recetas/familias" className="text-ambar-600 hover:underline">Crea la primera aqui</Link>.</p>)}
