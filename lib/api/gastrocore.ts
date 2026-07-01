@@ -112,7 +112,7 @@ async function apiGet<T>(
 
 async function apiPost<T>(
   resource: string,
-  action: 'create' | 'update' | 'delete',
+  action: 'create' | 'update' | 'delete' | 'setActivo',
   payload: { id?: string; data?: unknown }
 ): Promise<ApiResponse<T>> {
   assertConfig();
@@ -184,6 +184,10 @@ export async function crearReceta(data: Partial<Receta>) {
 }
 export async function actualizarReceta(id: string, data: Partial<Receta>) {
   return apiPost<Receta>('recetas', 'update', { id, data });
+}
+
+export async function setActivoReceta(id: string, activo: boolean) {
+  return apiPost<Receta>('recetas', 'setActivo', { id, data: { activo } });
 }
 
 export async function restaurarVersion(id: string, version: number, usuario?: string) {
