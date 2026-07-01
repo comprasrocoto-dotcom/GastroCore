@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 type Insumo = { id: string; articulo: string; unidad: string; coste: number };
 type Linea = { item_id: string; unidad: string; cantidad: number; merma_pct: number };
+type Cat = { id: string; nombre: string; familia_id?: string; tipo?: string };
 
 const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
@@ -34,6 +35,7 @@ function NuevaRecetaInner() {
         setDesvioPct(Number(rec.desvio_pct) || 0);
         setPrecioReal(Number(rec.precio_real) || 0);
         setFoodCostObjetivo(Number(rec.margen_objetivo) || 0.3);
+        if (rec.subfamilia_id) setSubfamiliaId(String(rec.subfamilia_id));
         const ings = Array.isArray(rec.ingredientes) ? rec.ingredientes : [];
         if (ings.length) {
           setLineas(ings.map((g: any) => ({
@@ -57,6 +59,29 @@ function NuevaRecetaInner() {
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [errores, setErrores] = useState<string[]>([]);
+
+  const [subfamiliaId, setSubfamiliaId] = useState('');
+  const [familiaId, setFamiliaId] = useState('');
+  const [familias, setFamilias] = useState<Cat[]>([]);
+  const [subfamilias, setSubfamilias] = useState<Cat[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/familias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
+      fetch('/api/subfamilias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
+    ]).then(([rf, rs]) => {
+      const esRec = (t?: string) => String(t || '').toLowerCase() === 'receta';
+      setFamilias((rf?.data || []).filter((f: Cat) => esRec(f.tipo)));
+      setSubfamilias((rs?.data || []).filter((s: Cat) => esRec(s.tipo)));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (subfamiliaId && !familiaId && subfamilias.length) {
+      const s = subfamilias.find((x) => String(x.id) === String(subfamiliaId));
+      if (s && s.familia_id) setFamiliaId(String(s.familia_id));
+    }
+  }, [subfamiliaId, subfamilias, familiaId]);
 
   useEffect(() => {
     fetch('/api/insumos')
@@ -136,6 +161,7 @@ function NuevaRecetaInner() {
         desvio_pct: desvioPct,
         precio_real: precioReal,
         margen_objetivo: foodCostObjetivo,
+        subfamilia_id: subfamiliaId,
         ingredientes: lineas.map((l, idx) => ({
           tipo_item: 'insumo',
           item_id: l.item_id,
@@ -192,6 +218,32 @@ function NuevaRecetaInner() {
           <input type="number" step="0.1" value={desvioPct} onChange={(e) => setDesvioPct(Number(e.target.value))}
             className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
         </label>
+      </div>
+
+      <div className="mb-4 rounded-lg border border-salvia-100 bg-white p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Clasificacion</h2>
+          <Link href="/recetas/familias" className="text-xs font-medium text-ambar-600 hover:underline">Administrar familias</Link>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-salvia-500">Familia</span>
+            <select value={familiaId} onChange={(e) => { setFamiliaId(e.target.value); setSubfamiliaId(''); }}
+              className="w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-500 focus:outline-none">
+              <option value="">Sin clasificar</option>
+              {familias.map((f) => (<option key={f.id} value={f.id}>{f.nombre}</option>))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-salvia-500">Subfamilia</span>
+            <select value={subfamiliaId} onChange={(e) => setSubfamiliaId(e.target.value)} disabled={!familiaId}
+              className="w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-500 focus:outline-none disabled:bg-salvia-50">
+              <option value="">{familiaId ? 'Sin subfamilia' : 'Elige una familia primero'}</option>
+              {subfamilias.filter((s) => String(s.familia_id) === String(familiaId)).map((s) => (<option key={s.id} value={s.id}>{s.nombre}</option>))}
+            </select>
+          </label>
+        </div>
+        {familias.length === 0 && (<p className="mt-2 text-xs text-salvia-400">Aun no hay familias de platos de venta. <Link href="/recetas/familias" className="text-ambar-600 hover:underline">Crea la primera aqui</Link>.</p>)}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
