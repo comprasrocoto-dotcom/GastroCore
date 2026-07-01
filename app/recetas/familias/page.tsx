@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import SearchableSelect from '@/components/SearchableSelect';
 
 type Familia = { id: string; nombre: string; tipo?: string; activo: boolean | string };
 type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: boolean | string };
@@ -144,18 +145,17 @@ export default function FamiliasRecetasPage() {
         <form onSubmit={crearSubfamilia} className="rounded-lg border border-salvia-100 bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Nueva subfamilia</h2>
           <label className="mb-1 block text-xs font-medium text-salvia-500">Familia</label>
-          <select
-            value={subFamiliaId}
-            onChange={(e) => setSubFamiliaId(e.target.value)}
-            className="mb-2 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-500 focus:outline-none"
-          >
-            {familias.length === 0 && <option value="">Crea una familia primero</option>}
-            {familias.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nombre}
-              </option>
-            ))}
-          </select>
+          <div className="mb-2">
+                <SearchableSelect
+                  value={subFamiliaId}
+                  onChange={(v) => setSubFamiliaId(v)}
+                  options={familias.map((f) => ({ value: f.id, label: f.nombre }))}
+                  placeholder={familias.length ? 'Selecciona una familia' : 'Crea una familia primero'}
+                  searchPlaceholder="Buscar familia…"
+                  clearLabel="— Selecciona una familia —"
+                  disabled={!familias.length}
+                />
+              </div>
           <label className="mb-1 block text-xs font-medium text-salvia-500">Nombre de la subfamilia</label>
           <input
             value={nuevaSub}
