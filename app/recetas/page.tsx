@@ -51,12 +51,15 @@ export default function RecetarioClient() {
     setRecetas((prev) => prev.map((x) => (x.id === r.id ? { ...x, activo: nuevo } : x)));
     try {
       const res = await fetch('/api/recetas', {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: r.id, activo: nuevo }),
       });
       const j = await res.json();
-      if (!j.ok) throw new Error(j.error || 'No se pudo actualizar el estado');
+      if (!j.ok) {
+        const em = j.error && typeof j.error === 'object' ? (j.error.message || JSON.stringify(j.error)) : (j.error || 'No se pudo actualizar el estado');
+        throw new Error(em);
+      }
     } catch (e: any) {
       setRecetas((prev) => prev.map((x) => (x.id === r.id ? { ...x, activo: r.activo } : x)));
       setError(e?.message || 'Error al cambiar el estado');
