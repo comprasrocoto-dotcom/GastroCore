@@ -98,24 +98,24 @@ export default function TrazabilidadPage() {
           <p className="text-xs text-salvia-500">Auditoria permanente de cambios &mdash; {receta?.nombre || id}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={exportCSV} className="rounded-md border border-salvia-200 px-3 py-1.5 text-xs font-medium text-salvia-700 hover:bg-salvia-50">Exportar Excel (CSV)</button>
-          <button onClick={exportPDF} className="rounded-md border border-salvia-200 px-3 py-1.5 text-xs font-medium text-salvia-700 hover:bg-salvia-50">Exportar PDF</button>
+          <button onClick={exportCSV} className="btn-secondary !px-3 !py-1.5 !text-xs">Exportar Excel (CSV)</button>
+          <button onClick={exportPDF} className="btn-secondary !px-3 !py-1.5 !text-xs">Exportar PDF</button>
           <Link href={'/recetas/' + id} className="rounded-md bg-ambar-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-ambar-700">Volver a la receta</Link>
         </div>
       </div>
 
       {msg && <div className="mb-3 rounded-md border border-ambar-200 bg-ambar-50 px-3 py-2 text-sm text-ambar-700 print:hidden">{msg}</div>}
 
-      <div className="mb-4 grid gap-3 rounded-lg border border-salvia-100 bg-white p-4 sm:grid-cols-4 print:hidden">
+      <div className="mb-4 grid gap-3 card p-4 sm:grid-cols-4 print:hidden">
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Buscar usuario</span>
           <input value={qUsuario} onChange={(e) => setQUsuario(e.target.value)} placeholder="Usuario..."
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]" />
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Tipo de cambio</span>
           <select value={fAccion} onChange={(e) => setFAccion(e.target.value)}
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none">
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]">
             <option value="">Todos</option>
             {acciones.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
@@ -123,18 +123,18 @@ export default function TrazabilidadPage() {
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Desde</span>
           <input type="date" value={fDesde} onChange={(e) => setFDesde(e.target.value)}
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]" />
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Hasta</span>
           <input type="date" value={fHasta} onChange={(e) => setFHasta(e.target.value)}
-            className="mt-1 w-full rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]" />
         </label>
       </div>
 
-      <div className="mb-6 overflow-x-auto rounded-lg border border-salvia-100 bg-white">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-salvia-50 text-salvia-600">
+      <div className="mb-6 overflow-x-auto card">
+        <table className="erp-table text-xs">
+          <thead>
             <tr>
               <th className="px-3 py-2">Fecha y hora</th>
               <th className="px-3 py-2">Usuario</th>
@@ -167,11 +167,11 @@ export default function TrazabilidadPage() {
         </table>
       </div>
 
-      <div className="rounded-lg border border-salvia-100 bg-white p-4">
+      <div className="card p-4">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Versiones de la receta</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-salvia-50 text-salvia-600">
+          <table className="erp-table">
+            <thead>
               <tr>
                 <th className="px-3 py-2">Version</th>
                 <th className="px-3 py-2">Fecha</th>
