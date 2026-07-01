@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 type Insumo = { id: string; articulo: string; unidad: string; coste: number };
@@ -16,6 +16,37 @@ const UNIDADES = ['GRAMOS', 'KILOS', 'ML', 'LITROS', 'ONZA', 'COPA', 'UNIDADES']
 
 export default function NuevaRecetaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+  const modoEdicion = !!editId;
+
+  useEffect(() => {
+    if (!editId) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/recetas?id=${editId}`, { cache: 'no-store' });
+        const j = await r.json();
+        const rec = j?.data;
+        if (cancel || !rec) return;
+        setNombre(rec.nombre || '');
+        setRendimiento(Number(rec.rendimiento) || 1);
+        setDesvioPct(Number(rec.desvio_pct) || 0);
+        setPrecioReal(Number(rec.precio_real) || 0);
+        setFoodCostObjetivo(Number(rec.margen_objetivo) || 0.3);
+        const ings = Array.isArray(rec.ingredientes) ? rec.ingredientes : [];
+        if (ings.length) {
+          setLineas(ings.map((g: any) => ({
+            item_id: g.item_id || '',
+            unidad: g.unidad_id || '',
+            cantidad: Number(g.cantidad) || 0,
+            merma_pct: Number(g.merma_pct) || 0,
+          })));
+        }
+      } catch {}
+    })();
+    return () => { cancel = true; };
+  }, [editId]);
   const [insumos, setInsumos] = useState<Insumo[]>([]);
   const [nombre, setNombre] = useState('');
   const [rendimiento, setRendimiento] = useState(1);
@@ -115,9 +146,9 @@ export default function NuevaRecetaPage() {
         })),
       };
       const res = await fetch('/api/recetas', {
-        method: 'POST',
+        method: modoEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(modoEdicion ? { id: editId, ...payload } : payload),
       });
       const data = await res.json();
       if (data.ok) {
@@ -139,7 +170,7 @@ export default function NuevaRecetaPage() {
     <main className="mx-auto max-w-7xl px-4 py-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ambar-700">Nueva receta</h1>
+          <h1 className="font-display text-2xl font-bold text-ambar-700">{modoEdicion ? 'Editar receta' : 'Nueva receta'}</h1>
           <p className="text-xs text-salvia-500">Costeo por ingrediente con merma real, sincronizado con la base.</p>
         </div>
         <Link href="/recetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
@@ -279,7 +310,7 @@ export default function NuevaRecetaPage() {
           {msg && <p className="rounded-lg border border-ambar-200 bg-ambar-50 p-2 text-sm text-ambar-700">{msg}</p>}
 
           <button onClick={guardar} disabled={guardando} className="btn-primary w-full disabled:opacity-50">
-            {guardando ? 'Guardando...' : 'Guardar receta'}
+            {guardando ? 'Guardando...' : modoEdicion ? 'Actualizar receta' : 'Guardar receta'}
           </button>
         </aside>
       </div>
