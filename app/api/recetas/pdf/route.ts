@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const costoPorcion = Number(receta.costo_porcion) || (costoTotal / rend);
     const mo = Number(receta.margen_objetivo) || 0;
     const fcObj = mo > 1 ? mo / 100 : mo;
-    const iva = Number(receta.iva) || 0;
+    const iva = 8;
     const precioBase = fcObj > 0 ? costoPorcion / fcObj : 0;
     const precioSugerido = precioBase * (1 + iva / 100);
     const precioReal = Number(receta.precio_real) || 0;
@@ -117,9 +117,7 @@ export async function GET(req: NextRequest) {
       row('Costo total del plato', money(costoTotal), true) +
       row('Costo por porcion', money(costoPorcion), true) +
       row('Food Cost objetivo', (fcObj * 100).toFixed(2) + '%') +
-      row('Precio base sugerido (sin IVA)', money(precioBase)) +
-      row('IVA (' + iva + '%)', money(precioSugerido - precioBase)) +
-      row('Precio sugerido (con IVA)', money(precioSugerido), true) +
+      row('Precio sugerido de venta (con INC)', money(precioSugerido), true) +
       row('Precio real de venta', money(precioReal)) +
       row('Food Cost real', fcPct.toFixed(2) + '%', true) +
       row('Utilidad', money(utilidad)) +
