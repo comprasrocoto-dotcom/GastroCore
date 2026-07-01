@@ -132,7 +132,6 @@ export async function GET(req: NextRequest) {
       '</div></div>' +
 
       '<div class="foot"><span>Generado: ' + esc(ahora) + ' &middot; Usuario: ' + esc(usuario) + '</span><span>Version v' + version + ' &middot; Pagina 1</span></div>' +
-      '<script>window.onload=function(){setTimeout(function(){window.print();},400);};</script>' +
       '</body></html>';
 
     return new NextResponse(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
