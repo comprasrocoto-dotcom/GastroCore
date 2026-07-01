@@ -5,7 +5,7 @@
  * (Server Components, Route Handlers). El token nunca se envía al navegador.
  * Las credenciales se leen de variables de entorno (Vercel / .env.local).
  */
-import 'server-only';
+// server-only: este modulo solo debe usarse en el servidor (Server Components / Route Handlers)
 
 const API_URL = process.env.GASTROCORE_API_URL;
 const API_TOKEN = process.env.GASTROCORE_API_TOKEN;
