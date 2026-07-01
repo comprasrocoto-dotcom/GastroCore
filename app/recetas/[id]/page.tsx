@@ -211,7 +211,6 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
               <Row label="Costo por merma" value={money2(costoMerma)} />
               <Row label="Desvio de mercancia" value={`${num(desvioPct, 1)}%`} sub={money2(desvioValor)} />
               <Row label="Costo total del plato" value={money(costoFinal)} strong />
-              <Row label="Costo por porcion" value={money(costoPorcion)} />
               <div className="my-2 border-t border-salvia-100" />
               <Row label="Food Cost objetivo" value={fcPct(margenObj)} />
               <Row label="Precio sugerido" value={money(precioSugerido)} />
