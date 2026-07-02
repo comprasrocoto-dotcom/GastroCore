@@ -79,9 +79,9 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .erp-table { @apply w-full text-sm; border-collapse: separate; border-spacing: 0; }
+  .erp-table { @apply w-full text-[15px]; border-collapse: separate; border-spacing: 0; }
   .erp-table thead th {
-    @apply text-left text-[11px] font-semibold uppercase tracking-wider px-4 py-3;
+    @apply text-left text-[12px] font-semibold uppercase tracking-wider px-4 py-3;
     color: var(--muted);
     background-color: #F1F5F9;
     border-bottom: 1px solid var(--line);
@@ -130,13 +130,13 @@
   /* Usa ~92-95% del ancho disponible, sin anchos fijos en px. */
   .app-shell {
     width: 100%;
-    max-width: 95%;
+    max-width: 1800px;
     margin-inline: auto;
-    padding-inline: clamp(0.75rem, 2vw, 2.5rem);
+    padding-inline: clamp(1rem, 2vw, 1.5rem);
   }
   /* Tope suave solo en monitores ultra-anchos (>= ~2560px) para legibilidad. */
   @media (min-width: 2560px) {
-    .app-shell { max-width: 2400px; }
+    .app-shell { max-width: 2000px; }
   }
   @media (max-width: 640px) {
     .app-shell { max-width: 100%; padding-inline: 0.75rem; }
