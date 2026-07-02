@@ -256,9 +256,9 @@ export default function RecetarioClient() {
             </div>
           <select value={fcSel} onChange={(e) => setFcSel(e.target.value)} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
             <option value="">Food Cost: todos</option>
-            <option value="verde">Verde (&lt;=35%)</option>
-            <option value="amarillo">Amarillo (35-40%)</option>
-            <option value="rojo">Rojo (&gt;40%)</option>
+            <option value="verde">Verde (&le;33%)</option>
+            <option value="amarillo">Amarillo (33-35%)</option>
+            <option value="rojo">Rojo (&gt;35%)</option>
           </select>
           <select value={estadoSel} onChange={(e) => setEstadoSel(e.target.value)} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
             <option value="activos">Activos</option>
