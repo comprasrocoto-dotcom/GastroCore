@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
       <body>
         <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
-          <nav className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-2 overflow-x-auto">
+          <nav className="app-shell flex items-center gap-1 py-2 overflow-x-auto">
             <Link href="/" className="mr-2 flex items-center gap-2 font-display text-lg font-bold text-[#1E3A5F]">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E3A5F] text-sm font-bold text-white">GC</span>
               GastroCore
