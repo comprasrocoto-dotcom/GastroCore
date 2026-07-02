@@ -104,6 +104,17 @@ export type CatalogoItem = {
 
 export type Dependencia = { id: string; nombre: string; es_subreceta: boolean; activo: boolean | string };
 
+export type HistorialInsumo = {
+  id: string;
+  insumo_id: string;
+  coste: number;
+  fecha: string;
+  usuario_id: string;
+  coste_anterior: number;
+  diferencia: number;
+  motivo: string;
+};
+
 function assertConfig(): void {
   if (!API_URL || !API_TOKEN) {
     throw new Error('Faltan GASTROCORE_API_URL o GASTROCORE_API_TOKEN en las variables de entorno.');
@@ -277,4 +288,12 @@ export async function getDependencias(itemId: string): Promise<Dependencia[]> {
 // ---------- INSUMOS: edicion con trazabilidad ----------
 export async function actualizarInsumo(id: string, data: Partial<Insumo> & { motivo?: string; usuario?: string }) {
   return apiPost<Insumo>('insumos', 'update', { id, data });
+}
+
+export async function getHistorialInsumo(insumoId: string): Promise<HistorialInsumo[]> {
+  const r = await apiGet<HistorialInsumo[]>('preciosHistoricos');
+  if (!r.ok || !Array.isArray(r.data)) return [];
+  return r.data
+    .filter((h) => h.insumo_id === insumoId)
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 }
