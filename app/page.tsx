@@ -7,6 +7,7 @@ export default function Home() {
     { href: '/recetas', titulo: 'Recetas', desc: 'Crea y costea recetas finales con food cost automatico y precio sugerido.', icon: '\uD83D\uDCD8' },
     { href: '/recetas/familias', titulo: 'Familias', desc: 'Organiza tus insumos, subrecetas y recetas por familia y subfamilia.', icon: '\uD83D\uDDC2\uFE0F' },
     { href: '/recetas/resumen', titulo: 'Panel Ejecutivo', desc: 'Indicadores clave: food cost promedio, recetas fuera de objetivo y rentabilidad.', icon: '\uD83D\uDCCA' },
+    { href: '/analisis', titulo: 'An\u00e1lisis de Costos', desc: 'Inteligencia de negocios: variaci\u00f3n de precios, impacto en el men\u00fa, alertas y simulaci\u00f3n.', icon: '\uD83D\uDCC8' },
   ];
 
   return (
