@@ -233,14 +233,15 @@ export default function ResumenClient() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <main className="app-shell py-6">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-salvia-100 pb-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ambar-700">Panel Ejecutivo</h1>
-          <p className="text-sm text-salvia-600">Tablero ejecutivo del costeo de recetas, sincronizado con la base.</p>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-salvia-400">GastroCore · Inteligencia de costos</p>
+          <h1 className="font-display text-[28px] font-bold leading-tight text-ambar-700">Panel Ejecutivo</h1>
+          <p className="mt-1 text-sm text-salvia-600">Tablero ejecutivo del costeo de recetas, sincronizado con la base.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={exportarExcel} className="btn-secondary">â¬ Exportar a Excel</button>
+          <button type="button" onClick={exportarExcel} className="btn-secondary">⬇ Exportar a Excel</button>
           <Link href="/recetas" className="btn-secondary">Volver al recetario</Link>
         </div>
       </header>
@@ -254,13 +255,54 @@ export default function ResumenClient() {
       ) : (
         <>
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="ð" />
-            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="ð" />
-            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="ð°" />
+            <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="📘" />
+            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊" />
+            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰" />
             <button type="button" onClick={() => setMostrarFuera((v) => !v)} className="text-left focus:outline-none">
-              <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="â " />
+              <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="⚠" />
             </button>
           </section>
+
+          {(() => {
+            const criticas = rows.filter((x) => x.fc > FC_OBJ);
+            const vigilar = rows.filter((x) => x.fc > 0.33 && x.fc <= FC_OBJ);
+            const peor = [...rows].filter((x) => x.fc > 0).sort((a, b) => b.fc - a.fc)[0];
+            if (criticas.length === 0 && vigilar.length === 0) {
+              return (
+                <section className="mb-6 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <span className="text-lg">🟢</span>
+                  <p className="text-sm text-emerald-800"><span className="font-semibold">Todo bajo control.</span> Ninguna receta activa supera el Food Cost objetivo.</p>
+                </section>
+              );
+            }
+            return (
+              <section className="mb-6 rounded-xl border border-amber-200 bg-gradient-to-r from-red-50 to-amber-50 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🔥</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-red-700">Alertas de rentabilidad</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-base">🔴</span>
+                    <span className="font-semibold text-red-700">{criticas.length}</span>
+                    <span className="text-salvia-600">acción inmediata</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-base">🟡</span>
+                    <span className="font-semibold text-amber-700">{vigilar.length}</span>
+                    <span className="text-salvia-600">a vigilar</span>
+                  </div>
+                  {peor && (
+                    <div className="ml-auto flex items-center gap-2 text-sm">
+                      <span className="text-salvia-500">Mayor Food Cost:</span>
+                      <Link href={`/recetas/${peor.r.id}`} className="font-semibold text-ambar-700 hover:underline">{peor.r.nombre}</Link>
+                      <span className={`font-mono ${sem(peor.fc).text}`}>{fcPct(peor.fc)}</span>
+                    </div>
+                  )}
+                </div>
+              </section>
+            );
+          })()}
 
           {mostrarFuera && (
             <section className="card mb-6">
@@ -297,7 +339,7 @@ export default function ResumenClient() {
 
           <section className="mb-6 grid gap-4 lg:grid-cols-2">
             <div className="card p-4">
-              <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Top 10 mas rentables</div>
+              <div className="mb-3 flex items-center gap-2 border-l-4 border-emerald-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>🥇</span>Top 10 más rentables</div>
               <div className="space-y-2">
                 {topRentables.map((x) => (
                   <div key={x.r.id} className="flex items-center gap-2 text-sm">
@@ -312,7 +354,7 @@ export default function ResumenClient() {
               </div>
             </div>
             <div className="card p-4">
-              <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Top 10 mayor Food Cost</div>
+              <div className="mb-3 flex items-center gap-2 border-l-4 border-red-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>🔴</span>Top 10 mayor Food Cost</div>
               <div className="space-y-2">
                 {topFoodCost.map((x) => (
                   <div key={x.r.id} className="flex items-center gap-2 text-sm">
@@ -329,7 +371,7 @@ export default function ResumenClient() {
           </section>
 
           <section className="card mb-6 p-4">
-            <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Food Cost promedio por familia</div>
+            <div className="mb-3 flex items-center gap-2 border-l-4 border-sky-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>🗂️</span>Food Cost promedio por familia</div>
             <div className="space-y-2">
               {porFamilia.map((x) => (
                 <div key={x.fam} className="flex items-center gap-2 text-sm">
@@ -346,7 +388,7 @@ export default function ResumenClient() {
 
           <section className="card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-salvia-100 px-4 py-3">
-              <div className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Detalle por receta</div>
+              <div className="flex items-center gap-2 border-l-4 border-ambar-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>📋</span>Detalle por receta</div>
               <div className="flex items-center gap-2">
                 <label className="text-xs text-salvia-500">Estado</label>
                 <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value as EstadoFiltro)} className="rounded-md border border-salvia-200 px-2 py-1 text-sm">
