@@ -14,6 +14,20 @@ const fechaCorta = (v: string) => {
   return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
 };
 
+function descargarCSV(nombre: string, filas: (string | number)[][]) {
+  const csv = filas.map((f) => f.map((c) => {
+    const s = String(c ?? '');
+    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(';')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function BarraVar({ value, max }: { value: number; max: number }) {
   const w = max > 0 ? Math.min(100, (Math.abs(value) / max) * 100) : 0;
   const color = value >= 0 ? 'bg-red-500' : 'bg-green-500';
@@ -232,6 +246,23 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
           </ul>
         </section>
       )}
+
+      {/* Reportes */}
+      <section className="card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-2 text-sm font-semibold text-ambar-700">📄 Reportes:</span>
+          <button onClick={() => descargarCSV('variacion_precios', [['Insumo', 'Referencia', 'Precio base', 'Precio actual', 'Variacion abs', 'Variacion %', 'Cambios'], ...[...analytics.top_aumentos, ...analytics.top_reducciones].map((t) => [t.articulo, t.referencia, t.coste_base, t.coste_actual, t.variacion_abs, t.variacion_pct.toFixed(2), t.cambios])])}
+            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-slate-50">Historial de precios (Excel)</button>
+          <button onClick={() => descargarCSV('impacto_recetas', [['Receta', 'Insumo', 'Variacion insumo %', 'Incremento costo', 'Nuevo food cost %', 'Fuera de objetivo'], ...analytics.impacto_menu.map((x) => [x.receta, x.insumo, x.variacion_pct.toFixed(2), Math.round(x.incremento_costo), (x.food_cost * 100).toFixed(1), x.fuera_objetivo ? 'SI' : 'NO'])])}
+            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-slate-50">Impacto en recetas (Excel)</button>
+          <button onClick={() => descargarCSV('variacion_por_familia', [['Familia', 'Variacion %'], ...analytics.variacion_familia.map((f) => [f.familia, f.variacion_pct.toFixed(2)])])}
+            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-slate-50">Variacion por familia (Excel)</button>
+          <button onClick={() => descargarCSV('evolucion_costos', [['Fecha', 'Costo promedio'], ...analytics.evolucion_costo.map((e) => [e.fecha, Math.round(e.costo_promedio)])])}
+            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-slate-50">Evolucion de costos (Excel)</button>
+          <button onClick={() => window.print()}
+            className="rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink hover:bg-slate-50">Exportar PDF (imprimir)</button>
+        </div>
+      </section>
 
       <div className="flex gap-2 border-b border-line">
         {([['resumen', 'Variación de costos'], ['impacto', 'Impacto en el menú'], ['simular', 'Simulación']] as const).map(([k, l]) => (
