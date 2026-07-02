@@ -354,7 +354,7 @@ export default function ResumenClient() {
               </div>
             </div>
             <div className="card p-4">
-              <div className="mb-3 flex items-center gap-2 border-l-4 border-red-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>🔴</span>Top 10 mayor Food Cost</div>
+              <div className="mb-3 flex items-center gap-2 border-l-4 border-red-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>🔴</span>Top recetas que más pierden</div>
               <div className="space-y-2">
                 {topFoodCost.map((x) => (
                   <div key={x.r.id} className="flex items-center gap-2 text-sm">
@@ -362,7 +362,7 @@ export default function ResumenClient() {
                     <div className="h-2 flex-1 rounded-full bg-salvia-100">
                       <div className={`h-2 rounded-full ${sem(x.fc).dot}`} style={{ width: `${Math.max(4, (x.fc / maxFc) * 100)}%` }} />
                     </div>
-                    <span className={`w-16 shrink-0 text-right font-mono ${sem(x.fc).text}`}>{fcPct(x.fc)}</span>
+                    <div className="flex w-28 shrink-0 flex-col items-end leading-tight"><span className={`font-mono ${sem(x.fc).text}`}>{fcPct(x.fc)}</span>{x.fc > FC_OBJ && (<span className="font-mono text-[11px] text-red-500">+{((x.fc - FC_OBJ) * 100).toFixed(1)} pp</span>)}</div>
                   </div>
                 ))}
                 {topFoodCost.length === 0 && <p className="text-sm text-salvia-400">Sin datos.</p>}
