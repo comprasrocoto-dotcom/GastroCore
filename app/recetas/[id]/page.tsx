@@ -61,7 +61,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
   const s = semaforo(foodCost);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8">
+    <main className="mx-auto w-[95%] max-w-[1800px] px-4 py-6 lg:px-6">
       <div className="mb-4 flex items-center gap-2 text-sm text-salvia-500">
         <Link href="/recetas" className="hover:text-ambar-700">Recetario</Link>
         <span>/</span>
@@ -71,7 +71,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="font-display text-2xl font-bold text-ambar-700">{receta.nombre}</h1>
+            <h1 className="font-display text-[34px] leading-tight font-bold text-ambar-700">{receta.nombre}</h1>
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold ${s.bg} ${s.text} ${s.border}`}>
               <span className={`h-2.5 w-2.5 rounded-full ${s.color}`} />
               Food Cost {fcPct(foodCost)} - {s.label}
@@ -85,11 +85,11 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[72fr_28fr]">
+        <div className="min-w-0 space-y-6">
           <section className="rounded-lg border border-salvia-100 bg-white p-4">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Informacion general</h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm lg:grid-cols-3 xl:grid-cols-4">
               <Info label="Codigo" value={receta.id} mono />
               <Info label="Familia" value={fam ? fam.nombre : 'General'} />
               <Info label="Subfamilia" value={sub ? sub.nombre : 'Sin clasificar'} />
@@ -102,16 +102,16 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
           <section className="rounded-lg border border-salvia-100 bg-white p-0 overflow-hidden">
             <h2 className="border-b border-salvia-100 px-4 py-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Ingredientes ({ingredientes.length})</h2>
             <div className="overflow-x-auto">
-              <table className="erp-table">
+              <table className="erp-table w-full table-fixed">
                 <thead>
                   <tr>
-                    <th>Insumo</th>
-                    <th>Unidad</th>
-                    <th className="!text-right">Cantidad</th>
-                    <th className="!text-right">% Merma</th>
-                    <th className="!text-right">Cant. real</th>
-                    <th className="!text-right">Costo unit.</th>
-                    <th className="!text-right">Costo total</th>
+                    <th className="w-[35%]">Insumo</th>
+                    <th className="w-[10%]">Unidad</th>
+                    <th className="w-[10%] !text-right">Cantidad</th>
+                    <th className="w-[9%] !text-right">% Merma</th>
+                    <th className="w-[10%] !text-right">Cant. real</th>
+                    <th className="w-[12%] !text-right">Costo unit.</th>
+                    <th className="w-[14%] !text-right">Costo total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -123,7 +123,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
                     const real = cant * (1 + merma / 100);
                     return (
                       <tr key={g.id || i} className="border-t border-salvia-50">
-                        <td className="px-3 py-2 font-medium text-salvia-800">{g.nombre_item || g.item_id}</td>
+                        <td className="px-3 py-3 font-medium text-salvia-800 whitespace-normal break-words leading-snug">{g.nombre_item || g.item_id}</td>
                         <td className="px-3 py-2 text-salvia-600">{g.unidad_id}</td>
                         <td className="px-3 py-2 text-right font-mono">{num(cant, 2)}</td>
                         <td className="px-3 py-2 text-right font-mono">{num(merma, 1)}%</td>
@@ -163,35 +163,35 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
           </section>
         </div>
 
-        <aside className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <aside className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
             <div className="card-hover rounded-xl border border-[#DBEAFE] bg-[#EFF6FF] p-4 shadow-card">
               <div className="flex items-center justify-between">
                 <p className="eyebrow">Costo del plato</p>
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#DBEAFE] text-sm text-[#2563EB]">{'\uD83D\uDCB0'}</span>
               </div>
-              <p className="mt-2 text-xl font-bold tabular-nums tracking-tight text-[#1E3A5F]">{money(costoFinal)}</p>
+              <p className="mt-2 text-[30px] leading-tight font-bold tabular-nums tracking-tight text-[#1E3A5F]">{money(costoFinal)}</p>
             </div>
             <div className="card-hover rounded-xl border border-[#D1FAE5] bg-[#ECFDF5] p-4 shadow-card">
               <div className="flex items-center justify-between">
                 <p className="eyebrow">Precio sugerido</p>
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#DCFCE7] text-sm text-[#16A34A]">{'\uD83C\uDFF7'}</span>
               </div>
-              <p className="mt-2 text-xl font-bold tabular-nums tracking-tight text-[#16A34A]">{money(precioSugerido)}</p>
+              <p className="mt-2 text-[30px] leading-tight font-bold tabular-nums tracking-tight text-[#16A34A]">{money(precioSugerido)}</p>
             </div>
             <div className="card-hover rounded-xl border border-[#E0E7FF] bg-[#EEF2FF] p-4 shadow-card">
               <div className="flex items-center justify-between">
                 <p className="eyebrow">Precio real</p>
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E0E7FF] text-sm text-[#1E3A5F]">{'\uD83D\uDCB5'}</span>
               </div>
-              <p className="mt-2 text-xl font-bold tabular-nums tracking-tight text-[#1E3A5F]">{precioReal > 0 ? money(precioReal) : 'Sin precio'}</p>
+              <p className="mt-2 text-[30px] leading-tight font-bold tabular-nums tracking-tight text-[#1E3A5F]">{precioReal > 0 ? money(precioReal) : 'Sin precio'}</p>
             </div>
             <div className={`card-hover rounded-xl border p-4 shadow-card ${utilidad > 0 ? 'border-[#D1FAE5] bg-[#DCFCE7]' : 'border-[#FEE2E2] bg-[#FEF2F2]'}`}>
               <div className="flex items-center justify-between">
                 <p className="eyebrow">Utilidad</p>
                 <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${utilidad > 0 ? 'bg-[#BBF7D0] text-[#16A34A]' : 'bg-[#FECACA] text-[#DC2626]'}`}>{'\uD83D\uDCC8'}</span>
               </div>
-              <p className={`mt-2 text-xl font-bold tabular-nums tracking-tight ${utilidad > 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>{money(utilidad)}</p>
+              <p className={`mt-2 text-[30px] leading-tight font-bold tabular-nums tracking-tight ${utilidad > 0 ? 'text-[#16A34A]' : 'text-[#DC2626]'}`}>{money(utilidad)}</p>
             </div>
           </div>
           <section className={`card-hover rounded-xl border p-5 ${s.border} ${s.bg}`}>
@@ -199,7 +199,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
               <p className="eyebrow">Food Cost real</p>
               <span className={`chip ${s.bg} ${s.text}`}>{s.label}</span>
             </div>
-            <p className={`mt-2 text-4xl font-bold tabular-nums tracking-tight ${s.text}`}>{fcPct(foodCost)}</p>
+            <p className={`mt-3 text-[42px] leading-none font-bold tabular-nums tracking-tight ${s.text}`}>{fcPct(foodCost)}</p>
             <div className="progress-track mt-4">
               <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(0, foodCost * 100)).toFixed(0)}%`, backgroundColor: s.hex }} />
             </div>
