@@ -297,3 +297,114 @@ export async function getHistorialInsumo(insumoId: string): Promise<HistorialIns
     .filter((h) => h.insumo_id === insumoId)
     .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
 }
+
+
+// ---------- ANALYTICS / BI: variacion de costos ----------
+export type TopMover = {
+  id: string;
+  referencia: string;
+  articulo: string;
+  subfamilia: string;
+  subfamilia_id: string;
+  coste_base: number;
+  coste_actual: number;
+  variacion_abs: number;
+  variacion_pct: number;
+  cambios: number;
+  ultima_fecha: string;
+};
+
+export type ImpactoMenu = {
+  receta_id: string;
+  receta: string;
+  insumo: string;
+  insumo_id: string;
+  variacion_pct: number;
+  incremento_costo: number;
+  food_cost: number;
+  fuera_objetivo: boolean;
+};
+
+export type VariacionFamilia = { familia: string; variacion_pct: number };
+export type EvolucionPunto = { fecha: string; costo_promedio: number };
+export type Alerta = { nivel: 'rojo' | 'amarillo' | 'verde'; mensaje: string };
+
+export type AnalyticsData = {
+  generado_en: string;
+  food_cost_objetivo: number;
+  top_aumentos: TopMover[];
+  top_reducciones: TopMover[];
+  impacto_menu: ImpactoMenu[];
+  variacion_familia: VariacionFamilia[];
+  indicadores: {
+    insumo_mas_inflacionario: TopMover | null;
+    receta_mas_afectada: ImpactoMenu | null;
+    variacion_promedio: number;
+    recetas_fuera_objetivo: number;
+  };
+  evolucion_costo: EvolucionPunto[];
+  food_cost_promedio: number;
+  alertas: Alerta[];
+  total_insumos: number;
+  insumos_con_variacion: number;
+};
+
+export type SimulacionReceta = {
+  receta_id: string;
+  nombre: string;
+  costo_actual: number;
+  costo_nuevo: number;
+  incremento: number;
+  food_cost_actual: number;
+  food_cost_nuevo: number;
+  precio_real: number;
+  precio_sugerido_nuevo: number;
+  rentable: boolean;
+  fuera_objetivo: boolean;
+};
+
+export type SimulacionResult = {
+  insumo_id: string;
+  articulo: string;
+  precio_actual: number;
+  nuevo_precio: number;
+  variacion_pct: number;
+  recetas: SimulacionReceta[];
+};
+
+export type SnapshotSemanal = {
+  id: string;
+  fecha: string;
+  hora: string;
+  usuario: string;
+  cantidad_insumos: number;
+  costo_promedio: number;
+  insumos_modificados: number;
+  nota: string;
+};
+
+export type PuntoHistorial = { fecha: string; coste: number; motivo?: string };
+
+export async function getAnalytics(): Promise<AnalyticsData | null> {
+  const r = await apiGet<AnalyticsData>('analytics');
+  return r.ok ? r.data : null;
+}
+
+export async function getHistorialInsumoGrafica(insumoId: string): Promise<PuntoHistorial[]> {
+  const r = await apiGet<PuntoHistorial[]>('analytics', { action: 'historialInsumo', item_id: insumoId });
+  return r.ok && Array.isArray(r.data) ? r.data : [];
+}
+
+export async function getSnapshots(): Promise<SnapshotSemanal[]> {
+  const r = await apiGet<SnapshotSemanal[]>('snapshots');
+  return r.ok && Array.isArray(r.data) ? r.data : [];
+}
+
+export async function simularImpacto(insumoId: string, nuevoPrecio: number): Promise<SimulacionResult | null> {
+  const r = await apiPost<SimulacionResult>('analytics', 'simular', { data: { insumo_id: insumoId, nuevo_precio: nuevoPrecio } });
+  return r.ok ? r.data : null;
+}
+
+export async function generarSnapshot(usuario?: string) {
+  return apiPost('analytics', 'snapshot', { data: { usuario: usuario || 'Sistema' } });
+}
