@@ -19,17 +19,21 @@ const fcPct = (n: number) => ((Number(n) || 0) * 100).toFixed(1) + '%';
 
 function semaforo(fc: number) {
   const v = Number(fc) || 0;
-  if (v <= 0.33) return { color: '#16A34A', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', label: 'Rentable' };
-  if (v <= 0.35) return { color: '#F59E0B', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', label: 'En limite' };
-  return { color: '#DC2626', text: 'text-[#DC2626]', bg: 'bg-[#FEE2E2]', border: 'border-[#FECACA]', label: 'Critico' };
+  if (v <= 0.33) return { color: '#16A34A', text: 'text-[#16A34A]', bg: 'bg-[#DCFCE7]', border: 'border-[#BBF7D0]', emoji: '🟢', label: 'Rentable' };
+  if (v <= 0.35) return { color: '#F59E0B', text: 'text-[#B45309]', bg: 'bg-[#FEF3C7]', border: 'border-[#FDE68A]', emoji: '🟡', label: 'Vigilar' };
+  return { color: '#DC2626', text: 'text-[#DC2626]', bg: 'bg-[#FEE2E2]', border: 'border-[#FECACA]', emoji: '🔴', label: 'Accion inmediata' };
 }
 
 function Semaforo({ fc }: { fc: number }) {
   const s = semaforo(fc);
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${s.bg} ${s.text}`}>
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-      {fcPct(fc)}
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${s.bg} ${s.text} ${s.border}`}
+      title={`Food Cost ${fcPct(fc)} - ${s.label}`}
+    >
+      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
+      <span className="tabular-nums">{fcPct(fc)}</span>
+      <span className="hidden opacity-90 sm:inline">· {s.label}</span>
     </span>
   );
 }
