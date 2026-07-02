@@ -37,6 +37,18 @@ export function precioSugerido(costoPorcion: number): number {
   return FC_OBJ > 0 ? (num(costoPorcion) / FC_OBJ) * (1 + INC) : 0;
 }
 
+// Food Cost objetivo para la SUGERENCIA de precio del Panel Ejecutivo (30%).
+// El resto de la app usa FC_OBJ (35%). Ver Panel Ejecutivo: precio sugerido editable.
+export const FC_OBJ_PANEL = 0.30;
+
+/**
+ * Precio de venta sugerido para el Panel Ejecutivo, calculado con el
+ * Food Cost objetivo del 30% e impuesto al consumo del 8% (incluido).
+ */
+export function precioSugeridoPanel(costoPorcion: number): number {
+  return FC_OBJ_PANEL > 0 ? (num(costoPorcion) / FC_OBJ_PANEL) * (1 + INC) : 0;
+}
+
 /** Utilidad = Precio de venta - Costo por porcion. */
 export function utilidad(precioReal: number, costoPorcion: number): number {
   const p = num(precioReal);
