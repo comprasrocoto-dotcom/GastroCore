@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import SearchableSelect from '@/components/SearchableSelect';
 import { precioSugerido as precioSugeridoObjetivo, FC_OBJ, INC } from '@/lib/costeo';
+import { BookOpen, DollarSign, CheckCircle, TriangleAlert, Tag, CalendarClock } from 'lucide-react';
 
 type Receta = any;
 type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: any };
@@ -185,7 +186,7 @@ export default function RecetarioClient() {
   }, [recetas, subMap, famMap, famRecetas, subRecetas]);
 
   return (
-    <div className="app-shell flex min-h-screen gap-2">
+    <div className="app-shell flex min-h-screen gap-4">
       <aside className="hidden w-60 shrink-0 border-r border-salvia-100 bg-salvia-50/40 p-4 lg:block">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-salvia-500">Familias</h2>
         <button onClick={() => { setFamSel(''); setSubSel(''); }} className={`mb-1 block w-full rounded-md px-2 py-1.5 text-left text-sm ${!famSel ? 'bg-ambar-100 font-semibold text-ambar-800' : 'text-salvia-700 hover:bg-salvia-100'}`}>Todas las recetas</button>
@@ -206,11 +207,12 @@ export default function RecetarioClient() {
         ))}
       </aside>
 
-      <main className="min-w-0 flex-1 py-6 pl-4">
-        <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <main className="min-w-0 flex-1 py-6 lg:pl-6">
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-salvia-100 pb-4">
           <div>
-            <h1 className="font-display text-2xl font-bold text-ambar-700">Recetario</h1>
-            <p className="text-sm text-salvia-600">Consulta y administra tus recetas por familia, con costeo en tiempo real.</p>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-salvia-400">GastroCore · Recetario</p>
+            <h1 className="font-display text-[32px] font-bold leading-tight text-ambar-700">Recetario</h1>
+            <p className="mt-1 text-[16px] text-salvia-600">Consulta y administra tus recetas por familia, con costeo en tiempo real.</p>
           </div>
           <div className="flex gap-2">
             <Link href="/recetas/familias" className="btn-secondary">Familias</Link>
@@ -219,45 +221,45 @@ export default function RecetarioClient() {
           </div>
         </header>
 
-        <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          <Card label="Total recetas" value={String(stats.n)} tone="indigo" icon="ð" />
-          <Card label="Costo promedio" value={money(stats.costoProm)} tone="blue" icon="ð°" />
+        <section className="mb-6 grid grid-cols-2 gap-5 md:grid-cols-4 xl:grid-cols-4">
+          <Card label="Total recetas" value={String(stats.n)} tone="indigo" icon={<BookOpen size={18} strokeWidth={2} />} />
+          <Card label="Costo promedio" value={money(stats.costoProm)} tone="blue" icon={<DollarSign size={18} strokeWidth={2} />} />
           <FoodCostCard fc={stats.fcProm} />
-          <Card label="Rentables" value={String(stats.rentables)} tone="green" icon="â" />
-          <Card label="Fuera de objetivo" value={String(stats.fuera)} tone="red" icon="â " />
-          <Card label="Sin precio" value={String(stats.sinPrecio)} tone="amber" icon="ð·" />
-          <Card label="Actualizadas hoy" value={String(stats.actualizadasHoy)} tone="neutral" icon="ð" />
+          <Card label="Rentables" value={String(stats.rentables)} tone="green" icon={<CheckCircle size={18} strokeWidth={2} />} />
+          <Card label="Fuera de objetivo" value={String(stats.fuera)} tone="red" icon={<TriangleAlert size={18} strokeWidth={2} />} />
+          <Card label="Sin precio" value={String(stats.sinPrecio)} tone="amber" icon={<Tag size={18} strokeWidth={2} />} />
+          <Card label="Actualizadas hoy" value={String(stats.actualizadasHoy)} tone="neutral" icon={<CalendarClock size={18} strokeWidth={2} />} />
         </section>
 
-        <section className="mb-4 flex flex-wrap items-center gap-2">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar receta..." className="w-56 rounded-md border border-salvia-200 px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
-          <div className="w-44">
+        <section className="mb-6 flex flex-wrap items-center gap-4">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar receta..." className="min-w-[300px] flex-1 rounded-md border border-salvia-200 px-3 py-2 text-[15px] focus:border-ambar-400 focus:outline-none" />
+          <div className="min-w-[250px] flex-1">
               <SearchableSelect
                 value={famSel}
                 onChange={(v) => { setFamSel(v); setSubSel(''); }}
                 options={famRecetas.map((f) => ({ value: f.id, label: f.nombre }))}
                 placeholder="Todas las familias"
-                searchPlaceholder="Buscar familiaâ¦"
+                searchPlaceholder="Buscar familia…"
                 clearLabel="Todas las familias"
               />
             </div>
-          <div className="w-44">
+          <div className="min-w-[250px] flex-1">
               <SearchableSelect
                 value={subSel}
                 onChange={(v) => setSubSel(v)}
                 options={subRecetas.filter((s) => !famSel || String(s.familia_id) === String(famSel)).map((s) => ({ value: s.id, label: s.nombre }))}
                 placeholder="Todas las subfamilias"
-                searchPlaceholder="Buscar subfamiliaâ¦"
+                searchPlaceholder="Buscar subfamilia…"
                 clearLabel="Todas las subfamilias"
               />
             </div>
-          <select value={fcSel} onChange={(e) => setFcSel(e.target.value)} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
+          <select value={fcSel} onChange={(e) => setFcSel(e.target.value)} className="min-w-[220px] flex-1 rounded-md border border-salvia-200 px-3 py-2 text-[15px]">
             <option value="">Food Cost: todos</option>
             <option value="verde">Verde (&le;33%)</option>
             <option value="amarillo">Amarillo (33-35%)</option>
             <option value="rojo">Rojo (&gt;35%)</option>
           </select>
-          <select value={estadoSel} onChange={(e) => setEstadoSel(e.target.value)} className="rounded-md border border-salvia-200 px-2 py-2 text-sm">
+          <select value={estadoSel} onChange={(e) => setEstadoSel(e.target.value)} className="min-w-[180px] flex-1 rounded-md border border-salvia-200 px-3 py-2 text-[15px]">
             <option value="activos">Activos</option>
             <option value="inactivos">Inactivos</option>
             <option value="todos">Todos</option>
@@ -342,15 +344,15 @@ const TONES: Record<string, { bg: string; ring: string; icon: string; val: strin
   red: { bg: 'bg-[#FEF2F2]', ring: 'border-[#FEE2E2]', icon: 'bg-[#FEE2E2] text-[#DC2626]', val: 'text-[#DC2626]' },
 };
 
-function Card({ label, value, tone = 'neutral', icon }: { label: string; value: string; tone?: string; icon?: string }) {
+function Card({ label, value, tone = 'neutral', icon }: { label: string; value: string; tone?: string; icon?: ReactNode }) {
   const t = TONES[tone] || TONES.neutral;
   return (
-    <div className={`card-hover rounded-xl border ${t.ring} ${t.bg} p-4 shadow-card`}>
+    <div className={`card-hover flex h-full flex-col justify-between rounded-xl border ${t.ring} ${t.bg} p-5 shadow-card`}>
       <div className="flex items-start justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
-        {icon && <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${t.icon}`}>{icon}</span>}
+        <p className="text-[12px] font-semibold uppercase tracking-wider text-muted">{label}</p>
+        {icon && <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${t.icon}`}>{icon}</span>}
       </div>
-      <p className={`mt-2 text-2xl font-bold tabular-nums tracking-tight ${t.val}`}>{value}</p>
+      <p className={`mt-3 text-[34px] font-bold leading-none tabular-nums tracking-tight ${t.val}`}>{value}</p>
     </div>
   );
 }
