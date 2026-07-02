@@ -89,6 +89,21 @@ export type Familia = { id: string; nombre: string; tipo?: string; activo: boole
 export type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: boolean | string };
 export type Unidad = { id: string; codigo: string; nombre: string; tipo: string; activo: boolean | string };
 
+// Item unificado del catalogo de ingredientes (insumo o subreceta).
+export type CatalogoItem = {
+  id: string;
+  tipo_item: 'insumo' | 'subreceta';
+  articulo: string;
+  unidad: string;
+  subfamilia: string;
+  subfamilia_id: string;
+  coste: number;
+  rendimiento?: number;
+  unidad_rendimiento_id?: string;
+};
+
+export type Dependencia = { id: string; nombre: string; es_subreceta: boolean; activo: boolean | string };
+
 function assertConfig(): void {
   if (!API_URL || !API_TOKEN) {
     throw new Error('Faltan GASTROCORE_API_URL o GASTROCORE_API_TOKEN en las variables de entorno.');
@@ -226,4 +241,40 @@ export async function getSubfamilias(): Promise<Subfamilia[]> {
 export async function getUnidades(): Promise<Unidad[]> {
   const r = await apiGet<Unidad[]>('unidades');
   return r.ok && Array.isArray(r.data) ? r.data : [];
+}
+
+
+// ---------- CATALOGO UNIFICADO (insumos + subrecetas) ----------
+export async function getCatalogo(): Promise<CatalogoItem[]> {
+  const r = await apiGet<CatalogoItem[]>('catalogo');
+  return r.ok && Array.isArray(r.data) ? r.data : [];
+}
+
+// ---------- SUBRECETAS (preparaciones base) ----------
+export async function getSubrecetas(all = false): Promise<Receta[]> {
+  const r = await apiGet<Receta[]>('subrecetas', all ? { all: 'true' } : {});
+  return r.ok && Array.isArray(r.data) ? r.data : [];
+}
+export async function getSubreceta(id: string): Promise<Receta | null> {
+  return getReceta(id);
+}
+export async function crearSubreceta(data: Partial<Receta>) {
+  return apiPost<Receta>('subrecetas', 'create', { data });
+}
+export async function actualizarSubreceta(id: string, data: Partial<Receta>) {
+  return apiPost<Receta>('subrecetas', 'update', { id, data });
+}
+export async function setActivoSubreceta(id: string, activo: boolean) {
+  return apiPost<Receta>('subrecetas', 'setActivo', { id, data: { activo } });
+}
+
+// ---------- DEPENDENCIAS (recetas que usan un item) ----------
+export async function getDependencias(itemId: string): Promise<Dependencia[]> {
+  const r = await apiGet<Dependencia[]>('dependencias', { item_id: itemId });
+  return r.ok && Array.isArray(r.data) ? r.data : [];
+}
+
+// ---------- INSUMOS: edicion con trazabilidad ----------
+export async function actualizarInsumo(id: string, data: Partial<Insumo> & { motivo?: string; usuario?: string }) {
+  return apiPost<Insumo>('insumos', 'update', { id, data });
 }
