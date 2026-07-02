@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import SearchableSelect from '@/components/SearchableSelect';
 import { precioSugerido as precioSugeridoObjetivo, FC_OBJ, INC } from '@/lib/costeo';
 
@@ -33,6 +34,7 @@ function Semaforo({ fc }: { fc: number }) {
 }
 
 export default function RecetarioClient() {
+  const router = useRouter();
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [familias, setFamilias] = useState<Familia[]>([]);
@@ -183,7 +185,7 @@ export default function RecetarioClient() {
   }, [recetas, subMap, famMap, famRecetas, subRecetas]);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="app-shell flex min-h-screen gap-2">
       <aside className="hidden w-60 shrink-0 border-r border-salvia-100 bg-salvia-50/40 p-4 lg:block">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-salvia-500">Familias</h2>
         <button onClick={() => { setFamSel(''); setSubSel(''); }} className={`mb-1 block w-full rounded-md px-2 py-1.5 text-left text-sm ${!famSel ? 'bg-ambar-100 font-semibold text-ambar-800' : 'text-salvia-700 hover:bg-salvia-100'}`}>Todas las recetas</button>
@@ -204,7 +206,7 @@ export default function RecetarioClient() {
         ))}
       </aside>
 
-      <main className="flex-1 px-4 py-6 lg:px-8">
+      <main className="min-w-0 flex-1 py-6 pl-4">
         <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-display text-2xl font-bold text-ambar-700">Recetario</h1>
@@ -218,13 +220,13 @@ export default function RecetarioClient() {
         </header>
 
         <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          <Card label="Total recetas" value={String(stats.n)} tone="indigo" icon="📘" />
-          <Card label="Costo promedio" value={money(stats.costoProm)} tone="blue" icon="💰" />
+          <Card label="Total recetas" value={String(stats.n)} tone="indigo" icon="ð" />
+          <Card label="Costo promedio" value={money(stats.costoProm)} tone="blue" icon="ð°" />
           <FoodCostCard fc={stats.fcProm} />
-          <Card label="Rentables" value={String(stats.rentables)} tone="green" icon="✓" />
-          <Card label="Fuera de objetivo" value={String(stats.fuera)} tone="red" icon="⚠" />
-          <Card label="Sin precio" value={String(stats.sinPrecio)} tone="amber" icon="🏷" />
-          <Card label="Actualizadas hoy" value={String(stats.actualizadasHoy)} tone="neutral" icon="🕒" />
+          <Card label="Rentables" value={String(stats.rentables)} tone="green" icon="â" />
+          <Card label="Fuera de objetivo" value={String(stats.fuera)} tone="red" icon="â " />
+          <Card label="Sin precio" value={String(stats.sinPrecio)} tone="amber" icon="ð·" />
+          <Card label="Actualizadas hoy" value={String(stats.actualizadasHoy)} tone="neutral" icon="ð" />
         </section>
 
         <section className="mb-4 flex flex-wrap items-center gap-2">
@@ -235,7 +237,7 @@ export default function RecetarioClient() {
                 onChange={(v) => { setFamSel(v); setSubSel(''); }}
                 options={famRecetas.map((f) => ({ value: f.id, label: f.nombre }))}
                 placeholder="Todas las familias"
-                searchPlaceholder="Buscar familia…"
+                searchPlaceholder="Buscar familiaâ¦"
                 clearLabel="Todas las familias"
               />
             </div>
@@ -245,7 +247,7 @@ export default function RecetarioClient() {
                 onChange={(v) => setSubSel(v)}
                 options={subRecetas.filter((s) => !famSel || String(s.familia_id) === String(famSel)).map((s) => ({ value: s.id, label: s.nombre }))}
                 placeholder="Todas las subfamilias"
-                searchPlaceholder="Buscar subfamilia…"
+                searchPlaceholder="Buscar subfamiliaâ¦"
                 clearLabel="Todas las subfamilias"
               />
             </div>
@@ -274,34 +276,53 @@ export default function RecetarioClient() {
               <div key={sub}>
                 <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-salvia-700"><span>{sub}</span><span className="rounded-full bg-salvia-100 px-2 text-xs text-salvia-500">{items.length}</span></h3>
                 <div className="card overflow-hidden">
-                  <table className="erp-table">
+                  <div className="erp-scroll">
+                  <table className="erp-table recetas-table">
                     <thead>
                       <tr>
                         <th>Receta</th>
-                        <th>Codigo</th>
+                        <th>Familia</th>
+                        <th>Subfamilia</th>
                         <th className="!text-right">Costo porcion</th>
                         <th className="!text-right">Precio venta</th>
-                        <th className="!text-center">Food Cost</th>
                         <th className="!text-right">Precio sugerido</th>
-                        <th className="!text-center">Estado</th>
-                        <th className="!text-center">Acciones</th>
+                        <th className="!text-center">Food Cost</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((r) => (
-                        <tr key={r.id} className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}>
-                          <td className="font-medium"><Link href={`/recetas/${r.id}`} className="text-[#2563EB] hover:underline">{r.nombre}</Link></td>
-                          <td className="font-mono text-xs text-muted">{r.id}</td>
+                      {items.map((r) => {
+                        const fc = Number(r.food_cost);
+                        const sinPrecio = !(Number(r.precio_real) > 0);
+                        const sugerido = precioSugeridoObjetivo(Number(r.costo_porcion));
+                        return (
+                        <tr
+                          key={r.id}
+                          onClick={() => router.push(`/recetas/${r.id}`)}
+                          className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}
+                        >
+                          <td className="font-medium"><span className="text-[#2563EB]">{r.nombre}</span></td>
+                          <td className="text-muted">{famNombre(r)}</td>
+                          <td className="text-muted">{subNombre(r)}</td>
                           <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
                           <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
-                          <td className="text-center">{Number(r.food_cost) > 0 ? <Semaforo fc={Number(r.food_cost)} /> : <span className="text-xs text-slate-400">-</span>}</td>
-                          <td className="text-right fin-value">{Number(r.food_cost) > 0.35 ? (<span className="font-semibold text-[#DC2626]">{money(precioSugeridoObjetivo(Number(r.costo_porcion)))}</span>) : (<span className="text-[#16A34A]" title="El precio actual cumple el objetivo">✓</span>)}</td>
-                          <td className="text-center">{esActivo(r) ? <span className="chip chip-success">Activo</span> : <span className="text-xs text-slate-400">Inactivo</span>}</td>
-                          <td className="text-center">{esActivo(r) ? (<button type="button" onClick={() => toggleActivo(r)} disabled={savingId === r.id} className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-[#DC2626] transition hover:bg-[#FEE2E2] disabled:opacity-50">Desactivar</button>) : (<button type="button" onClick={() => toggleActivo(r)} disabled={savingId === r.id} className="rounded-md border border-line px-2.5 py-1 text-xs font-medium text-[#16A34A] transition hover:bg-[#DCFCE7] disabled:opacity-50">Activar</button>)}</td>
+                          <td className="text-right fin-value">
+                            {sinPrecio || !(fc > 0) ? (
+                              <span className="text-xs text-slate-400">-</span>
+                            ) : fc > 0.35 ? (
+                              <span className="font-semibold text-[#DC2626]" title="El precio debe aumentar para cumplir el objetivo">{money(sugerido)}</span>
+                            ) : fc <= 0.33 ? (
+                              <span className="font-semibold text-[#B45309]" title="El precio podria disminuir">{money(sugerido)}</span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 font-semibold text-[#16A34A]" title="El precio actual cumple el objetivo"><span className="h-2 w-2 rounded-full bg-[#16A34A]" />&#10003; Correcto</span>
+                            )}
+                          </td>
+                          <td className="text-center">{fc > 0 ? <Semaforo fc={fc} /> : <span className="text-xs text-slate-400">-</span>}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             ))}
