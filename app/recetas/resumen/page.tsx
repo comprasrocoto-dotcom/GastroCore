@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { costearReceta, precioSugerido as calcPrecioSugerido, semaforo as calcSem, FC_OBJ, INC } from '@/lib/costeo';
+import { costearReceta, precioSugerido as calcPrecioSugerido, precioSugeridoPanel, semaforo as calcSem, FC_OBJ, FC_OBJ_PANEL, INC } from '@/lib/costeo';
 
 const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(n) || 0);
@@ -81,7 +81,13 @@ export default function ResumenClient() {
   const rows = useMemo(() => {
     const arr = visibles.map((r) => {
       const base = costearReceta(r);
-      const sim = costearReceta(r, nuevoPrecio[r.id] !== undefined && nuevoPrecio[r.id] !== '' ? Number(nuevoPrecio[r.id]) : undefined);
+      const sugeridoPanel = precioSugeridoPanel(base.costoPorcion);
+      const editado = nuevoPrecio[r.id];
+      const editValor =
+        editado !== undefined && editado !== ''
+          ? Number(editado)
+          : Math.round(sugeridoPanel);
+      const sim = costearReceta(r, editValor);
       return {
         r,
         familia: familiaDe(r),
@@ -90,6 +96,8 @@ export default function ResumenClient() {
         costo: base.costoPorcion,
         precio: base.precioReal,
         sugerido: base.precioSugerido,
+        sugeridoPanel,
+        editValor,
         fc: base.foodCost,
         rent: base.utilidad,
         margen: base.margenBruto,
@@ -132,7 +140,14 @@ export default function ResumenClient() {
   const maxFc = topFoodCost[0]?.fc || 1;
 
   async function actualizarPrecio(id: string) {
-    const val = Number(nuevoPrecio[id]);
+    const row = rows.find((x) => x.r.id === id);
+    const escrito = nuevoPrecio[id];
+    const val =
+      escrito !== undefined && escrito !== ''
+        ? Number(escrito)
+        : row
+        ? row.editValor
+        : NaN;
     if (!val || isNaN(val) || val <= 0) { setAviso('Ingresa un precio valido.'); return; }
     setGuardando(id);
     setAviso('');
@@ -211,7 +226,7 @@ export default function ResumenClient() {
     return (
       <th className="px-3 py-2 font-medium">
         <button onClick={() => { if (active) setDir(dir === 'asc' ? 'desc' : 'asc'); else { setSort(key); setDir('desc'); } }} className={`inline-flex items-center gap-1 ${active ? 'text-ambar-700' : 'text-salvia-600 hover:text-salvia-800'}`}>
-          {label}<span className="text-[10px]">{active ? (dir === 'asc' ? ' ▲' : ' ▼') : ''}</span>
+          {label}<span className="text-[10px]">{active ? (dir === 'asc' ? ' â²' : ' â¼') : ''}</span>
         </button>
       </th>
     );
@@ -225,7 +240,7 @@ export default function ResumenClient() {
           <p className="text-sm text-salvia-600">Tablero ejecutivo del costeo de recetas, sincronizado con la base.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={exportarExcel} className="btn-secondary">⬇ Exportar a Excel</button>
+          <button type="button" onClick={exportarExcel} className="btn-secondary">â¬ Exportar a Excel</button>
           <Link href="/recetas" className="btn-secondary">Volver al recetario</Link>
         </div>
       </header>
@@ -239,11 +254,11 @@ export default function ResumenClient() {
       ) : (
         <>
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="📘" />
-            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊" />
-            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰" />
+            <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="ð" />
+            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="ð" />
+            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="ð°" />
             <button type="button" onClick={() => setMostrarFuera((v) => !v)} className="text-left focus:outline-none">
-              <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="⚠" />
+              <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="â " />
             </button>
           </section>
 
@@ -348,18 +363,31 @@ export default function ResumenClient() {
                     <th className="px-3 py-2 font-medium">Receta</th>
                     {th('Familia', 'familia')}
                     {th('Costo plato', 'costo')}
-                    {th('Precio venta', 'precio')}
-                    {th('Food Cost', 'food_cost')}
-                    <th className="px-3 py-2 text-right font-medium">Nuevo precio de venta</th>
+                    {th('Precio actual', 'precio')}
+                    {th('Food Cost actual', 'food_cost')}
+                    <th className="px-3 py-2 text-right font-medium">Precio sugerido editable</th>
                     <th className="px-3 py-2 text-right font-medium">Food Cost resultante</th>
-                    {th('Rentabilidad', 'rentabilidad')}
+                    <th className="px-3 py-2 text-right font-medium">Utilidad</th>
                     <th className="px-3 py-2 text-center font-medium">Estado</th>
                     <th className="px-3 py-2 text-center font-medium">Accion</th>
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((x) => {
-                    const editando = nuevoPrecio[x.r.id] !== undefined && nuevoPrecio[x.r.id] !== '';
+                    const valorCampo =
+                      nuevoPrecio[x.r.id] !== undefined && nuevoPrecio[x.r.id] !== ''
+                        ? nuevoPrecio[x.r.id]
+                        : String(Math.round(x.sugeridoPanel));
+                    const sugMayor = x.sugeridoPanel > x.precio + 0.5;
+                    const sugMenor = x.sugeridoPanel < x.precio - 0.5;
+                    const indicador = x.precio <= 0
+                      ? { bg: 'border-salvia-200', icon: '', tip: '' }
+                      : sugMayor
+                      ? { bg: 'border-amber-300 bg-amber-50', icon: '↑', tip: 'Se recomienda subir el precio' }
+                      : sugMenor
+                      ? { bg: 'border-emerald-300 bg-emerald-50', icon: '↓', tip: 'Puede bajar el precio' }
+                      : { bg: 'border-sky-300 bg-sky-50', icon: '✓', tip: 'El precio actual ya cumple el objetivo' };
+                    const diferencia = x.editValor - x.precio;
                     return (
                       <tr key={x.r.id} className={`border-t border-salvia-50 hover:bg-ambar-50/40 ${!x.activo ? 'opacity-60' : ''}`}>
                         <td className="px-3 py-2 font-medium"><Link href={`/recetas/${x.r.id}`} className="text-ambar-700 hover:underline">{x.r.nombre}</Link></td>
@@ -368,23 +396,27 @@ export default function ResumenClient() {
                         <td className="px-3 py-2 text-right font-mono">{x.precio > 0 ? money(x.precio) : <span className="text-amber-500">-</span>}</td>
                         <td className="px-3 py-2 text-right"><span className={`inline-flex items-center gap-1.5 font-mono ${sem(x.fc).text}`}><span className={`h-2 w-2 rounded-full ${sem(x.fc).dot}`} />{x.fc > 0 ? fcPct(x.fc) : '-'}</span></td>
                         <td className="px-3 py-2 text-right">
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={nuevoPrecio[x.r.id] ?? ''}
-                            onChange={(e) => setNuevoPrecio((p) => ({ ...p, [x.r.id]: e.target.value }))}
-                            placeholder={x.precio > 0 ? String(Math.round(x.precio)) : '0'}
-                            className="w-28 rounded-md border border-salvia-200 px-2 py-1 text-right font-mono text-sm focus:border-ambar-400 focus:outline-none"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {editando ? (
-                            <span className={`inline-flex items-center gap-1.5 font-mono ${sem(x.sim.foodCost).text}`}><span className={`h-2 w-2 rounded-full ${sem(x.sim.foodCost).dot}`} />{fcPct(x.sim.foodCost)}</span>
-                          ) : (
-                            <span className="text-salvia-300">-</span>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className="text-xs" title={indicador.tip}>{indicador.icon}</span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              value={valorCampo}
+                              title={indicador.tip}
+                              onChange={(e) => setNuevoPrecio((p) => ({ ...p, [x.r.id]: e.target.value }))}
+                              className={`w-28 rounded-md border px-2 py-1 text-right font-mono text-sm focus:border-ambar-400 focus:outline-none ${indicador.bg}`}
+                            />
+                          </div>
+                          {x.precio > 0 && (
+                            <div className={`mt-0.5 text-right text-[10px] ${diferencia > 0 ? 'text-amber-600' : diferencia < 0 ? 'text-emerald-600' : 'text-sky-600'}`}>
+                              {diferencia === 0 ? 'Sin cambio' : (diferencia > 0 ? '+' : '') + money(diferencia)}
+                            </div>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono">{x.precio > 0 ? money(editando ? x.sim.utilidad : x.rent) : '-'}</td>
+                        <td className="px-3 py-2 text-right">
+                          <span className={`inline-flex items-center gap-1.5 font-mono ${sem(x.sim.foodCost).text}`}><span className={`h-2 w-2 rounded-full ${sem(x.sim.foodCost).dot}`} />{x.sim.foodCost > 0 ? fcPct(x.sim.foodCost) : '-'}</span>
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono">{x.sim.precioReal > 0 ? money(x.sim.utilidad) : '-'}</td>
                         <td className="px-3 py-2 text-center">
                           <select
                             value={x.activo ? 'activo' : 'inactivo'}
@@ -399,7 +431,7 @@ export default function ResumenClient() {
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"
-                            disabled={!editando || guardando === x.r.id}
+                            disabled={guardando === x.r.id || x.precio <= 0}
                             onClick={() => actualizarPrecio(x.r.id)}
                             className="rounded-md bg-ambar-600 px-2.5 py-1 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-40 hover:bg-ambar-700"
                           >
