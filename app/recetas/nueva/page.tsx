@@ -6,8 +6,8 @@ import Link from 'next/link';
 import SearchableSelect from '@/components/SearchableSelect';
 import InsumoAutocomplete from '@/components/InsumoAutocomplete';
 
-type Insumo = { id: string; articulo: string; unidad: string; coste: number };
-type Linea = { item_id: string; unidad: string; cantidad: number; merma_pct: number };
+type Insumo = { id: string; articulo: string; unidad: string; coste: number; tipo_item?: 'insumo' | 'subreceta' };
+type Linea = { item_id: string; unidad: string; cantidad: number; merma_pct: number; tipo_item?: 'insumo' | 'subreceta' };
 type Cat = { id: string; nombre: string; familia_id?: string; tipo?: string };
 
 const money = (n: number) =>
@@ -45,6 +45,7 @@ function NuevaRecetaInner() {
             unidad: g.unidad_id || '',
             cantidad: Number(g.cantidad) || 0,
             merma_pct: Number(g.merma_pct) || 0,
+            tipo_item: (g.tipo_item === 'subreceta' ? 'subreceta' : 'insumo'),
           })));
         }
       } catch {}
@@ -88,7 +89,7 @@ function NuevaRecetaInner() {
   }, [subfamiliaId, subfamilias, familiaId]);
 
   useEffect(() => {
-    fetch('/api/insumos')
+    fetch('/api/catalogo')
       .then((r) => r.json())
       .then((d) => { if (d.ok) setInsumos(d.data); })
       .catch(() => {});
@@ -134,9 +135,8 @@ function NuevaRecetaInner() {
   const delLinea = (i: number) => setLineas((p) => p.filter((_, idx) => idx !== i));
   const dupLinea = (i: number) => setLineas((p) => { const c = { ...p[i] }; const n = [...p]; n.splice(i + 1, 0, c); return n; });
 
-  const onInsumo = (i: number, id: string) => {
-    const ins = insumoPorId[id];
-    updLinea(i, { item_id: id, unidad: ins ? ins.unidad : '' });
+  const onInsumo = (i: number, ins: Insumo) => {
+    updLinea(i, { item_id: ins.id, unidad: ins ? ins.unidad : '', tipo_item: ins.tipo_item || 'insumo' });
   };
 
   function validar(): string[] {
@@ -173,7 +173,7 @@ function NuevaRecetaInner() {
         iva: Number(iva) || 0,
         subfamilia_id: subfamiliaId,
         ingredientes: lineas.map((l, idx) => ({
-          tipo_item: 'insumo',
+          tipo_item: l.tipo_item || 'insumo',
           item_id: l.item_id,
           cantidad: Number(l.cantidad),
           merma_pct: Number(l.merma_pct),
@@ -291,7 +291,7 @@ function NuevaRecetaInner() {
                         value={l.item_id}
                         insumos={insumos}
                         existingIds={lineas.filter((_, idx) => idx !== i).map((x) => x.item_id).filter(Boolean)}
-                        onSelect={(ins) => onInsumo(i, ins.id)}
+                        onSelect={(ins) => onInsumo(i, ins)}
                         onCommit={() => cantRefs.current[i]?.focus()}
                       />
                     </td>
