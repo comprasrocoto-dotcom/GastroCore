@@ -144,6 +144,7 @@ export default function ResumenClient() {
       }).then((x) => x.json());
       if (res?.ok === false) { setAviso('No se pudo actualizar: ' + (res.error || '')); }
       else {
+        await new Promise((r) => setTimeout(r, 1500));
         await cargar();
         setNuevoPrecio((p) => { const n = { ...p }; delete n[id]; return n; });
         setAviso('Precio actualizado y sincronizado.');
@@ -165,7 +166,7 @@ export default function ResumenClient() {
         body: JSON.stringify({ id, activo }),
       }).then((x) => x.json());
       if (res?.ok === false) { setAviso('No se pudo cambiar el estado: ' + (res.error || '')); }
-      else { await cargar(); setAviso(activo ? 'Receta activada.' : 'Receta marcada como inactiva.'); }
+      else { await new Promise((r) => setTimeout(r, 1500)); await cargar(); setAviso(activo ? 'Receta activada.' : 'Receta marcada como inactiva.'); }
     } catch (e) {
       setAviso('Error de red al cambiar el estado.');
     } finally {
