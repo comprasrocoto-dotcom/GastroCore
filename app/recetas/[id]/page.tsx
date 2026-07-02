@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getReceta, getSubfamilias, getFamilias } from '@/lib/api/gastrocore';
+import { foodCost as calcFoodCost, precioSugerido as calcPrecioSugerido, utilidad as calcUtilidad, margenBruto as calcMargenBruto } from '@/lib/costeo';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,9 +54,10 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
   const precioSugerido = Number(receta.precio_sugerido) || 0;
   const _mo = Number(receta.margen_objetivo) || 0;
   const margenObj = _mo > 1 ? _mo / 100 : _mo;
-  const foodCost = precioReal > 0 ? costoFinal / precioReal : Number(receta.food_cost) || 0;
-  const utilidad = precioReal > 0 ? precioReal - costoPorcion : 0;
-  const margenBruto = precioReal > 0 ? (precioReal - costoPorcion) / precioReal : 0;
+  // Fuente unica de verdad (lib/costeo): Food Cost = costo / precio base sin impuesto.
+  const foodCost = precioReal > 0 ? calcFoodCost(costoPorcion, precioReal) : Number(receta.food_cost) || 0;
+  const utilidad = calcUtilidad(precioReal, costoPorcion);
+  const margenBruto = calcMargenBruto(precioReal, costoPorcion);
   const s = semaforo(foodCost);
 
   return (
