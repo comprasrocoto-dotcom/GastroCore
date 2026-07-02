@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import SearchableSelect from '@/components/SearchableSelect';
+import { precioSugerido as precioSugeridoObjetivo, FC_OBJ, INC } from '@/lib/costeo';
 
 type Receta = any;
 type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: any };
@@ -12,13 +13,7 @@ const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
 const fcPct = (n: number) => ((Number(n) || 0) * 100).toFixed(1) + '%';
 
-const FC_OBJ = 0.35; // Food Cost objetivo FIJO 35%
-const INC = 0.08; // Impuesto al Consumo 8%
-// Precio de venta necesario para volver al Food Cost objetivo (con INC incluido).
-function precioSugeridoObjetivo(costoPorcion: number) {
-  const base = FC_OBJ > 0 ? (Number(costoPorcion) || 0) / FC_OBJ : 0;
-  return base * (1 + INC);
-}
+// FC_OBJ, INC y precioSugeridoObjetivo provienen de la fuente unica (lib/costeo).
 
 function semaforo(fc: number) {
   const v = Number(fc) || 0;
@@ -342,9 +337,9 @@ function Card({ label, value, tone = 'neutral', icon }: { label: string; value: 
 function FoodCostCard({ fc }: { fc: number }) {
   const pct = Math.max(0, Math.min(1, fc));
   const s = semaforo(fc);
-  const color = fc <= 0.35 ? '#16A34A' : fc <= 0.40 ? '#F59E0B' : '#DC2626';
-  const bg = fc <= 0.35 ? '#ECFDF5' : fc <= 0.40 ? '#FFFBEB' : '#FEF2F2';
-  const ring = fc <= 0.35 ? '#D1FAE5' : fc <= 0.40 ? '#FEF3C7' : '#FEE2E2';
+  const color = fc <= 0.33 ? '#16A34A' : fc <= 0.35 ? '#F59E0B' : '#DC2626';
+  const bg = fc <= 0.33 ? '#ECFDF5' : fc <= 0.35 ? '#FFFBEB' : '#FEF2F2';
+  const ring = fc <= 0.33 ? '#D1FAE5' : fc <= 0.35 ? '#FEF3C7' : '#FEE2E2';
   return (
     <div className="card-hover rounded-xl border p-4 shadow-card sm:col-span-2" style={{ backgroundColor: bg, borderColor: ring }}>
       <div className="flex items-center justify-between">
