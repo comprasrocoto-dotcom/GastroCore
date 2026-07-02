@@ -8,6 +8,13 @@ const money = (n: number) =>
 
 const pct = (n: number) => (n >= 0 ? '+' : '') + (n || 0).toFixed(1) + '%';
 
+function riesgoSim(fc: number) {
+  const v = Number(fc) || 0;
+  if (v <= 0.33) return { emoji: '🟢', label: 'Rentable', bg: 'bg-[#DCFCE7]', text: 'text-[#16A34A]', border: 'border-[#BBF7D0]', dot: '#16A34A' };
+  if (v <= 0.35) return { emoji: '🟡', label: 'Vigilar', bg: 'bg-[#FEF3C7]', text: 'text-[#B45309]', border: 'border-[#FDE68A]', dot: '#F59E0B' };
+  return { emoji: '🔴', label: 'Accion', bg: 'bg-[#FEE2E2]', text: 'text-[#DC2626]', border: 'border-[#FECACA]', dot: '#DC2626' };
+}
+
 const fechaCorta = (v: string) => {
   if (!v) return '';
   const d = new Date(v);
@@ -170,19 +177,29 @@ function Simulador({ insumos }: { insumos: { id: string; articulo: string; coste
                     <th className="!text-right">Incremento</th>
                     <th className="!text-right">Nuevo Food Cost</th>
                     <th className="!text-right">Precio sug.</th>
+                    <th className="!text-center">Riesgo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {res.recetas.map((r) => (
-                    <tr key={r.receta_id}>
+                  {res.recetas.map((r) => {
+                    const rg = riesgoSim(r.food_cost_nuevo);
+                    return (
+                    <tr key={r.receta_id} className={r.fuera_objetivo ? 'bg-red-50/60' : ''}>
                       <td className="font-medium">{r.nombre}</td>
                       <td className="text-right">{money(r.costo_actual)}</td>
                       <td className="text-right">{money(r.costo_nuevo)}</td>
                       <td className="text-right text-red-600">+{money(r.incremento)}</td>
-                      <td className={'text-right font-semibold ' + (r.fuera_objetivo ? 'text-red-600' : 'text-green-700')}>{(r.food_cost_nuevo * 100).toFixed(1)}%</td>
-                      <td className="text-right">{money(r.precio_sugerido_nuevo)}</td>
+                      <td className={'text-right font-semibold ' + rg.text}>{(r.food_cost_nuevo * 100).toFixed(1)}%</td>
+                      <td className={'text-right font-semibold ' + (r.fuera_objetivo ? 'text-[#DC2626]' : 'text-[#16A34A]')}>{money(r.precio_sugerido_nuevo)}</td>
+                      <td className="text-center">
+                        <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${rg.bg} ${rg.text} ${rg.border}`} title={`Nuevo Food Cost ${(r.food_cost_nuevo * 100).toFixed(1)}% - ${rg.label}`}>
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: rg.dot }} />
+                          {rg.label}
+                        </span>
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
