@@ -125,4 +125,31 @@
     @apply mt-2 flex items-center justify-between rounded-lg px-3 py-2 text-base font-bold tabular-nums;
     background-color: #F1F5F9;
   }
+
+  /* ---- Contenedor responsive tipo ERP (SAP Fiori / NetSuite / Odoo) ---- */
+  /* Usa ~92-95% del ancho disponible, sin anchos fijos en px. */
+  .app-shell {
+    width: 100%;
+    max-width: 95%;
+    margin-inline: auto;
+    padding-inline: clamp(0.75rem, 2vw, 2.5rem);
+  }
+  /* Tope suave solo en monitores ultra-anchos (>= ~2560px) para legibilidad. */
+  @media (min-width: 2560px) {
+    .app-shell { max-width: 2400px; }
+  }
+  @media (max-width: 640px) {
+    .app-shell { max-width: 100%; padding-inline: 0.75rem; }
+  }
+
+  /* Scroll horizontal en tablas solo cuando es estrictamente necesario. */
+  .erp-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Tabla de recetas: la columna Receta ocupa mas ancho y no se parte. */
+  .erp-table.recetas-table { table-layout: auto; }
+  .erp-table.recetas-table th:first-child,
+  .erp-table.recetas-table td:first-child { min-width: 220px; width: 34%; white-space: normal; }
+  .erp-table.recetas-table tbody tr { cursor: pointer; }
+  .erp-table.recetas-table tbody tr:hover { background-color: #EFF6FF; }
+
 }
