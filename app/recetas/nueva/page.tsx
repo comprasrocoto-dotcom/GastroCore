@@ -265,22 +265,22 @@ function NuevaRecetaInner() {
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <section className="card">
-          <div className="flex items-center justify-between border-b border-salvia-100 px-4 py-3">
-            <h2 className="font-display text-base font-semibold text-salvia-800">Ingredientes</h2>
+          <div className="sticky top-[70px] z-[100] flex items-center justify-between rounded-t-lg border-b border-salvia-100 bg-white px-5 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow duration-200">
+            <h2 className="font-display text-base font-semibold text-salvia-800">Ingredientes ({lineas.length})</h2>
             <button onClick={addLinea} className="btn-primary text-xs">+ Agregar ingrediente</button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="max-h-[calc(100vh-320px)] overflow-y-auto overflow-x-auto">
             <table className="erp-table">
               <thead>
                 <tr>
-                  <th>Insumo</th>
-                  <th>Unidad</th>
-                  <th className="!text-right">Cantidad</th>
-                  <th className="!text-right">% Merma</th>
-                  <th className="!text-right">Cant. real</th>
-                  <th className="!text-right">C. unitario</th>
-                  <th className="!text-right">C. total</th>
-                  <th className="!text-center">Accion</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC]">Insumo</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC]">Unidad</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">Cantidad</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">% Merma</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">Cant. real</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">C. unitario</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">C. total</th>
+                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-center">Accion</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,7 +341,7 @@ function NuevaRecetaInner() {
           </div>
         </section>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 self-start lg:sticky lg:top-[90px]">
           <div className="ticket-panel">
             <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[#1E3A5F]">Resumen de costeo</p>
             <div className="ticket-row"><span>Costo ingredientes</span><span>{money(costeo.costoIngredientes)}</span></div>
