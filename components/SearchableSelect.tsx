@@ -84,7 +84,7 @@ export default function SearchableSelect({
       </button>
 
       {open && !disabled && (
-        <div className="absolute z-30 mt-1 w-full rounded-md border border-salvia/30 bg-white shadow-lg">
+        <div className="absolute z-[9999] mt-1 w-full rounded-md border border-salvia/30 bg-white shadow-lg">
           <div className="border-b border-salvia/20 p-2">
             <input
               ref={inputRef}
