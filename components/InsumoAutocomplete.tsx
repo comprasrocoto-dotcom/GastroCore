@@ -194,13 +194,13 @@ export default function InsumoAutocomplete({
       )}
 
       {dupWarn ? (
-        <div className="absolute z-30 mt-1 w-full rounded-md border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 shadow">
+        <div className="absolute z-[9999] mt-1 w-full rounded-md border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 shadow">
           {dupWarn}
         </div>
       ) : null}
 
       {open && !dupWarn ? (
-        <div className="absolute z-30 mt-1 w-[320px] max-w-[80vw] overflow-hidden rounded-lg border border-salvia-200 bg-white shadow-xl">
+        <div className="absolute z-[9999] mt-1 w-[320px] max-w-[80vw] overflow-hidden rounded-lg border border-salvia-200 bg-white shadow-xl">
           <div ref={listRef} className="max-h-72 overflow-y-auto py-1">
             {resultados.length === 0 ? (
               <div className="px-3 py-3 text-sm text-salvia-400">Sin resultados</div>
