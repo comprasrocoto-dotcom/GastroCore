@@ -29,6 +29,7 @@ const NAV = [
   { href: '/recetas/familias', label: 'Familias', icon: '\uD83D\uDDC2\uFE0F' },
   { href: '/recetas/resumen', label: 'Panel', icon: '\uD83D\uDCCA' },
   { href: '/analisis', label: 'An\u00e1lisis', icon: '\uD83D\uDCC8' },
+  { href: '/manual', label: 'Manual', icon: '❓' },
 ];
 
 export default function RootLayout({
