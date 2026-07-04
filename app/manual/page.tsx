@@ -60,6 +60,9 @@ export default function ManualPage() {
               <span className="chip chip-warning">Amarillo · Vigilar: el food cost está cerca del límite</span>
               <span className="chip chip-danger">Rojo · Acción inmediata: el food cost supera el objetivo</span>
             </div>
+            <p className="mt-3 text-[15px] leading-relaxed">
+              Un punto clave: el food cost <strong>no</strong> se calcula sobre el precio de venta total que paga el cliente, sino sobre el <strong>precio base sin impuesto</strong>. GastroCore aplica un Impuesto al Consumo (INC) fijo del 8%, que ya viene incluido en el precio de venta. Por eso, antes de calcular el food cost, el sistema quita ese impuesto (precio base = precio de venta ÷ 1.08) y solo entonces divide el costo del plato entre ese precio base. El precio sugerido de venta funciona al revés: primero calcula el precio sin impuesto necesario para llegar al food cost objetivo y luego le suma el 8% de impuesto para mostrar el precio final con el que se vende.
+            </p>
             <p className="mt-4 text-[15px] leading-relaxed">
               Además del food cost, el sistema calcula automáticamente el <strong>precio sugerido de venta</strong> (el precio necesario para lograr el food cost objetivo), la <strong>utilidad</strong> (precio de venta menos costo del plato), el <strong>margen bruto</strong>, el impacto de la <strong>merma</strong> (pérdida de producto al preparar un ingrediente) y el <strong>desvío de mercancía</strong> (un porcentaje adicional que cubre diferencias de inventario no explicadas por la merma normal).
             </p>
@@ -181,6 +184,14 @@ export default function ManualPage() {
                 <dt className="font-semibold">Utilidad</dt>
                 <dd className="text-muted">Diferencia entre el precio de venta y el costo total del plato.</dd>
               </div>
+            <div className="py-3">
+              <dt className="font-semibold">Impuesto al Consumo (INC)</dt>
+              <dd className="text-muted">Impuesto fijo del 8% que ya viene incluido en el precio de venta de cada receta.</dd>
+            </div>
+            <div className="py-3">
+              <dt className="font-semibold">Precio base sin impuesto</dt>
+              <dd className="text-muted">El precio de venta sin el Impuesto al Consumo (precio de venta ÷ 1.08). El food cost se calcula sobre este valor, no sobre el precio de venta total.</dd>
+            </div>
             </dl>
           </section>
 
