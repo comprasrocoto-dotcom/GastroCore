@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import Link from 'next/link';
+import { getSession } from '@/lib/session';
 import './globals.css';
 
 const inter = Inter({
@@ -32,33 +33,48 @@ const NAV = [
   { href: '/manual', label: 'Manual', icon: '❓' },
 ];
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await getSession();
+
   return (
     <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
       <body>
-        <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
-          <nav className="app-shell flex items-center gap-1 py-2 overflow-x-auto">
-            <Link href="/" className="mr-2 flex items-center gap-2 font-display text-lg font-bold text-[#1E3A5F]">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E3A5F] text-sm font-bold text-white">GC</span>
-              GastroCore
-            </Link>
-            <div className="mx-2 h-6 w-px bg-black/10" />
-            {NAV.map((n) => (
-              <Link
-                key={n.href}
-                href={n.href}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-[#1E3A5F] hover:bg-[#EFF6FF]"
-              >
-                <span>{n.icon}</span>
-                {n.label}
+        {session && (
+          <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
+            <nav className="app-shell flex items-center gap-1 py-2 overflow-x-auto">
+              <Link href="/" className="mr-2 flex items-center gap-2 font-display text-lg font-bold text-[#1E3A5F]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E3A5F] text-sm font-bold text-white">GC</span>
+                GastroCore
               </Link>
-            ))}
-          </nav>
-        </header>
+              <div className="mx-2 h-6 w-px bg-black/10" />
+              {NAV.map((n) => (
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-[#1E3A5F] hover:bg-[#EFF6FF]"
+                >
+                  <span>{n.icon}</span>
+                  {n.label}
+                </Link>
+              ))}
+              <div className="ml-auto flex items-center gap-3 pl-3">
+                <span className="hidden whitespace-nowrap text-sm text-slate-500 sm:inline">
+                  {session.u}
+                </span>
+                <a
+                  href="/api/auth/logout"
+                  className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                >
+                  Salir
+                </a>
+              </div>
+            </nav>
+          </header>
+        )}
         {children}
       </body>
     </html>
