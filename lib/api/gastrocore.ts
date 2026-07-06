@@ -121,19 +121,44 @@ function assertConfig(): void {
   }
 }
 
+// Caché en memoria por instancia. Reemplaza al `next: { revalidate }` que se
+// perdió al pasar las lecturas a POST, y mantiene la protección de cuota de
+// Apps Script deduplicando lecturas idénticas dentro de la ventana TTL.
+type CacheEntry = { at: number; data: unknown };
+const readCache = new Map<string, CacheEntry>();
+
+/**
+ * Lectura de datos. IMPORTANTE (seguridad): el token viaja SIEMPRE en el body
+ * de un POST, nunca en la query string de la URL. Esto evita que el secreto
+ * quede registrado en logs de red, de Vercel o de intermediarios.
+ *
+ * Requiere que el backend de Apps Script maneje `mode: 'read'` en doPost
+ * (ver README, sección "Backend: lectura por POST").
+ */
 async function apiGet<T>(
   resource: string,
   params: Record<string, string> = {},
-  revalidate = 15
+  ttlSeconds = 15
 ): Promise<ApiResponse<T>> {
   assertConfig();
-  const url = new URL(API_URL as string);
-  url.searchParams.set('resource', resource);
-  url.searchParams.set('token', API_TOKEN as string);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url.toString(), { next: { revalidate } });
+
+  const cacheKey = resource + '::' + JSON.stringify(params);
+  const hit = readCache.get(cacheKey);
+  if (hit && Date.now() - hit.at < ttlSeconds * 1000) {
+    return hit.data as ApiResponse<T>;
+  }
+
+  const res = await fetch(API_URL as string, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode: 'read', resource, token: API_TOKEN, params }),
+    cache: 'no-store',
+  });
   if (!res.ok) throw new Error('Error de red al consultar la API: ' + res.status);
-  return (await res.json()) as ApiResponse<T>;
+
+  const json = (await res.json()) as ApiResponse<T>;
+  readCache.set(cacheKey, { at: Date.now(), data: json });
+  return json;
 }
 
 async function apiPost<T>(
