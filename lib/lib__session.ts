@@ -1,0 +1,22 @@
+/**
+ * Lectura de la sesión desde el lado servidor (route handlers / Server
+ * Components). Vive separado de `lib/auth.ts` porque importa `next/headers`,
+ * que NO está permitido en el middleware (runtime Edge).
+ */
+import { cookies } from 'next/headers';
+import { SESSION_COOKIE, verifySessionValue, type Session } from '@/lib/auth';
+
+export async function getSession(): Promise<Session | null> {
+  const value = cookies().get(SESSION_COOKIE)?.value;
+  return verifySessionValue(value);
+}
+
+/**
+ * Devuelve el nombre del usuario autenticado (firmado en la cookie), o el
+ * fallback. Usar esto en las mutaciones en lugar de confiar en el body del
+ * cliente para la trazabilidad.
+ */
+export async function getUsuario(fallback = 'Sistema'): Promise<string> {
+  const s = await getSession();
+  return s?.u || fallback;
+}
