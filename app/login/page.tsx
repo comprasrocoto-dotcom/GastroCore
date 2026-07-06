@@ -8,8 +8,8 @@ function LoginInner() {
   const params = useSearchParams();
   const next = params.get('next') || '/';
 
-  const [nombre, setNombre] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [clave, setClave] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
 
@@ -21,7 +21,7 @@ function LoginInner() {
       const r = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, password }),
+        body: JSON.stringify({ email, clave }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || !j.ok) {
@@ -54,20 +54,22 @@ function LoginInner() {
           </div>
         </div>
 
-        <label className="mb-1 block text-sm font-medium text-slate-700">Tu nombre</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
         <input
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          placeholder="Para la trazabilidad de cambios"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tu@correo.com"
           className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#1E3A5F]"
           autoComplete="username"
+          required
         />
 
-        <label className="mb-1 block text-sm font-medium text-slate-700">Contraseña</label>
+        <label className="mb-1 block text-sm font-medium text-slate-700">Clave</label>
         <input
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={clave}
+          onChange={(e) => setClave(e.target.value)}
           className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#1E3A5F]"
           autoComplete="current-password"
           required
