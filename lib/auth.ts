@@ -8,20 +8,20 @@
  * NO importa `next/headers` para poder usarse desde el middleware. La lectura
  * de la cookie desde route handlers/Server Components vive en `lib/session.ts`.
  *
- * Modelo: contraseña compartida (APP_PASSWORD) + nombre que el usuario declara
- * al entrar. El nombre viaja firmado dentro de la cookie, así la trazabilidad
- * deja de depender de un campo que el cliente podía falsificar.
+ * Modelo (v3): usuarios individuales de la hoja 'Usuarios' del backend
+ * (email + clave). La validación de credenciales la hace el backend de Apps
+ * Script (acción 'login'); aquí solo se FIRMA y VERIFICA la cookie de sesión,
+ * que ahora incluye el nombre Y el rol del usuario. APP_PASSWORD ya no se usa.
  */
 
 const encoder = new TextEncoder();
 
 const SECRET = process.env.AUTH_SECRET || '';
-const PASSWORD = process.env.APP_PASSWORD || '';
 
 export const SESSION_COOKIE = 'gc_session';
 export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 horas
 
-export type Session = { u: string; exp: number };
+export type Session = { u: string; r: string; exp: number };
 
 // ---------- base64url helpers ----------
 function bytesToB64url(bytes: ArrayBuffer | Uint8Array): string {
@@ -67,9 +67,16 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 // ---------- API pública ----------
 
-/** Crea el valor firmado de la cookie de sesión para un nombre de usuario. */
-export async function createSessionValue(username: string): Promise<string> {
-  const payload: Session = { u: username, exp: Date.now() + SESSION_MAX_AGE * 1000 };
+/**
+ * Crea el valor firmado de la cookie de sesión para un usuario autenticado.
+ * El rol viaja FIRMADO dentro de la cookie: el cliente no puede falsificarlo.
+ */
+export async function createSessionValue(username: string, rol: string): Promise<string> {
+  const payload: Session = {
+    u: username,
+    r: rol || 'Usuario',
+    exp: Date.now() + SESSION_MAX_AGE * 1000,
+  };
   const payloadB64 = strToB64url(JSON.stringify(payload));
   const sig = await hmac(payloadB64);
   return `${payloadB64}.${sig}`;
@@ -88,19 +95,16 @@ export async function verifySessionValue(value: string | undefined | null): Prom
     const json = new TextDecoder().decode(b64urlToBytes(payloadB64));
     const session = JSON.parse(json) as Session;
     if (!session || typeof session.exp !== 'number' || session.exp < Date.now()) return null;
+    // Cookies emitidas antes de v3 no traen rol: se tratan como sesión inválida
+    // para forzar un re-login limpio con el nuevo modelo de usuarios.
+    if (typeof session.r !== 'string' || !session.r) return null;
     return session;
   } catch {
     return null;
   }
 }
 
-/** Compara la contraseña recibida con APP_PASSWORD en tiempo constante. */
-export function checkPassword(input: string): boolean {
-  if (!PASSWORD) return false; // sin contraseña configurada => nadie entra
-  return timingSafeEqual(input, PASSWORD);
-}
-
 /** True si el servidor tiene las variables de auth configuradas. */
 export function authConfigured(): boolean {
-  return Boolean(SECRET && PASSWORD);
+  return Boolean(SECRET);
 }
