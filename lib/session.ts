@@ -20,3 +20,15 @@ export async function getUsuario(fallback = 'Sistema'): Promise<string> {
   const s = await getSession();
   return s?.u || fallback;
 }
+
+/** Rol del usuario autenticado ('Admin', etc.), firmado en la cookie. */
+export async function getRol(fallback = ''): Promise<string> {
+  const s = await getSession();
+  return s?.r || fallback;
+}
+
+/** True si la sesión actual pertenece a un Admin. */
+export async function esAdmin(): Promise<boolean> {
+  const rol = await getRol();
+  return rol.trim().toLowerCase() === 'admin';
+}
