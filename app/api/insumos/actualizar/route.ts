@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { actualizarInsumo } from '@/lib/api/gastrocore';
+import { getUsuario } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'No hay cambios que aplicar' }, { status: 400 });
     }
     data.motivo = (body.motivo || '').toString().trim();
-    data.usuario = (body.usuario || 'Panel de insumos').toString().trim();
+    // Trazabilidad: el usuario proviene de la sesión firmada, NO del cliente.
+    data.usuario = await getUsuario('Panel de insumos');
 
     const res = await actualizarInsumo(id, data);
     return NextResponse.json({ ok: true, data: res });
