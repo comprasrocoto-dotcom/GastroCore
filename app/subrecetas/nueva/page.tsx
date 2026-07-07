@@ -107,7 +107,9 @@ function NuevaSubrecetaInner() {
     return lineas.map((l) => {
       const ins = insumoPorId[l.item_id];
       const costoUnit = ins ? Number(ins.coste) : 0;
-      const cantReal = (Number(l.cantidad) || 0) * (1 + (Number(l.merma_pct) || 0) / 100);
+      // v7.2: merma por RENDIMIENTO (gross-up ÷), igual que el backend y HioPOS.
+      const mermaPct = Math.min(Math.max(Number(l.merma_pct) || 0, 0), 94.9);
+      const cantReal = (Number(l.cantidad) || 0) / (1 - mermaPct / 100);
       const costoTotal = costoUnit * cantReal;
       return { ins, costoUnit, cantReal, costoTotal };
     });
