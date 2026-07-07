@@ -1,23 +1,40 @@
 'use client';
 
 /**
- * Galería pública del recetario — hereda la organización del Recetario Malanga:
- * sidebar de categorías, buscador, tarjetas con foto (recorte object-cover) y
- * costo/precio visibles (decisión del negocio, igual al recetario original).
+ * Recetario público — réplica visual del Recetario Malanga original:
+ *  - Tarjetas con foto (recorte) o placeholder rosado con hojita 🌿 y categoría.
+ *  - Pie de tarjeta: "N ingredientes" / "N pasos".
+ *  - Toggle cuadrícula / lista (esquina superior derecha).
+ *  - Al hacer clic se abre un MODAL con cabecera verde: ingredientes
+ *    (Artículo / Unidad de Medida / Cantidad), PREPARACIÓN y EMPLATADO con
+ *    pasos numerados en círculos verdes. SIN costos ni precios.
  */
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import type { RecetaPublica } from '@/lib/recetario';
-import { cop, fotoConAncho } from '@/lib/recetario';
+import { fotoConAncho } from '@/lib/recetario';
+
+const VERDE = '#2F5233';
+const CREMA = '#FBF0EE';
+const ROSA = '#F8E3E0';
+
+/** Divide un texto multilínea en pasos no vacíos. */
+function pasos(texto: string): string[] {
+  return String(texto || '')
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
 
 export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[] }) {
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState<string>('TODAS');
+  const [modo, setModo] = useState<'grid' | 'list'>('grid');
+  const [abierta, setAbierta] = useState<RecetaPublica | null>(null);
 
   const categorias = useMemo(() => {
-    const set = new Map<string, number>();
-    recetas.forEach((r) => set.set(r.categoria, (set.get(r.categoria) || 0) + 1));
-    return Array.from(set.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const m = new Map<string, number>();
+    recetas.forEach((r) => m.set(r.categoria, (m.get(r.categoria) || 0) + 1));
+    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [recetas]);
 
   const visibles = useMemo(() => {
@@ -27,134 +44,321 @@ export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[]
       if (!q) return true;
       return (
         r.nombre.toLowerCase().includes(q) ||
-        r.ficha.descripcion.toLowerCase().includes(q) ||
         r.ingredientes.some((i) => i.nombre.toLowerCase().includes(q))
       );
     });
   }, [recetas, busqueda, categoria]);
 
-  return (
-    <main className="min-h-screen bg-[#FAF7F0] text-[#25301F]">
-      {/* Cabecera */}
-      <header className="sticky top-0 z-10 border-b border-[#E5DFD2] bg-[#FAF7F0]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🌿</span>
-            <div>
-              <h1 className="font-display text-lg font-bold leading-tight text-[#2B4D2E]">
-                Recetario Malanga
-              </h1>
-              <p className="text-[11px] text-[#8A957F]">
-                {recetas.length} recetas · actualizado en vivo desde la Base de Costos
-              </p>
-            </div>
-          </div>
-          <input
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar receta o ingrediente…"
-            className="ml-auto w-full max-w-xs rounded-full border border-[#D8D1BF] bg-white px-4 py-2 text-sm outline-none focus:border-[#2B4D2E] sm:w-64"
-          />
-        </div>
-      </header>
+  // Cerrar el modal con Escape.
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => e.key === 'Escape' && setAbierta(null);
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, []);
 
-      <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
-        {/* Sidebar de categorías (en móvil se vuelve una fila con scroll) */}
-        <nav className="flex w-full gap-2 overflow-x-auto pb-2 md:block md:w-48 md:min-w-48 md:overflow-visible md:pb-0">
-          <BotonCategoria
-            activa={categoria === 'TODAS'}
-            onClick={() => setCategoria('TODAS')}
-            etiqueta="Toda la carta"
-            n={recetas.length}
-          />
+  const titulo =
+    categoria === 'TODAS' ? 'Recetario' : categoria.charAt(0) + categoria.slice(1).toLowerCase();
+
+  return (
+    <main className="min-h-screen" style={{ background: CREMA, color: '#2A2A28' }}>
+      <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6">
+        {/* Sidebar de categorías */}
+        <nav className="hidden w-52 min-w-52 md:block">
+          <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: VERDE }}>
+            Secciones
+          </p>
+          <CategoriaBtn activa={categoria === 'TODAS'} onClick={() => setCategoria('TODAS')} nombre="Todas" n={recetas.length} />
           {categorias.map(([cat, n]) => (
-            <BotonCategoria
-              key={cat}
-              activa={categoria === cat}
-              onClick={() => setCategoria(cat)}
-              etiqueta={cat}
-              n={n}
-            />
+            <CategoriaBtn key={cat} activa={categoria === cat} onClick={() => setCategoria(cat)} nombre={cat} n={n} />
           ))}
         </nav>
 
-        {/* Cuadrícula de tarjetas */}
-        <section className="flex-1">
+        {/* Contenido */}
+        <section className="min-w-0 flex-1">
+          {/* Cabecera: título + contador + toggle */}
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{titulo}</h1>
+              <p className="mt-0.5 text-sm text-neutral-500">{visibles.length} recetas</p>
+            </div>
+            <div className="flex gap-1.5 pt-1">
+              <ToggleBtn activo={modo === 'grid'} onClick={() => setModo('grid')} title="Cuadrícula">▦</ToggleBtn>
+              <ToggleBtn activo={modo === 'list'} onClick={() => setModo('list')} title="Lista">☰</ToggleBtn>
+            </div>
+          </div>
+
+          {/* Selector de categoría en móvil */}
+          <div className="mb-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
+            <ChipCat activa={categoria === 'TODAS'} onClick={() => setCategoria('TODAS')} nombre="Todas" />
+            {categorias.map(([cat]) => (
+              <ChipCat key={cat} activa={categoria === cat} onClick={() => setCategoria(cat)} nombre={cat} />
+            ))}
+          </div>
+
+          {/* Buscador */}
+          <div className="mb-5 flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 shadow-sm">
+            <span>🔍</span>
+            <input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar receta o ingrediente..."
+              className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-400"
+            />
+          </div>
+
+          {/* Tarjetas */}
           {visibles.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#D8D1BF] bg-white p-10 text-center text-sm text-[#8A957F]">
+            <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-12 text-center text-sm text-neutral-400">
               No hay recetas que coincidan con la búsqueda.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={modo === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5' : 'flex flex-col gap-3'}>
               {visibles.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/recetario/${r.id}`}
-                  className="group overflow-hidden rounded-xl border border-[#E5DFD2] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  {/* Miniatura: recorte a propósito (object-cover) para uniformar la galería */}
-                  <div className="flex h-40 items-center justify-center overflow-hidden bg-[#EFEAD9]">
-                    {r.ficha.foto_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={fotoConAncho(r.ficha.foto_url, 600)}
-                        alt={r.nombre}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center gap-1 text-[#8A957F]">
-                        <span className="text-3xl">🍽️</span>
-                        <span className="text-[11px]">{r.categoria}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-[#B0552F]">
-                      {r.categoria}
-                    </p>
-                    <h2 className="mt-0.5 line-clamp-2 text-sm font-semibold leading-snug">
-                      {r.nombre}
-                    </h2>
-                    <div className="mt-2 flex items-center justify-between text-xs">
-                      <span className="text-[#6B7A6B]">Costo {cop(r.costo_porcion)}</span>
-                      <span className="font-bold text-[#2B4D2E]">{cop(r.precio_real)}</span>
-                    </div>
-                  </div>
-                </Link>
+                <Tarjeta key={r.id} r={r} modo={modo} onOpen={() => setAbierta(r)} />
               ))}
             </div>
           )}
         </section>
       </div>
+
+      {abierta && <ModalReceta r={abierta} onClose={() => setAbierta(null)} />}
     </main>
   );
 }
 
-function BotonCategoria({
-  activa,
-  onClick,
-  etiqueta,
-  n,
-}: {
-  activa: boolean;
-  onClick: () => void;
-  etiqueta: string;
-  n: number;
-}) {
+/* ============================ TARJETA ==================================== */
+function Tarjeta({ r, modo, onOpen }: { r: RecetaPublica; modo: 'grid' | 'list'; onOpen: () => void }) {
+  const nIng = r.ingredientes.length;
+  const nPasos = pasos(r.ficha.preparacion).length + pasos(r.ficha.emplatado).length;
+  const horizontal = modo === 'list';
+
+  return (
+    <button
+      onClick={onOpen}
+      className={
+        'group overflow-hidden rounded-xl border border-neutral-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ' +
+        (horizontal ? 'flex items-stretch' : '')
+      }
+    >
+      {/* Miniatura: recorte a propósito (object-cover) para uniformar la galería */}
+      <div
+        className={
+          'flex items-center justify-center overflow-hidden ' +
+          (horizontal ? 'h-24 w-28 min-w-28' : 'h-40 w-full')
+        }
+        style={{ background: ROSA }}
+      >
+        {r.ficha.foto_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={fotoConAncho(r.ficha.foto_url, 600)}
+            alt={r.nombre}
+            loading="lazy"
+            className="h-full w-full object-cover transition group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-1.5 text-neutral-500">
+            <span className="text-3xl">🌿</span>
+            {!horizontal && (
+              <span className="text-[10px] font-medium uppercase tracking-wide">{r.categoria}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className={'flex min-w-0 flex-1 flex-col ' + (horizontal ? 'px-4 py-2.5' : 'p-3.5')}>
+        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: VERDE }}>
+          {r.categoria}
+        </p>
+        <h2 className="mt-0.5 line-clamp-2 text-sm font-semibold uppercase leading-snug">{r.nombre}</h2>
+        <div className="mt-auto flex items-center justify-between border-t border-neutral-100 pt-2 text-[11px] text-neutral-500">
+          <span>{nIng} ingredientes</span>
+          {nPasos > 0 && <span className="font-semibold">{nPasos} pasos</span>}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ============================ MODAL ====================================== */
+export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () => void }) {
+  const prep = pasos(r.ficha.preparacion);
+  const empl = pasos(r.ficha.emplatado);
+
+  return (
+    <div className="flex max-h-full w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+      {/* Cabecera verde */}
+      <div className="flex items-start justify-between gap-4 px-6 py-4" style={{ background: VERDE }}>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">{r.categoria}</p>
+          <h2 className="mt-0.5 text-xl font-bold uppercase leading-tight text-white">{r.nombre}</h2>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Cuerpo */}
+      <div className="flex flex-col gap-6 overflow-y-auto bg-white px-6 py-5">
+        {/* FOTO: se ve COMPLETA en su proporción natural, adaptándose a
+            cualquier resolución (tope ~60% de pantalla / 560px). */}
+        {r.ficha.foto_url && (
+          <div className="flex w-full items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={fotoConAncho(r.ficha.foto_url, 1200)}
+              alt={r.nombre}
+              className="block h-auto w-auto rounded-lg"
+              style={{ maxWidth: '100%', maxHeight: 'min(60vh, 560px)' }}
+            />
+          </div>
+        )}
+
+        {r.ficha.descripcion && (
+          <p className="text-sm leading-relaxed text-neutral-600">{r.ficha.descripcion}</p>
+        )}
+
+        {/* Ingredientes: Artículo / Unidad de Medida / Cantidad (sin costos) */}
+        <section>
+          <TituloSeccion>Ingredientes</TituloSeccion>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-neutral-200 text-left text-xs text-neutral-500">
+                <th className="py-2 pr-2 font-semibold">Artículo</th>
+                <th className="py-2 pr-2 font-semibold">Unidad de Medida</th>
+                <th className="py-2 text-right font-semibold">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.ingredientes.map((ing, i) => (
+                <tr key={i} className="border-b border-neutral-100 last:border-0">
+                  <td className="py-2 pr-2 font-medium uppercase">{ing.nombre}</td>
+                  <td className="py-2 pr-2 text-neutral-500">{abreviarUnidad(ing.unidad)}</td>
+                  <td className="py-2 text-right tabular-nums" style={{ color: VERDE }}>
+                    {ing.cantidad}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        {prep.length > 0 && <Pasos titulo="Preparación" items={prep} />}
+        {empl.length > 0 && <Pasos titulo="Emplatado" items={empl} />}
+
+        {r.ficha.notas && (
+          <section>
+            <TituloSeccion>Notas</TituloSeccion>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-neutral-600">{r.ficha.notas}</p>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModalReceta({ r, onClose }: { r: RecetaPublica; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-6"
+      onClick={onClose}
+    >
+      <div className="max-h-full w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+        <DetalleReceta r={r} onClose={onClose} />
+      </div>
+    </div>
+  );
+}
+
+/* ============================ PIEZAS ===================================== */
+function TituloSeccion({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="mb-2.5 text-[11px] font-bold uppercase tracking-widest" style={{ color: VERDE }}>
+      {children}
+    </h3>
+  );
+}
+
+function Pasos({ titulo, items }: { titulo: string; items: string[] }) {
+  return (
+    <section>
+      <TituloSeccion>{titulo}</TituloSeccion>
+      <ol className="space-y-2.5">
+        {items.map((paso, i) => (
+          <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
+            <span
+              className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+              style={{ background: VERDE }}
+            >
+              {i + 1}
+            </span>
+            <span style={{ color: VERDE }}>{paso}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function abreviarUnidad(u: string): string {
+  const s = String(u || '').toUpperCase();
+  if (s === 'GRAMOS') return 'g';
+  if (s === 'UNIDADES') return 'uds';
+  if (s === 'ONZA') return 'oz';
+  if (s === 'COPA') return 'copa';
+  return u || '';
+}
+
+function CategoriaBtn({ activa, onClick, nombre, n }: { activa: boolean; onClick: () => void; nombre: string; n: number }) {
   return (
     <button
       onClick={onClick}
       className={
-        'flex w-auto shrink-0 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium transition md:mb-1 md:w-full ' +
-        (activa
-          ? 'bg-[#2B4D2E] text-white'
-          : 'bg-white text-[#4A5443] hover:bg-[#EFEAD9] border border-[#E5DFD2]')
+        'mb-1 flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium transition ' +
+        (activa ? 'text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50 border border-neutral-200')
       }
+      style={activa ? { background: VERDE } : undefined}
     >
-      <span className="truncate">{etiqueta}</span>
-      <span className={activa ? 'text-white/70' : 'text-[#8A957F]'}>{n}</span>
+      <span className="truncate uppercase">{nombre}</span>
+      <span className={activa ? 'text-white/70' : 'text-neutral-400'}>{n}</span>
+    </button>
+  );
+}
+
+function ChipCat({ activa, onClick, nombre }: { activa: boolean; onClick: () => void; nombre: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        'shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase transition ' +
+        (activa ? 'text-white' : 'bg-white text-neutral-600 border border-neutral-200')
+      }
+      style={activa ? { background: VERDE } : undefined}
+    >
+      {nombre}
+    </button>
+  );
+}
+
+function ToggleBtn({ activo, onClick, title, children }: { activo: boolean; onClick: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={
+        'flex h-9 w-9 items-center justify-center rounded-lg border text-base transition ' +
+        (activo ? 'border-transparent text-white' : 'border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50')
+      }
+      style={activo ? { background: VERDE } : undefined}
+    >
+      {children}
     </button>
   );
 }
