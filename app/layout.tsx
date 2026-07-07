@@ -31,6 +31,7 @@ const NAV = [
   { href: '/recetas/resumen', label: 'Panel', icon: '\uD83D\uDCCA' },
   { href: '/analisis', label: 'An\u00e1lisis', icon: '\uD83D\uDCC8' },
   { href: '/manual', label: 'Manual', icon: '❓' },
+  { href: '/configuracion', label: 'Configuraci\u00f3n', icon: '\u2699\uFE0F' },
 ];
 
 export default async function RootLayout({
