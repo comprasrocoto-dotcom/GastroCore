@@ -2,7 +2,7 @@ import { getRecetario } from '@/lib/recetario';
 import RecetarioGaleria from '@/components/RecetarioGaleria';
 
 export const metadata = {
-  title: 'Recetario · Malanga',
+  title: 'Recetario · Rocoto Cocina Peruana',
   description: 'Recetario en línea del equipo de cocina',
 };
 
@@ -14,10 +14,13 @@ export default async function RecetarioPage() {
     recetas = await getRecetario();
   } catch {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6 text-center" style={{ background: '#FBF0EE' }}>
+      <main
+        className="flex min-h-screen items-center justify-center px-6 text-center"
+        style={{ background: '#F6F1E6' }}
+      >
         <div>
           <div className="mb-3 text-4xl">🌿</div>
-          <h1 className="mb-2 text-xl font-bold" style={{ color: '#2F5233' }}>
+          <h1 className="mb-2 text-xl font-bold" style={{ color: '#1E3B2C' }}>
             El recetario no está disponible
           </h1>
           <p className="text-sm text-neutral-500">
@@ -27,5 +30,16 @@ export default async function RecetarioPage() {
       </main>
     );
   }
-  return <RecetarioGaleria recetas={recetas} />;
+  return (
+    <>
+      {/* Tipografía display del sitio de Rocoto (serif elegante para títulos) */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap"
+      />
+      <RecetarioGaleria recetas={recetas} />
+    </>
+  );
 }
