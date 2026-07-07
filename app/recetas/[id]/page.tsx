@@ -121,7 +121,8 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
                   ) : ingredientes.map((g: any, i: number) => {
                     const cant = Number(g.cantidad) || 0;
                     const merma = Number(g.merma_pct) || 0;
-                    const real = cant * (1 + merma / 100);
+                    // v7.2: cantidad BRUTA por gross-up (lo que sale de bodega)
+                    const real = cant / (1 - Math.min(Math.max(merma, 0), 94.9) / 100);
                     return (
                       <tr key={g.id || i} className="border-t border-salvia-50">
                         <td className="px-3 py-3 font-medium text-salvia-800 whitespace-normal break-words leading-snug">{g.nombre_item || g.item_id}</td>
