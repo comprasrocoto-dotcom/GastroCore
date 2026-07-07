@@ -71,14 +71,18 @@ function NuevaRecetaInner() {
   const [subfamilias, setSubfamilias] = useState<Cat[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/familias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
-      fetch('/api/subfamilias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
-    ]).then(([rf, rs]) => {
-      const esRec = (t?: string) => String(t || '').toLowerCase() === 'receta';
-      setFamilias((rf?.data || []).filter((f: Cat) => esRec(f.tipo)));
-      setSubfamilias((rs?.data || []).filter((s: Cat) => esRec(s.tipo)));
-    });
+    // v7: UNA sola llamada trae familias + subfamilias + unidades + catálogo
+    // (antes eran 3 peticiones separadas al backend).
+    fetch('/api/bootstrap', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d?.ok || !d.data) return;
+        const esRec = (t?: string) => String(t || '').toLowerCase() === 'receta';
+        setFamilias((d.data.familias || []).filter((f: Cat) => esRec(f.tipo)));
+        setSubfamilias((d.data.subfamilias || []).filter((s: Cat) => esRec(s.tipo)));
+        setInsumos(d.data.catalogo || []);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -88,12 +92,7 @@ function NuevaRecetaInner() {
     }
   }, [subfamiliaId, subfamilias, familiaId]);
 
-  useEffect(() => {
-    fetch('/api/catalogo')
-      .then((r) => r.json())
-      .then((d) => { if (d.ok) setInsumos(d.data); })
-      .catch(() => {});
-  }, []);
+
 
   const insumoPorId = useMemo(() => {
     const m: Record<string, Insumo> = {};
