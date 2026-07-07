@@ -56,6 +56,14 @@ export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[]
     return () => window.removeEventListener('keydown', fn);
   }, []);
 
+  // Bloquear el scroll del fondo mientras el modal está abierto.
+  useEffect(() => {
+    document.body.style.overflow = abierta ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [abierta]);
+
   const titulo =
     categoria === 'TODAS' ? 'Recetario' : categoria.charAt(0) + categoria.slice(1).toLowerCase();
 
@@ -187,9 +195,15 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
   const empl = pasos(r.ficha.emplatado);
 
   return (
-    <div className="flex max-h-full w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+    <div
+      className="flex w-full flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+      // En modal (onClose presente) la altura se limita contra el VIEWPORT
+      // (88vh) — max-h-full en cadena no aplica cuando el padre no tiene
+      // altura fija, que era el bug que dejaba el panel sin scroll.
+      style={onClose ? { maxHeight: '88vh' } : undefined}
+    >
       {/* Cabecera verde */}
-      <div className="flex items-start justify-between gap-4 px-6 py-4" style={{ background: VERDE }}>
+      <div className="flex shrink-0 items-start justify-between gap-4 px-6 py-4" style={{ background: VERDE }}>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">{r.categoria}</p>
           <h2 className="mt-0.5 text-xl font-bold uppercase leading-tight text-white">{r.nombre}</h2>
@@ -206,7 +220,7 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
       </div>
 
       {/* Cuerpo */}
-      <div className="flex flex-col gap-6 overflow-y-auto bg-white px-6 py-5">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto bg-white px-6 py-5">
         {/* FOTO: se ve COMPLETA en su proporción natural, adaptándose a
             cualquier resolución (tope ~60% de pantalla / 560px). */}
         {r.ficha.foto_url && (
@@ -267,10 +281,10 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
 function ModalReceta({ r, onClose }: { r: RecetaPublica; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-6"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-3 sm:p-6"
       onClick={onClose}
     >
-      <div className="max-h-full w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <DetalleReceta r={r} onClose={onClose} />
       </div>
     </div>
