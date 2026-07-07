@@ -13,9 +13,16 @@ import { useEffect, useMemo, useState } from 'react';
 import type { RecetaPublica } from '@/lib/recetario';
 import { fotoConAncho } from '@/lib/recetario';
 
-const VERDE = '#2F5233';
-const CREMA = '#FBF0EE';
-const ROSA = '#F8E3E0';
+/* ══ TOKENS DE MARCA ROCOTO ══════════════════════════════════════════════
+   Paleta tomada de rocotorestaurante.com: verde botella del header (logo
+   blanco sobre verde), crema natural de fondo, y rojo rocoto como acento.
+   Si algún hex difiere del manual de marca oficial, se ajusta SOLO aquí. */
+const VERDE = '#1E3B2C';        // verde botella Rocoto (cabeceras, botones)
+const VERDE_HOJA = '#41654A';   // verde secundario (hovers, detalles)
+const CREMA = '#F6F1E6';        // fondo general crema natural
+const ROSA = '#EDE6D3';         // placeholder de tarjetas sin foto
+const ROJO = '#B93A2B';         // rojo rocoto (categorías y títulos de sección)
+const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif"; // display del sitio
 
 /** Divide un texto multilínea en pasos no vacíos. */
 function pasos(texto: string): string[] {
@@ -68,11 +75,18 @@ export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[]
     categoria === 'TODAS' ? 'Recetario' : categoria.charAt(0) + categoria.slice(1).toLowerCase();
 
   return (
-    <main className="min-h-screen" style={{ background: CREMA, color: '#2A2A28' }}>
+    <main className="min-h-screen" style={{ background: CREMA, color: '#26291F' }}>
+      {/* Barra de marca: verde botella con el nombre en blanco, eco del header del sitio */}
+      <div className="w-full px-4 py-3 text-center" style={{ background: VERDE }}>
+        <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: SERIF }}>
+          Rocoto <span className="mx-1.5 font-normal text-white/50">·</span>
+          <span className="font-normal italic text-white/90">Recetario de Cocina</span>
+        </p>
+      </div>
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6">
         {/* Sidebar de categorías */}
         <nav className="hidden w-52 min-w-52 md:block">
-          <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: VERDE }}>
+          <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: ROJO }}>
             Secciones
           </p>
           <CategoriaBtn activa={categoria === 'TODAS'} onClick={() => setCategoria('TODAS')} nombre="Todas" n={recetas.length} />
@@ -86,7 +100,9 @@ export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[]
           {/* Cabecera: título + contador + toggle */}
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{titulo}</h1>
+              <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: SERIF, color: VERDE }}>
+                {titulo}
+              </h1>
               <p className="mt-0.5 text-sm text-neutral-500">{visibles.length} recetas</p>
             </div>
             <div className="flex gap-1.5 pt-1">
@@ -104,7 +120,7 @@ export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[]
           </div>
 
           {/* Buscador */}
-          <div className="mb-5 flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 shadow-sm">
+          <div className="mb-5 flex items-center gap-2 rounded-xl border bg-white px-4 py-2.5 shadow-sm" style={{ borderColor: '#DDD4C0' }}>
             <span>🔍</span>
             <input
               type="search"
@@ -176,7 +192,7 @@ function Tarjeta({ r, modo, onOpen }: { r: RecetaPublica; modo: 'grid' | 'list';
       </div>
 
       <div className={'flex min-w-0 flex-1 flex-col ' + (horizontal ? 'px-4 py-2.5' : 'p-3.5')}>
-        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: VERDE }}>
+        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: ROJO }}>
           {r.categoria}
         </p>
         <h2 className="mt-0.5 line-clamp-2 text-sm font-semibold uppercase leading-snug">{r.nombre}</h2>
@@ -205,8 +221,10 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
       {/* Cabecera verde */}
       <div className="flex shrink-0 items-start justify-between gap-4 px-6 py-4" style={{ background: VERDE }}>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">{r.categoria}</p>
-          <h2 className="mt-0.5 text-xl font-bold uppercase leading-tight text-white">{r.nombre}</h2>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">{r.categoria}</p>
+          <h2 className="mt-0.5 text-2xl font-bold leading-tight text-white" style={{ fontFamily: SERIF }}>
+            {r.nombre}
+          </h2>
         </div>
         {onClose && (
           <button
@@ -255,7 +273,7 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
                 <tr key={i} className="border-b border-neutral-100 last:border-0">
                   <td className="py-2 pr-2 font-medium uppercase">{ing.nombre}</td>
                   <td className="py-2 pr-2 text-neutral-500">{abreviarUnidad(ing.unidad)}</td>
-                  <td className="py-2 text-right tabular-nums" style={{ color: VERDE }}>
+                  <td className="py-2 text-right font-semibold tabular-nums" style={{ color: VERDE_HOJA }}>
                     {ing.cantidad}
                   </td>
                 </tr>
@@ -294,7 +312,7 @@ function ModalReceta({ r, onClose }: { r: RecetaPublica; onClose: () => void }) 
 /* ============================ PIEZAS ===================================== */
 function TituloSeccion({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-2.5 text-[11px] font-bold uppercase tracking-widest" style={{ color: VERDE }}>
+    <h3 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: ROJO }}>
       {children}
     </h3>
   );
@@ -313,7 +331,7 @@ function Pasos({ titulo, items }: { titulo: string; items: string[] }) {
             >
               {i + 1}
             </span>
-            <span style={{ color: VERDE }}>{paso}</span>
+            <span style={{ color: '#3B4034' }}>{paso}</span>
           </li>
         ))}
       </ol>
