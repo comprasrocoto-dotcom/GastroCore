@@ -121,11 +121,57 @@ function assertConfig(): void {
   }
 }
 
-// Caché en memoria por instancia. Reemplaza al `next: { revalidate }` que se
-// perdió al pasar las lecturas a POST, y mantiene la protección de cuota de
-// Apps Script deduplicando lecturas idénticas dentro de la ventana TTL.
+// ── Caché de lecturas (v7) ──────────────────────────────────────────────────
+// TTL DIFERENCIADO por recurso + STALE-WHILE-REVALIDATE: dentro del TTL se
+// responde de memoria; vencido el TTL (pero dentro de la ventana de gracia)
+// se responde AL INSTANTE con el dato viejo y se refresca en segundo plano.
+// Solo la primera visita en frío espera a Apps Script. Vive por instancia de
+// Vercel; el CacheService del backend (v7) cubre los arranques en frío.
 type CacheEntry = { at: number; data: unknown };
 const readCache = new Map<string, CacheEntry>();
+const enVuelo = new Map<string, Promise<unknown>>(); // dedupe de peticiones simultáneas
+
+// Segundos de frescura por recurso. Catálogos casi estáticos: largos;
+// datos operativos: cortos. Cualquier mutación borra TODO el caché igual.
+const TTL_POR_RECURSO: Record<string, number> = {
+  familias: 300, subfamilias: 300, unidades: 300, conversiones: 300, proveedores: 300,
+  insumos: 120, catalogo: 120, bootstrap: 120,
+  analytics: 120, snapshots: 120,
+  recetas: 45, subrecetas: 45,
+};
+const TTL_DEFAULT = 30;
+const VENTANA_GRACIA_MS = 30 * 60 * 1000; // hasta 30 min sirviendo viejo mientras refresca
+
+/** Borra todo el caché de lecturas (se llama tras cada mutación). */
+export function limpiarCacheLecturas(): void {
+  readCache.clear();
+}
+
+async function descargar<T>(
+  cacheKey: string,
+  resource: string,
+  params: Record<string, string>
+): Promise<ApiResponse<T>> {
+  // Dedupe: si ya hay una petición idéntica en vuelo, únete a ella.
+  const pendiente = enVuelo.get(cacheKey);
+  if (pendiente) return pendiente as Promise<ApiResponse<T>>;
+
+  const promesa = (async () => {
+    const res = await fetch(API_URL as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'read', resource, token: API_TOKEN, params }),
+      cache: 'no-store',
+    });
+    if (!res.ok) throw new Error('Error de red al consultar la API: ' + res.status);
+    const json = (await res.json()) as ApiResponse<T>;
+    readCache.set(cacheKey, { at: Date.now(), data: json });
+    return json;
+  })().finally(() => enVuelo.delete(cacheKey));
+
+  enVuelo.set(cacheKey, promesa);
+  return promesa;
+}
 
 /**
  * Lectura de datos. IMPORTANTE (seguridad): el token viaja SIEMPRE en el body
@@ -138,27 +184,35 @@ const readCache = new Map<string, CacheEntry>();
 async function apiGet<T>(
   resource: string,
   params: Record<string, string> = {},
-  ttlSeconds = 15
+  ttlSeconds?: number
 ): Promise<ApiResponse<T>> {
   assertConfig();
 
+  const ttlMs = (ttlSeconds ?? TTL_POR_RECURSO[resource] ?? TTL_DEFAULT) * 1000;
   const cacheKey = resource + '::' + JSON.stringify(params);
   const hit = readCache.get(cacheKey);
-  if (hit && Date.now() - hit.at < ttlSeconds * 1000) {
+  const edad = hit ? Date.now() - hit.at : Infinity;
+
+  // Fresco: directo de memoria (0 ms).
+  if (hit && edad < ttlMs) return hit.data as ApiResponse<T>;
+
+  // Vencido pero dentro de la gracia: responder YA con lo viejo y refrescar
+  // en segundo plano (mejor esfuerzo: si la instancia se congela antes de
+  // terminar, la próxima petición lo refresca — y el caché compartido del
+  // backend v7 hace que ese refresco cueste <1s).
+  if (hit && edad < VENTANA_GRACIA_MS) {
+    void descargar<T>(cacheKey, resource, params).catch(() => {});
     return hit.data as ApiResponse<T>;
   }
 
-  const res = await fetch(API_URL as string, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode: 'read', resource, token: API_TOKEN, params }),
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error('Error de red al consultar la API: ' + res.status);
-
-  const json = (await res.json()) as ApiResponse<T>;
-  readCache.set(cacheKey, { at: Date.now(), data: json });
-  return json;
+  // Frío o demasiado viejo: hay que esperar. Si la red falla y existe un dato
+  // viejo, mejor servir eso que reventar la página.
+  try {
+    return await descargar<T>(cacheKey, resource, params);
+  } catch (err) {
+    if (hit) return hit.data as ApiResponse<T>;
+    throw err;
+  }
 }
 
 async function apiPost<T>(
@@ -174,7 +228,9 @@ async function apiPost<T>(
     cache: 'no-store',
   });
   if (!res.ok) throw new Error('Error de red al escribir en la API: ' + res.status);
-  return (await res.json()) as ApiResponse<T>;
+  const json = (await res.json()) as ApiResponse<T>;
+  limpiarCacheLecturas(); // los datos cambiaron: la próxima lectura trae lo nuevo
+  return json;
 }
 
 // ---------- INSUMOS ----------
@@ -281,6 +337,19 @@ export async function getUnidades(): Promise<Unidad[]> {
 
 
 // ---------- CATALOGO UNIFICADO (insumos + subrecetas) ----------
+export type Bootstrap = {
+  familias: Familia[];
+  subfamilias: Subfamilia[];
+  unidades: Unidad[];
+  catalogo: CatalogoItem[];
+};
+
+/** Carga inicial del editor: 4 catálogos en UNA llamada al backend. */
+export async function getBootstrap(): Promise<Bootstrap | null> {
+  const r = await apiGet<Bootstrap>('bootstrap');
+  return r.ok ? r.data : null;
+}
+
 export async function getCatalogo(): Promise<CatalogoItem[]> {
   const r = await apiGet<CatalogoItem[]>('catalogo');
   return r.ok && Array.isArray(r.data) ? r.data : [];
