@@ -140,7 +140,7 @@ const TTL_POR_RECURSO: Record<string, number> = {
   recetas: 45, subrecetas: 45,
 };
 const TTL_DEFAULT = 30;
-const VENTANA_GRACIA_MS = 30 * 60 * 1000; // hasta 30 min sirviendo viejo mientras refresca
+const VENTANA_GRACIA_MS = 10 * 60 * 1000; // hasta 10 min sirviendo viejo mientras refresca
 
 /** Borra todo el caché de lecturas (se llama tras cada mutación). */
 export function limpiarCacheLecturas(): void {
@@ -165,7 +165,12 @@ async function descargar<T>(
     });
     if (!res.ok) throw new Error('Error de red al consultar la API: ' + res.status);
     const json = (await res.json()) as ApiResponse<T>;
-    readCache.set(cacheKey, { at: Date.now(), data: json });
+    // CRITICO: solo se cachean respuestas EXITOSAS. Cachear un error (p. ej.
+    // durante la ventana de redespliegue de Apps Script) lo dejaria "pegado"
+    // y el stale-while-revalidate lo serviria una y otra vez.
+    if (json && json.ok) {
+      readCache.set(cacheKey, { at: Date.now(), data: json });
+    }
     return json;
   })().finally(() => enVuelo.delete(cacheKey));
 
@@ -190,7 +195,12 @@ async function apiGet<T>(
 
   const ttlMs = (ttlSeconds ?? TTL_POR_RECURSO[resource] ?? TTL_DEFAULT) * 1000;
   const cacheKey = resource + '::' + JSON.stringify(params);
-  const hit = readCache.get(cacheKey);
+  let hit = readCache.get(cacheKey);
+  // Defensa extra: si algo invalido llego al cache, se descarta.
+  if (hit && !(hit.data as ApiResponse<unknown>)?.ok) {
+    readCache.delete(cacheKey);
+    hit = undefined;
+  }
   const edad = hit ? Date.now() - hit.at : Infinity;
 
   // Fresco: directo de memoria (0 ms).
