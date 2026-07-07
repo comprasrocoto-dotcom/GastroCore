@@ -1,5 +1,9 @@
 /**
- * GastroCore — Middleware de sesión (v4).
+ * GastroCore — Middleware de sesión (v4.1).
+ *
+ * v4.1 corrige el fallo MIDDLEWARE_INVOCATION_FAILED de v4: se importaban
+ * nombres inexistentes. Los reales en lib/auth.ts son `verifySessionValue`
+ * y `SESSION_COOKIE` ('gc_session').
  *
  * Reglas:
  *  1. Rutas PÚBLICAS (sin sesión): /login, su API, y el RECETARIO de cocina
@@ -9,7 +13,7 @@
  *  3. Mutaciones (POST/PUT/DELETE) sobre /api/* exigen rol Admin.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { verificarCookieSesion } from '@/lib/auth';
+import { verifySessionValue, SESSION_COOKIE } from '@/lib/auth';
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login', '/recetario'];
 
@@ -31,8 +35,8 @@ export async function middleware(req: NextRequest) {
 
   if (isPublic(pathname)) return NextResponse.next();
 
-  const cookie = req.cookies.get('gastrocore_session')?.value || '';
-  const sesion = await verificarCookieSesion(cookie);
+  const cookie = req.cookies.get(SESSION_COOKIE)?.value || '';
+  const sesion = await verifySessionValue(cookie);
 
   if (!sesion) {
     // API sin sesión -> 401 JSON; página sin sesión -> redirect a /login.
