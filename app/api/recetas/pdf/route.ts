@@ -59,7 +59,8 @@ export async function GET(req: NextRequest) {
     const filas = ings.map((x) => {
       const cant = Number(x.cantidad) || 0;
       const merma = Number(x.merma_pct) || 0;
-      const cantReal = cant * (1 + merma / 100);
+      // v7.2: cantidad bruta por gross-up, consistente con el costeo
+      const cantReal = cant / (1 - Math.min(Math.max(merma, 0), 94.9) / 100);
       return '<tr>' +
         '<td>' + esc(x.nombre_item || x.item_id) + '</td>' +
         '<td>' + esc(x.unidad_id || '') + '</td>' +
