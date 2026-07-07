@@ -81,6 +81,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
         </div>
         <div className="flex gap-2">
           <Link href="/recetas" className="btn-secondary">Volver</Link>
+          <Link href={`/recetas/${receta.id}/ficha`} className="btn-secondary">📷 Ficha técnica</Link>
           <Link href={`/recetas/nueva?edit=${receta.id}`} className="btn-primary">Editar receta</Link>
         </div>
       </header>
