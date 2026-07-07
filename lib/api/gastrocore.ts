@@ -138,6 +138,7 @@ const TTL_POR_RECURSO: Record<string, number> = {
   insumos: 120, catalogo: 120, bootstrap: 120,
   analytics: 120, snapshots: 120,
   recetas: 45, subrecetas: 45,
+  fichas: 20, historialRecetas: 30, ingredientes: 30, configfotos: 600,
 };
 const TTL_DEFAULT = 30;
 const VENTANA_GRACIA_MS = 10 * 60 * 1000; // hasta 10 min sirviendo viejo mientras refresca
@@ -263,23 +264,23 @@ export async function getRecetas(all = false): Promise<Receta[]> {
 }
 
 export async function getReceta(id: string): Promise<Receta | null> {
-  // Traemos todas y buscamos por id (el backend no filtra por id de forma fiable),
-  // y adjuntamos sus ingredientes desde el recurso 'ingredientes'.
-  const [recetas, ings, insumos, historial] = await Promise.all([
-    getRecetas(true),
-    getIngredientesReceta(id),
-    getInsumos(),
+  // v7.3: el backend getById ya devuelve la receta CON sus ingredientes y los
+  // nombres resueltos, y el historial llega filtrado y SIN los snapshots
+  // pesados. Antes: 4 descargas de tablas completas; ahora: 2 llamadas finas.
+  const [r, historial] = await Promise.all([
+    apiGet<Receta>('recetas', { id }),
     getHistorialReceta(id).catch(() => []),
   ]);
-  const receta = recetas.find((x) => x.id === id);
-  if (!receta) return null;
-  const mapaInsumo = new Map(insumos.map((i) => [i.id, i.articulo]));
-  receta.ingredientes = ings.map((g) => ({
-    ...g,
-    nombre_item: mapaInsumo.get(g.item_id) || g.item_id,
-  }));
+  if (!r.ok || !r.data) return null;
+  const receta = r.data;
   receta.historial = historial;
   return receta;
+}
+
+/** Receta puntual SIN historial (para pantallas que solo necesitan la base). */
+export async function getRecetaPorId(id: string): Promise<Receta | null> {
+  const r = await apiGet<Receta>('recetas', { id });
+  return r.ok ? r.data : null;
 }
 
 export async function getHistorialReceta(recetaId: string): Promise<HistorialReceta[]> {
@@ -355,6 +356,47 @@ export type Bootstrap = {
 };
 
 /** Carga inicial del editor: 4 catálogos en UNA llamada al backend. */
+export type FichaTecnica = {
+  id?: string; receta_id: string; descripcion?: string; preparacion?: string;
+  emplatado?: string; notas?: string; foto_url?: string; foto_id?: string;
+  tiempo_min?: string | number; gramaje_porcion?: string | number;
+};
+
+/** Ficha técnica de una receta (cacheada 20 s). */
+export async function getFicha(recetaId: string): Promise<FichaTecnica | null> {
+  const r = await apiGet<FichaTecnica[]>('fichas', { receta_id: recetaId });
+  return r.ok && Array.isArray(r.data) ? r.data[0] || null : null;
+}
+
+/** Carpeta de fotos de Drive (cacheada 10 min: cambia casi nunca). */
+export async function getConfigFotos(): Promise<{ folder_id: string; nombre: string; url: string } | null> {
+  const r = await apiGet<{ folder_id: string; nombre: string; url: string }>('configfotos');
+  return r.ok ? r.data : null;
+}
+
+/**
+ * Acción de escritura genérica (guardar ficha, subir foto, renombrar carpeta…).
+ * Pasa por la misma limpieza de caché que apiPost: tras mutar, la próxima
+ * lectura trae lo nuevo.
+ */
+export async function accionBackend<T>(
+  resource: string,
+  action: string,
+  payload: { id?: string; data?: unknown }
+): Promise<ApiResponse<T>> {
+  assertConfig();
+  const res = await fetch(API_URL as string, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ resource, action, token: API_TOKEN, ...payload }),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Error de red al escribir en la API: ' + res.status);
+  const json = (await res.json()) as ApiResponse<T>;
+  limpiarCacheLecturas();
+  return json;
+}
+
 export async function getBootstrap(): Promise<Bootstrap | null> {
   const r = await apiGet<Bootstrap>('bootstrap');
   return r.ok ? r.data : null;
