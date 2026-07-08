@@ -21,7 +21,6 @@ export type IngredienteRecetario = {
 };
 
 export type FichaRecetario = {
-  descripcion: string;
   preparacion: string;
   emplatado: string;
   notas: string;
