@@ -67,6 +67,10 @@ function NuevaSubrecetaInner() {
   const [msg, setMsg] = useState<string | null>(null);
   const [errores, setErrores] = useState<string[]>([]);
 
+  // v7.8: migracion de un insumo "SUB." existente hacia esta subreceta
+  const [migrarDesde, setMigrarDesde] = useState('');
+  const [busquedaSub, setBusquedaSub] = useState('');
+  const [depsMigrar, setDepsMigrar] = useState<number | null>(null);
   const [subfamiliaId, setSubfamiliaId] = useState('');
   const [familiaId, setFamiliaId] = useState('');
   const [familias, setFamilias] = useState<Cat[]>([]);
@@ -168,6 +172,7 @@ function NuevaSubrecetaInner() {
     setGuardando(true);
     try {
       const payload = {
+        migrar_desde: migrarDesde || undefined,
         nombre: nombre.trim(),
         rendimiento,
         merma_pct: 0,
@@ -193,6 +198,10 @@ function NuevaSubrecetaInner() {
       });
       const data = await res.json();
       if (data.ok) {
+        const mig = data?.data?.migracion;
+        if (mig && mig.recetas_actualizadas > 0) {
+          alert(`Migración completada: ${mig.recetas_actualizadas} receta(s) ahora costean con esta subreceta.`);
+        }
         router.push('/subrecetas');
       } else {
         setMsg((data.error && data.error.message) || data.error || 'No se pudo guardar la receta.');
@@ -202,6 +211,31 @@ function NuevaSubrecetaInner() {
     } finally {
       setGuardando(false);
     }
+  }
+
+  // Preparaciones del maestro candidatas a migrar (insumos "SUB. ...")
+  const candidatosMigrar = useMemo(() => {
+    const q = busquedaSub.trim().toLowerCase();
+    return insumos
+      .filter((i) => i.tipo_item === 'insumo' && /^sub[\s.]/i.test(String(i.articulo || '')))
+      .filter((i) => !q || String(i.articulo).toLowerCase().includes(q))
+      .slice(0, 60);
+  }, [insumos, busquedaSub]);
+
+  function seleccionarMigracion(id: string) {
+    setMigrarDesde(id);
+    setDepsMigrar(null);
+    const ins = insumoPorId[id];
+    if (ins) {
+      // Prefijo "SUB." fuera del nombre: el sistema ya lo antepone al mostrarla como ingrediente.
+      setNombre(String(ins.articulo).replace(/^sub[\s.]+/i, '').trim());
+      const u = String(ins.unidad || '').toUpperCase();
+      if (UNIDADES.includes(u)) setUnidadRendimiento(u);
+    }
+    fetch(`/api/dependencias?item_id=${encodeURIComponent(id)}`)
+      .then((r) => r.json())
+      .then((d) => setDepsMigrar(Array.isArray(d.data) ? d.data.length : Array.isArray(d.dependencias) ? d.dependencias.length : null))
+      .catch(() => setDepsMigrar(null));
   }
 
   const fcBadge = (fc: number) =>
@@ -216,6 +250,53 @@ function NuevaSubrecetaInner() {
         </div>
         <Link href="/subrecetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
       </div>
+
+      {!modoEdicion && (
+        <div className="mb-4 card p-4">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-ink">¿Digitalizar una preparación que ya existe en Insumos?</h2>
+              <p className="text-xs text-salvia-500">
+                Selecciona el insumo &quot;SUB.&quot; del maestro. Al guardar, todas las recetas que lo usan pasarán a
+                costear con esta subreceta y el insumo quedará marcado como migrado. O deja vacío para crear desde cero.
+              </p>
+            </div>
+            {migrarDesde && (
+              <button onClick={() => { setMigrarDesde(''); setDepsMigrar(null); }}
+                className="rounded-lg border border-line px-3 py-1.5 text-xs text-salvia-700 hover:bg-neutral-50">
+                ✕ Quitar selección
+              </button>
+            )}
+          </div>
+          {!migrarDesde ? (
+            <div>
+              <input value={busquedaSub} onChange={(e) => setBusquedaSub(e.target.value)}
+                placeholder="Buscar preparación… (ej: fondo, salsa, arroz)"
+                className="mb-2 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-[#2563EB] focus:outline-none" />
+              <div className="max-h-44 overflow-y-auto rounded-lg border border-line">
+                {candidatosMigrar.length === 0 ? (
+                  <p className="p-3 text-xs text-salvia-500">No hay preparaciones &quot;SUB.&quot; pendientes que coincidan.</p>
+                ) : candidatosMigrar.map((i) => (
+                  <button key={i.id} onClick={() => seleccionarMigracion(i.id)}
+                    className="flex w-full items-center justify-between border-b border-line px-3 py-2 text-left text-sm last:border-0 hover:bg-blue-50">
+                    <span>{i.articulo}</span>
+                    <span className="text-xs text-salvia-500">${'{'}Number(i.coste).toLocaleString('es-CO'){'}'} / {i.unidad}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+              <b>Migrando:</b> {insumoPorId[migrarDesde]?.articulo}
+              {depsMigrar !== null && (
+                <span className="ml-2 text-xs text-salvia-600">
+                  · está en <b>{depsMigrar}</b> receta{depsMigrar === 1 ? '' : 's'} que se actualizarán automáticamente
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mb-4 grid gap-3 card p-4 sm:grid-cols-3">
         <label className="block sm:col-span-1">
