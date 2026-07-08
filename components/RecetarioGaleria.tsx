@@ -253,10 +253,6 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
           </div>
         )}
 
-        {r.ficha.descripcion && (
-          <p className="text-sm leading-relaxed text-neutral-600">{r.ficha.descripcion}</p>
-        )}
-
         {/* Ingredientes: Artículo / Unidad de Medida / Cantidad (sin costos) */}
         <section>
           <TituloSeccion>Ingredientes</TituloSeccion>
@@ -284,6 +280,18 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
 
         {prep.length > 0 && <Pasos titulo="Preparación" items={prep} />}
         {empl.length > 0 && <Pasos titulo="Emplatado" items={empl} />}
+
+        {/* Datos operativos: solo aparecen cuando tienen información registrada */}
+        {(r.ficha.tiempo_min || r.ficha.gramaje_porcion) && (
+          <section className="flex flex-wrap gap-3">
+            {r.ficha.tiempo_min ? (
+              <DatoOperativo etiqueta="Tiempo de preparación" valor={`${r.ficha.tiempo_min} min`} />
+            ) : null}
+            {r.ficha.gramaje_porcion ? (
+              <DatoOperativo etiqueta="Gramaje por porción" valor={String(r.ficha.gramaje_porcion)} />
+            ) : null}
+          </section>
+        )}
 
         {r.ficha.notas && (
           <section>
@@ -336,6 +344,17 @@ function Pasos({ titulo, items }: { titulo: string; items: string[] }) {
         ))}
       </ol>
     </section>
+  );
+}
+
+function DatoOperativo({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3.5 py-2">
+      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: VERDE }}>
+        {etiqueta}
+      </p>
+      <p className="mt-0.5 text-sm font-semibold">{valor}</p>
+    </div>
   );
 }
 
