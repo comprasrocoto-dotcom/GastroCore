@@ -134,7 +134,7 @@ const enVuelo = new Map<string, Promise<unknown>>(); // dedupe de peticiones sim
 // Segundos de frescura por recurso. Catálogos casi estáticos: largos;
 // datos operativos: cortos. Cualquier mutación borra TODO el caché igual.
 const TTL_POR_RECURSO: Record<string, number> = {
-  familias: 300, subfamilias: 300, unidades: 300, conversiones: 300, proveedores: 300,
+  familias: 300, subfamilias: 300, unidades: 300,
   insumos: 120, catalogo: 120, bootstrap: 120,
   analytics: 120, snapshots: 120,
   recetas: 45, subrecetas: 45,

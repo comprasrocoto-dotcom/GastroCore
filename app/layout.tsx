@@ -30,7 +30,6 @@ const NAV = [
   { href: '/recetas/familias', label: 'Familias', icon: '\uD83D\uDDC2\uFE0F' },
   { href: '/recetas/resumen', label: 'Panel', icon: '\uD83D\uDCCA' },
   { href: '/analisis', label: 'An\u00e1lisis', icon: '\uD83D\uDCC8' },
-  { href: '/proveedores', label: 'Proveedores', icon: '\uD83D\uDE9A' },
   { href: '/usuarios', label: 'Usuarios', icon: '\uD83D\uDC65' },
   { href: '/manual', label: 'Manual', icon: '❓' },
   { href: '/configuracion', label: 'Configuraci\u00f3n', icon: '\u2699\uFE0F' },

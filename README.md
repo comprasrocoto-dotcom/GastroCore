@@ -49,8 +49,7 @@ agregado) y `action`. Acciones: `read` (con `id` opcional), `create`, `update`,
 `guardar`, `subirfoto`, `renombrar`.
 
 Recursos: `insumos · recetas · subrecetas · catalogo · dependencias · analytics ·
-snapshots · ingredientes · familias · subfamilias · unidades · conversiones ·
-proveedores · usuarios · preciosHistoricos · configuracion · historialRecetas ·
+snapshots · ingredientes · familias · subfamilias · unidades · usuarios · preciosHistoricos · configuracion · historialRecetas ·
 fichas · recetario · configfotos · bootstrap`.
 
 ### 2.2 Concurrencia (v5/v6)
@@ -130,7 +129,7 @@ agregado de solo lectura que arma TODO lo que la vista de cocina necesita en una
 | `/recetas/nueva` | Client | Sesión (guarda: Admin) | Editor con costeo en vivo (carga vía `bootstrap`) |
 | `/recetas/[id]`, `/[id]/trazabilidad`, `/[id]/ficha` | Mixto | Sesión | Detalle, historial de versiones, ficha técnica |
 | `/subrecetas`, `/subrecetas/nueva`, `/recetas/familias` | Client | Sesión | Preparaciones base y clasificación |
-| `/usuarios`, `/proveedores`, `/configuracion` | Client | Sesión (muta: Admin) | Administración |
+| `/usuarios`, `/configuracion` | Client | Sesión (muta: Admin) | Administración |
 
 ### 3.2 Sesión y seguridad
 
@@ -173,7 +172,7 @@ Familias (tipo: insumo|receta|subreceta)
                  ├─── FichaTecnica (1:1, narrativa de cocina + foto)
                  └─< HistorialRecetas (versiones con snapshot JSON + diffs)
 
-UnidadesMedida · Conversiones · Proveedores · Usuarios (email, rol, clave)
+UnidadesMedida · Usuarios (email, rol, clave)
 Configuracion (clave/valor: FOTOS_FOLDER_ID, …)
 SnapshotsSemanales ─< SnapshotDetalle (foto semanal de costos del maestro)
 ```
