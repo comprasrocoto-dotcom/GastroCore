@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 type Ficha = {
-  descripcion: string;
   preparacion: string;
   emplatado: string;
   notas: string;
@@ -22,7 +21,6 @@ type Ficha = {
 };
 
 const FICHA_VACIA: Ficha = {
-  descripcion: '',
   preparacion: '',
   emplatado: '',
   notas: '',
@@ -78,7 +76,6 @@ export default function FichaTecnicaPage() {
         setNombreReceta(j.receta?.nombre || recetaId);
         if (j.ficha) {
           setFicha({
-            descripcion: j.ficha.descripcion || '',
             preparacion: j.ficha.preparacion || '',
             emplatado: j.ficha.emplatado || '',
             notas: j.ficha.notas || '',
@@ -226,16 +223,6 @@ export default function FichaTecnicaPage() {
 
       {/* Campos de la ficha */}
       <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
-        <Campo etiqueta="Descripción (aparece bajo el nombre en el recetario)">
-          <textarea
-            value={ficha.descripcion}
-            onChange={(e) => campo('descripcion', e.target.value)}
-            rows={2}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#1E3A5F]"
-            placeholder="Ej: Palmitos crocantes rellenos de salsa dinamita, acompañados de salsa melcocha."
-          />
-        </Campo>
-
         <Campo etiqueta="Preparación (un paso por línea)">
           <textarea
             value={ficha.preparacion}
