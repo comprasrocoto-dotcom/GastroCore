@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -61,7 +62,7 @@ export default function FamiliasRecetasPage() {
     setGuardandoFam(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/familias', {
+      const r = await fetchEnCola('/api/familias', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre }),
@@ -87,7 +88,7 @@ export default function FamiliasRecetasPage() {
     setGuardandoSub(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/subfamilias', {
+      const r = await fetchEnCola('/api/subfamilias', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, familia_id: subFamiliaId }),
@@ -112,7 +113,7 @@ export default function FamiliasRecetasPage() {
     setOcupado(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/familias', {
+      const r = await fetchEnCola('/api/familias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, nombre }),
@@ -136,7 +137,7 @@ export default function FamiliasRecetasPage() {
     setOcupado(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/familias', {
+      const r = await fetchEnCola('/api/familias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, activo: false }),
@@ -160,7 +161,7 @@ export default function FamiliasRecetasPage() {
     setOcupado(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/subfamilias', {
+      const r = await fetchEnCola('/api/subfamilias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, nombre }),
@@ -184,7 +185,7 @@ export default function FamiliasRecetasPage() {
     setOcupado(true);
     setMsg(null);
     try {
-      const r = await fetch('/api/subfamilias', {
+      const r = await fetchEnCola('/api/subfamilias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, activo: false }),

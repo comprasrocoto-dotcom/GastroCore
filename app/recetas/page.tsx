@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 import { useRol } from '@/lib/useRol';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
@@ -54,7 +55,7 @@ export default function RecetarioClient() {
     setSavingId(r.id);
     setRecetas((prev) => prev.map((x) => (x.id === r.id ? { ...x, activo: nuevo } : x)));
     try {
-      const res = await fetch('/api/recetas', {
+      const res = await fetchEnCola('/api/recetas', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: r.id, activo: nuevo }),

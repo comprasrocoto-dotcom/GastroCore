@@ -71,7 +71,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Mutaciones de la API según el rol.
-  const esMutacion = req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE';
+  const esMutacion = req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' || req.method === 'DELETE';
   if (pathname.startsWith('/api/') && esMutacion) {
     const chefPuede = /^\/api\/(recetas|subrecetas|fichas)(\/|$|\?)/.test(pathname);
     const permitido = rol === 'Admin' || (rol === 'Chef' && chefPuede);

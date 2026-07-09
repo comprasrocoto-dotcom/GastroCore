@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -82,7 +83,7 @@ export default function TrazabilidadPage() {
     if (!confirm('Restaurar la receta a la version ' + version + '? Se creara una nueva entrada de historial (no se pierde nada).')) return;
     setRestaurando(version); setMsg(null);
     try {
-      const r = await fetch('/api/recetas/restaurar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, version, usuario: 'Web' }) });
+      const r = await fetchEnCola('/api/recetas/restaurar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, version, usuario: 'Web' }) });
       const j = await r.json();
       if (j.ok) { setMsg('Version ' + version + ' restaurada correctamente.'); await cargar(); }
       else setMsg((j.error && (j.error.message || j.error)) || 'No se pudo restaurar.');

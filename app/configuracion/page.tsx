@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 
 /**
  * Configuración (ADMIN) — /configuracion
@@ -42,7 +43,7 @@ export default function ConfiguracionPage() {
     setGuardando(true);
     setMensaje(null);
     try {
-      const r = await fetch('/api/config/fotos', {
+      const r = await fetchEnCola('/api/config/fotos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre }),

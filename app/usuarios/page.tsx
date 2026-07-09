@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 
 /**
  * Usuarios (ADMIN) — /usuarios
@@ -45,7 +46,7 @@ export default function UsuariosPage() {
     setOcupado(true);
     setMensaje(null);
     try {
-      const r = await fetch('/api/usuarios', {
+      const r = await fetchEnCola('/api/usuarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

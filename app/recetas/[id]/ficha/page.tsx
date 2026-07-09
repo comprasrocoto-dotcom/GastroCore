@@ -1,4 +1,6 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
+import { RecorteImagen } from '@/components/RecorteImagen';
 
 /**
  * Ficha técnica (ADMIN) — /recetas/[id]/ficha
@@ -107,7 +109,7 @@ export default function FichaTecnicaPage() {
     setGuardando(true);
     setMensaje(null);
     try {
-      const r = await fetch('/api/fichas', {
+      const r = await fetchEnCola('/api/fichas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ receta_id: recetaId, ...ficha }),
@@ -142,7 +144,7 @@ export default function FichaTecnicaPage() {
     setSubiendoFoto(true);
     setMensaje(null);
     try {
-      const r = await fetch('/api/fichas/foto', {
+      const r = await fetchEnCola('/api/fichas/foto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ receta_id: recetaId, base64, mime }),

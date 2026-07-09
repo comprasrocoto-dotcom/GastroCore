@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -183,7 +184,7 @@ function NuevaRecetaInner() {
           orden: idx + 1,
         })),
       };
-      const res = await fetch('/api/recetas', {
+      const res = await fetchEnCola('/api/recetas', {
         method: modoEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(modoEdicion ? { id: editId, ...payload } : payload),

@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import type { Insumo, HistorialInsumo, Dependencia } from '@/lib/api/gastrocore';
@@ -224,7 +225,7 @@ function EditarInsumoModal({
     }
     setGuardando(true);
     try {
-      const r = await fetch('/api/insumos/actualizar', {
+      const r = await fetchEnCola('/api/insumos/actualizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: insumo.id, coste: costeNum, unidad, motivo }),
@@ -491,7 +492,7 @@ function CargaPlana({ insumos, onCerrar, onListo }:
     setEnviando(true);
     setResultado(null);
     try {
-      const r = await fetch('/api/insumos/carga', {
+      const r = await fetchEnCola('/api/insumos/carga', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filas: aEnviar.map((fl) => ({ referencia: fl.referencia, coste: fl.coste })) }),
