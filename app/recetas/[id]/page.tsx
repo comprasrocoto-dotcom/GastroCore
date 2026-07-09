@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getReceta, getSubfamilias, getFamilias } from '@/lib/api/gastrocore';
+import { getRol } from '@/lib/session';
 import { foodCost as calcFoodCost, precioSugerido as calcPrecioSugerido, utilidad as calcUtilidad, margenBruto as calcMargenBruto } from '@/lib/costeo';
 
 export const dynamic = 'force-dynamic';
@@ -28,10 +29,11 @@ function semaforo(fc: number) {
 
 export default async function RecetaDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [receta, subfamilias, familias] = await Promise.all([
+  const [receta, subfamilias, familias, rol] = await Promise.all([
     getReceta(id),
     getSubfamilias().catch(() => []),
     getFamilias().catch(() => []),
+    getRol('Lector'),
   ]);
   if (!receta) notFound();
 
@@ -82,7 +84,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
         <div className="flex gap-2">
           <Link href="/recetas" className="btn-secondary">Volver</Link>
           <Link href={`/recetas/${receta.id}/ficha`} className="btn-secondary">📷 Ficha técnica</Link>
-          <Link href={`/recetas/nueva?edit=${receta.id}`} className="btn-primary">Editar receta</Link>
+          {(rol === 'Admin' || rol === 'Chef') && <Link href={`/recetas/nueva?edit=${receta.id}`} className="btn-primary">Editar receta</Link>}
         </div>
       </header>
 

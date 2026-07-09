@@ -64,6 +64,7 @@ export default function FichaTecnicaPage() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [recortando, setRecortando] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -128,10 +129,19 @@ export default function FichaTecnicaPage() {
       setMensaje({ tipo: 'error', texto: 'El archivo debe ser una imagen (JPG, PNG…)' });
       return;
     }
+    // v7.9: abrir el recortador (rotar + encuadrar) antes de subir.
+    const lector = new FileReader();
+    lector.onload = () => setRecortando(String(lector.result));
+    lector.readAsDataURL(file);
+    if (fileRef.current) fileRef.current.value = '';
+    return;
+  }
+
+  async function subirRecortada(base64: string, mime: string) {
+    setRecortando(null);
     setSubiendoFoto(true);
     setMensaje(null);
     try {
-      const { base64, mime } = await comprimirImagen(file);
       const r = await fetch('/api/fichas/foto', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,6 +216,9 @@ export default function FichaTecnicaPage() {
           </div>
           <div className="text-sm">
             <input ref={fileRef} type="file" accept="image/*" onChange={onFoto} className="hidden" id="foto-input" />
+            {recortando && (
+              <RecorteImagen src={recortando} onListo={subirRecortada} onCancelar={() => setRecortando(null)} />
+            )}
             <button
               onClick={() => fileRef.current?.click()}
               disabled={subiendoFoto}

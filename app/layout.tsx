@@ -53,7 +53,7 @@ export default async function RootLayout({
                 GastroCore
               </Link>
               <div className="mx-2 h-6 w-px bg-black/10" />
-              {NAV.map((n) => (
+              {NAV.filter((n) => session?.r === 'Admin' || (n.href !== '/usuarios' && n.href !== '/configuracion')).map((n) => (
                 <Link
                   key={n.href}
                   href={n.href}

@@ -446,23 +446,9 @@ function NuevaSubrecetaInner() {
             <div className="ticket-row"><span>Costo ingredientes</span><span>{money(costeo.costoIngredientes)}</span></div>
             <div className="ticket-row"><span>Desvio mercancia</span><span>{money(costeo.desvio)}</span></div>
             <div className="ticket-row"><span>Costo final</span><span>{money(costeo.costoFinal)}</span></div>
-            <div className="ticket-row"><span>Costo del plato por porcion (sin impuestos)</span><span>{money(costeo.costoPorcion)}</span></div>
-            <div className="ticket-row"><span>Food cost objetivo</span><span>{pct(foodCostObjetivo > 1 ? foodCostObjetivo : foodCostObjetivo * 100)}</span></div>
-            <div className="my-1 border-t border-dashed border-salvia-200" />
-            <div className="ticket-row font-semibold text-ambar-700"><span>Precio sugerido de venta (con INC)</span><span>{money(costeo.precioSugerido)}</span></div>
-            <div className="my-1 border-t border-dashed border-salvia-200" />
-            <div className="ticket-row"><span>Precio real de venta</span><span>{money(precioReal)}</span></div>
-            <div className="ticket-row"><span>Utilidad</span><span>{money(costeo.utilidad)}</span></div>
-            <div className="ticket-row"><span>Margen bruto</span><span>{pct(costeo.margenBruto)}</span></div>
-            <div className={'ticket-total ' + fcBadge(costeo.foodCostReal)}><span>Food cost real</span><span>{pct(costeo.foodCostReal)}</span></div>
-          </div>
-
-          <div className="card p-4 space-y-3">
-            <label className="block">
-              <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Precio real de venta</span>
-              <input type="number" min={0} value={precioReal} onChange={(e) => setPrecioReal(Number(e.target.value))}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
-            </label>
+            {/* v7.9: las subrecetas son FABRICACIONES — solo costeo. La venta
+                (precio, food cost, margen) vive en la receta que las usa. */}
+            <div className="ticket-total"><span>Costo por {unidadRendimiento || 'unidad'}</span><span>{money(costeo.costoPorcion)}</span></div>
           </div>
 
           {errores.length > 0 && (

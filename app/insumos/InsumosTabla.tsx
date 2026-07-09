@@ -12,10 +12,16 @@ const fecha = (v: string) => {
   return isNaN(d.getTime()) ? String(v) : d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 };
 
-export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
+type Cat = { id: string; nombre: string; familia_id?: string };
+
+export function InsumosTabla({ insumos, familias = [], subfamilias: subfamiliasCat = [], esAdmin = false }:
+  { insumos: Insumo[]; familias?: Cat[]; subfamilias?: Cat[]; esAdmin?: boolean }) {
   const [lista, setLista] = useState<Insumo[]>(insumos);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState('');
+  const [familiaF, setFamiliaF] = useState('');
+  const [subfamiliaF, setSubfamiliaF] = useState('');
+  const [cargaAbierta, setCargaAbierta] = useState(false);
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [viendo, setViendo] = useState<Insumo | null>(null);
 
@@ -27,15 +33,19 @@ export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
 
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();
+    const subsDeFamilia = familiaF ? new Set(subfamiliasCat.filter((s) => s.familia_id === familiaF).map((s) => s.id)) : null;
+    const filtroClas = (i: Insumo) =>
+      (!subfamiliaF || String((i as any).subfamilia_id) === subfamiliaF) &&
+      (!subsDeFamilia || subsDeFamilia.has(String((i as any).subfamilia_id)));
     return lista.filter((i) => {
       const matchQ =
         !term ||
         i.articulo?.toLowerCase().includes(term) ||
         i.referencia?.toLowerCase().includes(term);
       const matchSub = !sub || i.subfamilia === sub;
-      return matchQ && matchSub;
+      return matchQ && matchSub && filtroClas(i);
     });
-  }, [lista, q, sub]);
+  }, [lista, q, sub, familiaF, subfamiliaF, subfamiliasCat]);
 
   const onGuardado = useCallback((id: string, coste: number, unidad: string) => {
     setLista((prev) => prev.map((i) => (i.id === id ? { ...i, coste, unidad } : i)));
@@ -50,6 +60,24 @@ export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
           placeholder="Buscar por articulo o referencia..."
           className="flex-1 min-w-[220px] rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
         />
+        <select value={familiaF} onChange={(e) => { setFamiliaF(e.target.value); setSubfamiliaF(''); }}
+          className="rounded-lg border border-line px-3 py-2 text-sm">
+          <option value="">Todas las familias</option>
+          {familias.map((fa) => <option key={fa.id} value={fa.id}>{fa.nombre}</option>)}
+        </select>
+        <select value={subfamiliaF} onChange={(e) => setSubfamiliaF(e.target.value)}
+          className="rounded-lg border border-line px-3 py-2 text-sm">
+          <option value="">Todas las subfamilias</option>
+          {subfamiliasCat.filter((s) => !familiaF || s.familia_id === familiaF).map((s) => (
+            <option key={s.id} value={s.id}>{s.nombre}</option>
+          ))}
+        </select>
+        {esAdmin && (
+          <button onClick={() => setCargaAbierta(true)}
+            className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ambar-700">
+            ⇪ Carga por plana
+          </button>
+        )}
         <select
           value={sub}
           onChange={(e) => setSub(e.target.value)}
@@ -88,7 +116,8 @@ export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
                 <td className="text-right fin-value text-[#1E3A5F]">{money(i.coste)}</td>
                 <td className="text-right whitespace-nowrap">
                   <button
-                    onClick={() => setEditando(i)}
+                    onClick={() => esAdmin && setEditando(i)}
+                    hidden={!esAdmin}
                     className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ambar-700 hover:bg-ambar-50"
                   >
                     Editar
@@ -112,6 +141,21 @@ export function InsumosTabla({ insumos }: { insumos: Insumo[] }) {
           </tbody>
         </table>
       </div>
+
+      {cargaAbierta && esAdmin && (
+        <CargaPlana
+          insumos={lista}
+          onCerrar={() => setCargaAbierta(false)}
+          onListo={(actualizados) => {
+            if (actualizados.length) {
+              setLista((prev) => prev.map((i) => {
+                const a = actualizados.find((x) => x.referencia === String(i.referencia || '').trim().toUpperCase());
+                return a ? { ...i, coste: a.ahora } : i;
+              }));
+            }
+          }}
+        />
+      )}
 
       {editando && (
         <EditarInsumoModal
@@ -389,6 +433,146 @@ function DependenciasModal({ insumo, onClose }: { insumo: Insumo; onClose: () =>
             Cerrar
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+//  CARGA POR PLANA (v7.9): pega dos columnas — REFERENCIA y COSTE —
+//  desde Excel. Cruza por referencia; historial + cascada incluidos.
+// ══════════════════════════════════════════════════════════════════
+type FilaPlana = { referencia: string; coste: number; articulo?: string; actual?: number; esSub?: boolean; incluir: boolean; estado: 'ok' | 'no_encontrado' | 'invalida' };
+
+function CargaPlana({ insumos, onCerrar, onListo }:
+  { insumos: Insumo[]; onCerrar: () => void; onListo: (a: { referencia: string; ahora: number }[]) => void }) {
+  const [texto, setTexto] = useState('');
+  const [filas, setFilas] = useState<FilaPlana[] | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState<string | null>(null);
+
+  const porRef = useMemo(() => {
+    const m: Record<string, Insumo> = {};
+    insumos.forEach((i) => { const r = String(i.referencia || '').trim().toUpperCase(); if (r) m[r] = i; });
+    return m;
+  }, [insumos]);
+
+  function analizar() {
+    const out: FilaPlana[] = [];
+    texto.split(/\r?\n/).forEach((linea) => {
+      const l = linea.trim();
+      if (!l) return;
+      const partes = l.split(/[\t;|]+|\s{2,}/).map((p) => p.trim()).filter(Boolean);
+      const referencia = String(partes[0] || '').toUpperCase();
+      const bruto = String(partes[1] || '').replace(/[^0-9.,-]/g, '');
+      const coste = Number(bruto.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+      if (!referencia || partes.length < 2 || isNaN(coste) || coste < 0) {
+        out.push({ referencia: referencia || l.slice(0, 18), coste: NaN, incluir: false, estado: 'invalida' });
+        return;
+      }
+      const ins = porRef[referencia];
+      if (!ins) { out.push({ referencia, coste, incluir: false, estado: 'no_encontrado' }); return; }
+      const actual = Number(ins.coste) || 0;
+      const esSub = /^SUB[\s.]/i.test(String(ins.articulo || ''));
+      out.push({
+        referencia, coste, articulo: ins.articulo, actual, esSub,
+        // Preparaciones SUB. con costo ya digitado: piden confirmación manual.
+        incluir: !(esSub && actual > 0),
+        estado: 'ok',
+      });
+    });
+    setFilas(out);
+  }
+
+  async function enviar() {
+    const aEnviar = (filas || []).filter((fl) => fl.estado === 'ok' && fl.incluir && Math.abs((fl.actual || 0) - fl.coste) > 0.0001);
+    if (!aEnviar.length) { setResultado('No hay cambios seleccionados para aplicar.'); return; }
+    setEnviando(true);
+    setResultado(null);
+    try {
+      const r = await fetch('/api/insumos/carga', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filas: aEnviar.map((fl) => ({ referencia: fl.referencia, coste: fl.coste })) }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Error del servidor');
+      const d = j.data || {};
+      setResultado(`✔ ${d.actualizados?.length || 0} actualizados · ${d.sin_cambio?.length || 0} sin cambio · ${d.no_encontrados?.length || 0} no encontrados${d.errores?.length ? ' · ' + d.errores.length + ' con error' : ''}. Las recetas afectadas se recalcularon en cascada.`);
+      onListo((d.actualizados || []).map((a: { referencia: string; ahora: number }) => ({ referencia: a.referencia, ahora: a.ahora })));
+    } catch (e) {
+      setResultado('✘ ' + (e instanceof Error ? e.message : 'Error inesperado'));
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  const pendientes = (filas || []).filter((fl) => fl.esSub && !fl.incluir && fl.estado === 'ok').length;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={onCerrar}>
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-ink">Carga de costos por plana</h3>
+        <p className="mt-1 text-xs text-salvia-600">
+          Pega dos columnas desde Excel: <b>REFERENCIA</b> y <b>COSTE</b> (tab, «;» o espacios).
+          El cruce es por referencia; cada cambio queda en el historial y recalcula las recetas en cascada.
+        </p>
+        {!filas ? (
+          <>
+            <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={10}
+              placeholder={'REF001\t4500\nREF002\t12300'}
+              className="mt-3 w-full rounded-lg border border-line p-3 font-mono text-xs focus:border-[#2563EB] focus:outline-none" />
+            <div className="mt-3 flex justify-end gap-2">
+              <button onClick={onCerrar} className="rounded-lg border border-line px-4 py-2 text-sm">Cancelar</button>
+              <button onClick={analizar} disabled={!texto.trim()}
+                className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Analizar</button>
+            </div>
+          </>
+        ) : (
+          <>
+            {pendientes > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                ⚠ {pendientes} preparación(es) «SUB.» ya tienen costo digitado. Marca su casilla solo si de verdad
+                quieres <b>actualizar el costo del insumo</b>.
+              </div>
+            )}
+            <div className="mt-3 max-h-72 overflow-y-auto rounded-lg border border-line">
+              <table className="w-full text-xs">
+                <thead className="bg-neutral-50 text-left text-salvia-600">
+                  <tr><th className="px-2 py-1.5">✓</th><th className="px-2 py-1.5">Referencia</th><th className="px-2 py-1.5">Artículo</th><th className="px-2 py-1.5 text-right">Actual</th><th className="px-2 py-1.5 text-right">Nuevo</th></tr>
+                </thead>
+                <tbody>
+                  {filas.map((fl, i) => (
+                    <tr key={i} className={fl.estado !== 'ok' ? 'bg-red-50 text-red-700' : fl.esSub ? 'bg-amber-50' : ''}>
+                      <td className="px-2 py-1.5">
+                        {fl.estado === 'ok' ? (
+                          <input type="checkbox" checked={fl.incluir}
+                            onChange={(e) => setFilas((prev) => prev!.map((x, j) => (j === i ? { ...x, incluir: e.target.checked } : x)))} />
+                        ) : '—'}
+                      </td>
+                      <td className="px-2 py-1.5 font-mono">{fl.referencia}</td>
+                      <td className="px-2 py-1.5">{fl.estado === 'no_encontrado' ? 'NO ENCONTRADO EN INSUMOS' : fl.estado === 'invalida' ? 'FILA INVÁLIDA' : fl.articulo}</td>
+                      <td className="px-2 py-1.5 text-right font-mono">{fl.actual !== undefined ? '$' + Number(fl.actual).toLocaleString('es-CO') : ''}</td>
+                      <td className="px-2 py-1.5 text-right font-mono font-semibold">{isNaN(fl.coste) ? '' : '$' + fl.coste.toLocaleString('es-CO')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {resultado && <p className="mt-3 text-sm">{resultado}</p>}
+            <div className="mt-3 flex justify-between">
+              <button onClick={() => { setFilas(null); setResultado(null); }} className="rounded-lg border border-line px-4 py-2 text-sm">← Corregir texto</button>
+              <div className="flex gap-2">
+                <button onClick={onCerrar} className="rounded-lg border border-line px-4 py-2 text-sm">Cerrar</button>
+                <button onClick={enviar} disabled={enviando}
+                  className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">
+                  {enviando ? 'Aplicando…' : 'Aplicar cambios'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -49,13 +49,38 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Mutaciones de la API solo para Admin.
+  // ── MATRIZ DE ROLES (v5) ─────────────────────────────────────────────
+  //  Admin : todo.
+  //  Chef  : puede crear/editar recetas, subrecetas y fichas técnicas; el
+  //          resto solo lectura.
+  //  Lector: solo lectura en toda la aplicación.
+  const rol = sesion.r;
+
+  // Usuarios y Configuración: exclusivos de Admin, incluso para VER.
+  const zonaAdmin =
+    pathname === '/usuarios' || pathname.startsWith('/usuarios/') ||
+    pathname === '/configuracion' || pathname.startsWith('/configuracion/') ||
+    pathname.startsWith('/api/usuarios') || pathname.startsWith('/api/config');
+  if (zonaAdmin && rol !== 'Admin') {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ ok: false, error: 'Sección exclusiva de Admin' }, { status: 403 });
+    }
+    const url = req.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
+  // Mutaciones de la API según el rol.
   const esMutacion = req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE';
-  if (pathname.startsWith('/api/') && esMutacion && sesion.r !== 'Admin') {
-    return NextResponse.json(
-      { ok: false, error: 'Se requiere rol Admin para esta acción' },
-      { status: 403 },
-    );
+  if (pathname.startsWith('/api/') && esMutacion) {
+    const chefPuede = /^\/api\/(recetas|subrecetas|fichas)(\/|$|\?)/.test(pathname);
+    const permitido = rol === 'Admin' || (rol === 'Chef' && chefPuede);
+    if (!permitido) {
+      return NextResponse.json(
+        { ok: false, error: 'Tu rol (' + rol + ') no permite esta acción' },
+        { status: 403 },
+      );
+    }
   }
 
   return NextResponse.next();

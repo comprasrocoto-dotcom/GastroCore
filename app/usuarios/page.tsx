@@ -10,8 +10,8 @@ import { useEffect, useState } from 'react';
 
 type Usuario = { id: string; email: string; nombre: string; rol: string; activo: boolean | string };
 
-const ROLES = ['Admin', 'Usuario', 'Consulta'];
-const VACIO = { email: '', nombre: '', rol: 'Usuario', clave: '' };
+const ROLES = ['Admin', 'Chef', 'Lector'];
+const VACIO = { email: '', nombre: '', rol: 'Lector', clave: '' };
 
 function esActivo(v: Usuario['activo']): boolean {
   return v === true || v === 'TRUE' || v === 'VERDADERO' || v === '';
@@ -21,7 +21,7 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [nuevo, setNuevo] = useState({ ...VACIO });
   const [editando, setEditando] = useState<string | null>(null);
-  const [formEdit, setFormEdit] = useState({ nombre: '', rol: 'Usuario', clave: '' });
+  const [formEdit, setFormEdit] = useState({ nombre: '', rol: 'Lector', clave: '' });
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
@@ -80,8 +80,9 @@ export default function UsuariosPage() {
     <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="font-display text-xl font-bold text-[#1E3A5F]">Usuarios</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Quién puede entrar al panel y con qué rol. Solo <b>Admin</b> puede crear, editar o guardar; los
-        demás roles pueden consultar la aplicación.
+        Quién puede entrar al panel y con qué rol. <b>Admin</b>: acceso total. <b>Chef</b>: puede crear y
+        editar recetas, subrecetas y fichas técnicas; el resto solo lectura. <b>Lector</b>: solo consulta,
+        sin editar ni crear nada.
       </p>
 
       {mensaje && (

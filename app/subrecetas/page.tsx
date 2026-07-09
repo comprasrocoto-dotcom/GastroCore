@@ -1,4 +1,5 @@
 'use client';
+import { useRol } from '@/lib/useRol';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -21,6 +22,7 @@ const num = (n: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigit
 const esActivo = (v: unknown) => v === true || v === 'TRUE' || v === 'true';
 
 export default function SubrecetasPage() {
+  const { puedeEditarRecetas } = useRol();
   const [subs, setSubs] = useState<Sub[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -53,7 +55,7 @@ export default function SubrecetasPage() {
           <h1 className="font-display text-2xl font-bold text-ambar-700">Subrecetas · Preparaciones base</h1>
           <p className="text-xs text-salvia-500">Preparaciones que se costean como una receta y se usan como insumo en otras recetas.</p>
         </div>
-        <Link href="/subrecetas/nueva" className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ambar-700">+ Nueva subreceta</Link>
+        {puedeEditarRecetas && <Link href="/subrecetas/nueva" className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ambar-700">+ Nueva subreceta</Link>}
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
@@ -112,7 +114,7 @@ export default function SubrecetasPage() {
                       : <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">Inactiva</span>}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    <Link href={`/subrecetas/nueva?edit=${s.id}`} className="text-xs font-medium text-ambar-600 hover:underline">Editar</Link>
+                    {puedeEditarRecetas && <Link href={`/subrecetas/nueva?edit=${s.id}`} className="text-xs font-medium text-ambar-600 hover:underline">Editar</Link>}
                   </td>
                 </tr>
               ))}

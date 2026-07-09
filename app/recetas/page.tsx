@@ -1,4 +1,5 @@
 'use client';
+import { useRol } from '@/lib/useRol';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -40,6 +41,7 @@ function Semaforo({ fc }: { fc: number }) {
 
 export default function RecetarioClient() {
   const router = useRouter();
+  const { puedeEditarRecetas } = useRol();
   const [recetas, setRecetas] = useState<Receta[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [familias, setFamilias] = useState<Familia[]>([]);
@@ -221,7 +223,7 @@ export default function RecetarioClient() {
           <div className="flex gap-2">
             <Link href="/recetas/familias" className="btn-secondary">Familias</Link>
             <Link href="/recetas/resumen" className="btn-secondary">Panel ejecutivo</Link>
-            <Link href="/recetas/nueva" className="btn-primary">+ Nueva receta</Link>
+            {puedeEditarRecetas && <Link href="/recetas/nueva" className="btn-primary">+ Nueva receta</Link>}
           </div>
         </header>
 
