@@ -58,7 +58,9 @@ function NuevaRecetaInner() {
   const [rendimiento, setRendimiento] = useState(1);
   const [desvioPct, setDesvioPct] = useState(0);
   const [precioReal, setPrecioReal] = useState(0);
-  const foodCostObjetivo = 0.35; // Food Cost objetivo FIJO 35% (no editable)
+  // v8.0: FC objetivo e impuesto vienen de Configuración (con excepción por familia).
+  const [fcGlobal, setFcGlobal] = useState(35);
+  const [fcPorFamilia, setFcPorFamilia] = useState<Record<string, number>>({});
   const [iva, setIva] = useState(8);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const cantRefs = useRef<Record<number, HTMLInputElement | null>>({});
@@ -82,6 +84,14 @@ function NuevaRecetaInner() {
         setFamilias((d.data.familias || []).filter((f: Cat) => esRec(f.tipo)));
         setSubfamilias((d.data.subfamilias || []).filter((s: Cat) => esRec(s.tipo)));
         setInsumos(d.data.catalogo || []);
+        // v8.0: parámetros de negocio (Configuración): FC objetivo, FC por
+        // familia e impuesto — con valores de respaldo si aún no llegan.
+        const par = d.data.parametros;
+        if (par) {
+          if (Number(par.fc_objetivo) > 0) setFcGlobal(Number(par.fc_objetivo));
+          if (par.fc_por_familia) setFcPorFamilia(par.fc_por_familia);
+          if (Number(par.impuesto_pct) >= 0) setIva(Number(par.impuesto_pct));
+        }
       })
       .catch(() => {});
   }, []);
@@ -114,6 +124,12 @@ function NuevaRecetaInner() {
     });
   }, [lineas, insumoPorId]);
 
+  const foodCostObjetivo = useMemo(() => {
+    const subf = subfamilias.find((s) => String(s.id) === String(subfamiliaId));
+    const fcFam = subf && subf.familia_id ? fcPorFamilia[String(subf.familia_id)] : undefined;
+    return ((fcFam && fcFam > 0 ? fcFam : fcGlobal) || 35) / 100;
+  }, [subfamiliaId, subfamilias, fcPorFamilia, fcGlobal]);
+
   const costeo = useMemo(() => {
     const costoIngredientes = filas.reduce((s, f) => s + f.costoTotal, 0);
     const desvio = costoIngredientes * (desvioPct / 100);
@@ -139,7 +155,9 @@ function NuevaRecetaInner() {
   const dupLinea = (i: number) => setLineas((p) => { const c = { ...p[i] }; const n = [...p]; n.splice(i + 1, 0, c); return n; });
 
   const onInsumo = (i: number, ins: Insumo) => {
-    updLinea(i, { item_id: ins.id, unidad: ins ? ins.unidad : '', tipo_item: ins.tipo_item || 'insumo' });
+    // v8.0: precargar la merma estándar del insumo (el usuario puede ajustarla).
+    const mermaStd = Number((ins as { merma_std?: number }).merma_std) || 0;
+    updLinea(i, { item_id: ins.id, unidad: ins ? ins.unidad : '', tipo_item: ins.tipo_item || 'insumo', merma_pct: mermaStd });
   };
 
   function validar(): string[] {

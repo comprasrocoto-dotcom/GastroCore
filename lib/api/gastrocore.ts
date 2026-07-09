@@ -138,7 +138,7 @@ const TTL_POR_RECURSO: Record<string, number> = {
   insumos: 120, catalogo: 120, bootstrap: 120,
   analytics: 120, snapshots: 120,
   recetas: 45, subrecetas: 45,
-  fichas: 20, historialRecetas: 30, ingredientes: 30, configfotos: 600,
+  fichas: 20, historialRecetas: 30, ingredientes: 30, configfotos: 600, parametros: 300,
 };
 const TTL_DEFAULT = 30;
 const VENTANA_GRACIA_MS = 10 * 60 * 1000; // hasta 10 min sirviendo viejo mientras refresca
@@ -369,6 +369,20 @@ export async function getFicha(recetaId: string): Promise<FichaTecnica | null> {
 }
 
 /** Carpeta de fotos de Drive (cacheada 10 min: cambia casi nunca). */
+export type Parametros = {
+  fc_objetivo: number;
+  fc_por_familia: Record<string, number>;
+  impuesto_pct: number;
+  alerta_subida_pct: number;
+  familias?: { id: string; nombre: string; tipo: string }[];
+};
+
+/** Parámetros de negocio (FC objetivo, impuesto, umbral de alertas). Cache 5 min. */
+export async function getParametros(): Promise<Parametros | null> {
+  const r = await apiGet<Parametros>('parametros');
+  return r.ok ? r.data : null;
+}
+
 export async function getConfigFotos(): Promise<{ folder_id: string; nombre: string; url: string } | null> {
   const r = await apiGet<{ folder_id: string; nombre: string; url: string }>('configfotos');
   return r.ok ? r.data : null;

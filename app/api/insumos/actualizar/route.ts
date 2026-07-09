@@ -23,6 +23,14 @@ export async function POST(req: NextRequest) {
     if (typeof body.unidad === 'string' && body.unidad.trim()) {
       data.unidad = body.unidad.trim();
     }
+    // v8.0: merma estándar del insumo (se precarga en los editores de recetas).
+    if (body.merma_std !== undefined && body.merma_std !== null && body.merma_std !== '') {
+      const m = Number(body.merma_std);
+      if (Number.isNaN(m) || m < 0 || m >= 95) {
+        return NextResponse.json({ ok: false, error: 'Merma estándar inválida (0 a 94.9%)' }, { status: 400 });
+      }
+      data.merma_std = m;
+    }
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ ok: false, error: 'No hay cambios que aplicar' }, { status: 400 });
     }

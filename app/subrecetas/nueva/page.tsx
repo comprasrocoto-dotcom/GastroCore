@@ -145,7 +145,8 @@ function NuevaSubrecetaInner() {
   const dupLinea = (i: number) => setLineas((p) => { const c = { ...p[i] }; const n = [...p]; n.splice(i + 1, 0, c); return n; });
 
   const onInsumo = (i: number, ins: Insumo) => {
-    updLinea(i, { item_id: ins.id, unidad: ins ? ins.unidad : '', tipo_item: ins.tipo_item || 'insumo' });
+    const mermaStd = Number((ins as { merma_std?: number }).merma_std) || 0;
+    updLinea(i, { item_id: ins.id, unidad: ins ? ins.unidad : '', tipo_item: ins.tipo_item || 'insumo', merma_pct: mermaStd });
   };
 
   function validar(): string[] {
