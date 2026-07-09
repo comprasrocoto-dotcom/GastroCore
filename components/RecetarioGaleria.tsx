@@ -32,7 +32,7 @@ function pasos(texto: string): string[] {
     .filter(Boolean);
 }
 
-export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[] }) {
+export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: { recetas: RecetaPublica[]; nombreNegocio?: string }) {
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState<string>('TODAS');
   const [modo, setModo] = useState<'grid' | 'list'>('grid');
@@ -79,7 +79,7 @@ export default function RecetarioGaleria({ recetas }: { recetas: RecetaPublica[]
       {/* Barra de marca: verde botella con el nombre en blanco, eco del header del sitio */}
       <div className="w-full px-4 py-3 text-center" style={{ background: VERDE }}>
         <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: SERIF }}>
-          Rocoto <span className="mx-1.5 font-normal text-white/50">·</span>
+          {nombreNegocio} <span className="mx-1.5 font-normal text-white/50">·</span>
           <span className="font-normal italic text-white/90">Recetario de Cocina</span>
         </p>
       </div>

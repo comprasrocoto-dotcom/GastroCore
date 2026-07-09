@@ -370,6 +370,7 @@ export async function getFicha(recetaId: string): Promise<FichaTecnica | null> {
 
 /** Carpeta de fotos de Drive (cacheada 10 min: cambia casi nunca). */
 export type Parametros = {
+  nombre_negocio?: string;
   fc_objetivo: number;
   fc_por_familia: Record<string, number>;
   impuesto_pct: number;

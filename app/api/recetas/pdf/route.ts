@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getReceta, getSubfamilias, getFamilias } from '@/lib/api/gastrocore';
+import { getReceta, getSubfamilias, getFamilias, getParametros } from '@/lib/api/gastrocore';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     if (!id) return NextResponse.json({ ok: false, error: 'Falta id' }, { status: 400 });
     const usuario = req.nextUrl.searchParams.get('usuario') || 'Sistema';
 
-    const [receta, subs, fams] = await Promise.all([getReceta(id), getSubfamilias(), getFamilias()]);
+    const [receta, subs, fams, par] = await Promise.all([getReceta(id), getSubfamilias(), getFamilias(), getParametros().catch(() => null)]);
     if (!receta) return NextResponse.json({ ok: false, error: 'Receta no encontrada' }, { status: 404 });
 
     const sub = subs.find((s) => String(s.id) === String(receta.subfamilia_id));
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       '.btn{background:#1E3A5F;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}' +
       '</style></head><body>' +
       '<div class="noprint" style="text-align:right;margin-bottom:10px"><button class="btn" onclick="window.print()">Imprimir / Guardar PDF</button></div>' +
-      '<div class="hdr"><div class="brand"><div class="logo">GC</div><div><div class="rest">GastroCore &mdash; Restaurante</div>' +
+      '<div class="hdr"><div class="brand"><div class="logo">GC</div><div><div class="rest">GastroCore &mdash; ' + esc((par && par.nombre_negocio) || 'Restaurante') + '</div>' +
       '<h1>' + esc(receta.nombre) + '</h1><div style="font-size:11px;color:#64748B">' + esc(receta.id) + ' &middot; ' + esc((fam ? fam.nombre : 'General')) + ' / ' + esc((sub ? sub.nombre : 'Sin clasificar')) + '</div></div></div>' +
       '<div class="meta">Fecha de impresion: ' + esc(ahora) + '<br>Version de la receta: v' + version + '</div></div>' +
 

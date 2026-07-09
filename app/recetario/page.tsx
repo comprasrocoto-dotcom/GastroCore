@@ -1,15 +1,16 @@
-import { getRecetario } from '@/lib/recetario';
+import { getRecetario, getNombreNegocio } from '@/lib/recetario';
 import RecetarioGaleria from '@/components/RecetarioGaleria';
 
-export const metadata = {
-  title: 'Recetario · Rocoto Cocina Peruana',
-  description: 'Recetario en línea del equipo de cocina',
-};
+export async function generateMetadata() {
+  const nombre = await getNombreNegocio();
+  return { title: 'Recetario · ' + nombre, description: 'Recetario de cocina de ' + nombre };
+}
 
 // Página PÚBLICA (ver middleware). Los datos llegan cacheados 5 min desde el
 // servidor; el navegador de cocina nunca toca la API con token.
 export default async function RecetarioPage() {
   let recetas;
+  const nombreNegocio = await getNombreNegocio();
   try {
     recetas = await getRecetario();
   } catch {
@@ -39,7 +40,7 @@ export default async function RecetarioPage() {
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap"
       />
-      <RecetarioGaleria recetas={recetas} />
+      <RecetarioGaleria recetas={recetas} nombreNegocio={nombreNegocio} />
     </>
   );
 }

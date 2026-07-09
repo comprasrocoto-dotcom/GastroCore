@@ -27,19 +27,99 @@ type Mensaje = { tipo: 'ok' | 'error'; texto: string } | null;
 
 export default function ConfiguracionPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <header className="mb-6">
-        <h1 className="font-display text-3xl font-bold text-ambar-700">Configuración</h1>
-        <p className="text-sm text-salvia-700">Parámetros de negocio del sistema. Solo visible para Admin.</p>
+    <main className="mx-auto max-w-5xl px-4 py-8">
+      <header className="mb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ambar-600">Solo Admin</p>
+        <h1 className="mt-1 font-display text-3xl font-bold text-slate-900">Configuración</h1>
+        <p className="mt-1 text-sm text-salvia-600">Los parámetros que gobiernan el costeo, las alertas y la identidad del sistema.</p>
       </header>
-      <div className="space-y-6">
-        <SeccionParametros />
-        <SeccionMermas />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="lg:col-span-2"><SeccionIdentidad /></div>
+        <div className="lg:col-span-2"><SeccionParametros /></div>
+        <div className="lg:col-span-2"><SeccionMermas /></div>
         <SeccionRespaldo />
-        <SeccionCredenciales />
         <SeccionCarpetaFotos />
+        <div className="lg:col-span-2"><SeccionCredenciales /></div>
       </div>
     </main>
+  );
+}
+
+/* Cabecera visual homogénea de cada tarjeta */
+function CabeceraSeccion({ icono, tono, titulo, descripcion }:
+  { icono: string; tono: string; titulo: string; descripcion: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className={'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ' + tono}>{icono}</span>
+      <div>
+        <h2 className="text-[15px] font-bold text-slate-900">{titulo}</h2>
+        <p className="mt-0.5 text-xs leading-relaxed text-salvia-600">{descripcion}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ 0. IDENTIDAD DEL NEGOCIO ══════════════ */
+function SeccionIdentidad() {
+  const [nombre, setNombre] = useState('');
+  const [original, setOriginal] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [msg, setMsg] = useState<Mensaje>(null);
+
+  useEffect(() => {
+    fetch('/api/config/parametros', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.ok && j.parametros?.nombre_negocio) {
+          setNombre(j.parametros.nombre_negocio);
+          setOriginal(j.parametros.nombre_negocio);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function guardar() {
+    const n = nombre.trim();
+    if (!n || n === original) return;
+    setGuardando(true);
+    setMsg(null);
+    try {
+      const r = await fetchEnCola('/api/config/parametros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre_negocio: n }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'No se pudo guardar');
+      setOriginal(n);
+      setMsg({ tipo: 'ok', texto: 'Nombre guardado. El recetario público y los PDF lo mostrarán en unos minutos (caché de 5 min).' });
+    } catch (e) {
+      setMsg({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error inesperado' });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <CabeceraSeccion icono="🏪" tono="bg-ambar-100 text-ambar-700"
+        titulo="Identidad del negocio"
+        descripcion="El nombre aparece en el recetario público que ve el equipo de cocina y en la cabecera de los PDF de recetas." />
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={60}
+          placeholder="Ej: Rocoto, Malanga, Arrebatao…"
+          className="flex-1 rounded-lg border border-line px-3 py-2 text-sm focus:border-ambar-400 focus:outline-none" />
+        <button onClick={guardar} disabled={guardando || !nombre.trim() || nombre.trim() === original}
+          className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-semibold text-white disabled:opacity-40">
+          {guardando ? 'Guardando…' : 'Guardar'}
+        </button>
+      </div>
+      {msg && (
+        <p className={'mt-3 rounded-lg px-3 py-2 text-xs ' + (msg.tipo === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
+          {msg.texto}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -97,12 +177,10 @@ function SeccionParametros() {
   }
 
   return (
-    <section className="card p-5">
-      <h2 className="text-sm font-semibold text-slate-800">🎯 Parámetros de costeo</h2>
-      <p className="mt-1 text-xs text-salvia-600">
-        Definen el <b>precio sugerido</b> y el <b>food cost</b> de todas las recetas. Al guardar cambios,
-        el sistema recalcula el menú completo (con rastro en el historial de cada receta).
-      </p>
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <CabeceraSeccion icono="🎯" tono="bg-blue-100 text-blue-700"
+        titulo="Parámetros de costeo"
+        descripcion="Definen el precio sugerido y el food cost de todas las recetas. Al guardar cambios, el sistema recalcula el menú completo (con rastro en el historial de cada receta)." />
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Food cost objetivo (%)</span>
@@ -214,12 +292,10 @@ function SeccionMermas() {
   }
 
   return (
-    <section className="card p-5">
-      <h2 className="text-sm font-semibold text-slate-800">🔪 Mermas estándar por insumo</h2>
-      <p className="mt-1 text-xs text-salvia-600">
-        El % de merma típico de limpieza/porcionado de cada insumo. Al agregarlo en el editor de recetas,
-        la merma llega <b>precargada</b> (siempre ajustable en la línea). No recalcula recetas existentes.
-      </p>
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <CabeceraSeccion icono="🔪" tono="bg-red-100 text-red-700"
+        titulo="Mermas estándar por insumo"
+        descripcion="El % de merma típico de limpieza o porcionado. Al agregar el insumo en el editor de recetas, la merma llega precargada (siempre ajustable en la línea). No recalcula recetas existentes." />
       <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar insumo… (ej: cebolla, pescado, aguacate)"
         className="mt-3 w-full rounded-lg border border-line px-3 py-2 text-sm" />
       {filtrados.length > 0 && (
@@ -284,12 +360,10 @@ function SeccionRespaldo() {
   }
 
   return (
-    <section className="card p-5">
-      <h2 className="text-sm font-semibold text-slate-800">💾 Respaldo de la base de datos</h2>
-      <p className="mt-1 text-xs text-salvia-600">
-        Descarga una copia Excel del Sheet completo (las 13 hojas: insumos, recetas, historial, fichas…).
-        Recomendado: <b>una vez al mes</b>, guardada fuera de Google.
-      </p>
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <CabeceraSeccion icono="💾" tono="bg-green-100 text-green-700"
+        titulo="Respaldo de la base"
+        descripcion="Copia Excel del Sheet completo. Recomendado una vez al mes, guardada fuera de Google." />
       {msg && (
         <p className={'mt-3 rounded-lg px-3 py-2 text-xs ' + (msg.tipo === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700')}>
           {msg.texto}
@@ -334,11 +408,10 @@ function SeccionCredenciales() {
   }
 
   return (
-    <section className="card p-5">
-      <h2 className="text-sm font-semibold text-slate-800">🔐 Rotación de credenciales</h2>
-      <p className="mt-1 text-xs text-salvia-600">
-        Cambia periódicamente las llaves del sistema (o de inmediato si alguna quedó expuesta).
-      </p>
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <CabeceraSeccion icono="🔐" tono="bg-slate-200 text-slate-700"
+        titulo="Rotación de credenciales"
+        descripcion="Cambia periódicamente las llaves del sistema, o de inmediato si alguna quedó expuesta." />
 
       <div className="mt-4 rounded-lg border border-line p-3">
         <p className="text-xs font-semibold text-slate-700">A · Token de la API (Apps Script ↔ Vercel)</p>
@@ -440,11 +513,10 @@ function SeccionCarpetaFotos() {
   }
 
   return (
-    <section className="card p-5">
-      <h2 className="text-sm font-semibold text-slate-800">📁 Carpeta de fotos del recetario</h2>
-      <p className="mt-1 text-xs text-salvia-600">
-        Las fotos de las fichas técnicas se guardan aquí. Renombrarla no afecta las fotos ya subidas.
-      </p>
+    <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+      <CabeceraSeccion icono="📁" tono="bg-purple-100 text-purple-700"
+        titulo="Carpeta de fotos"
+        descripcion="Aquí se guardan las fotos de las fichas técnicas. Renombrarla no afecta las ya subidas." />
       {carpeta ? (
         <div className="mt-3 space-y-2">
           <p className="text-xs text-salvia-700">

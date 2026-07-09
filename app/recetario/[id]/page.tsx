@@ -3,7 +3,10 @@ import { notFound } from 'next/navigation';
 import { getRecetaPublica } from '@/lib/recetario';
 import { DetalleReceta } from '@/components/RecetarioGaleria';
 
-export const metadata = { title: 'Receta · Rocoto Cocina Peruana' };
+export async function generateMetadata() {
+  const { getNombreNegocio } = await import('@/lib/recetario');
+  return { title: 'Receta · ' + (await getNombreNegocio()) };
+}
 
 /**
  * Detalle público por URL directa (/recetario/REC-000011).

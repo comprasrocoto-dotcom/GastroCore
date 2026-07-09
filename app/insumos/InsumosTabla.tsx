@@ -13,15 +13,10 @@ const fecha = (v: string) => {
   return isNaN(d.getTime()) ? String(v) : d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 };
 
-type Cat = { id: string; nombre: string; familia_id?: string };
-
-export function InsumosTabla({ insumos, familias = [], subfamilias: subfamiliasCat = [], esAdmin = false }:
-  { insumos: Insumo[]; familias?: Cat[]; subfamilias?: Cat[]; esAdmin?: boolean }) {
+export function InsumosTabla({ insumos, esAdmin = false }: { insumos: Insumo[]; esAdmin?: boolean }) {
   const [lista, setLista] = useState<Insumo[]>(insumos);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState('');
-  const [familiaF, setFamiliaF] = useState('');
-  const [subfamiliaF, setSubfamiliaF] = useState('');
   const [cargaAbierta, setCargaAbierta] = useState(false);
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [viendo, setViendo] = useState<Insumo | null>(null);
@@ -34,19 +29,15 @@ export function InsumosTabla({ insumos, familias = [], subfamilias: subfamiliasC
 
   const filtrados = useMemo(() => {
     const term = q.trim().toLowerCase();
-    const subsDeFamilia = familiaF ? new Set(subfamiliasCat.filter((s) => s.familia_id === familiaF).map((s) => s.id)) : null;
-    const filtroClas = (i: Insumo) =>
-      (!subfamiliaF || String((i as any).subfamilia_id) === subfamiliaF) &&
-      (!subsDeFamilia || subsDeFamilia.has(String((i as any).subfamilia_id)));
     return lista.filter((i) => {
       const matchQ =
         !term ||
         i.articulo?.toLowerCase().includes(term) ||
         i.referencia?.toLowerCase().includes(term);
       const matchSub = !sub || i.subfamilia === sub;
-      return matchQ && matchSub && filtroClas(i);
+      return matchQ && matchSub;
     });
-  }, [lista, q, sub, familiaF, subfamiliaF, subfamiliasCat]);
+  }, [lista, q, sub]);
 
   const onGuardado = useCallback((id: string, coste: number, unidad: string) => {
     setLista((prev) => prev.map((i) => (i.id === id ? { ...i, coste, unidad } : i)));
@@ -61,18 +52,6 @@ export function InsumosTabla({ insumos, familias = [], subfamilias: subfamiliasC
           placeholder="Buscar por articulo o referencia..."
           className="flex-1 min-w-[220px] rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
         />
-        <select value={familiaF} onChange={(e) => { setFamiliaF(e.target.value); setSubfamiliaF(''); }}
-          className="rounded-lg border border-line px-3 py-2 text-sm">
-          <option value="">Todas las familias</option>
-          {familias.map((fa) => <option key={fa.id} value={fa.id}>{fa.nombre}</option>)}
-        </select>
-        <select value={subfamiliaF} onChange={(e) => setSubfamiliaF(e.target.value)}
-          className="rounded-lg border border-line px-3 py-2 text-sm">
-          <option value="">Todas las subfamilias</option>
-          {subfamiliasCat.filter((s) => !familiaF || s.familia_id === familiaF).map((s) => (
-            <option key={s.id} value={s.id}>{s.nombre}</option>
-          ))}
-        </select>
         {esAdmin && (
           <button onClick={() => setCargaAbierta(true)}
             className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ambar-700">
@@ -448,8 +427,8 @@ type FilaPlana = { referencia: string; coste: number; articulo?: string; actual?
 
 function CargaPlana({ insumos, onCerrar, onListo }:
   { insumos: Insumo[]; onCerrar: () => void; onListo: (a: { referencia: string; ahora: number }[]) => void }) {
-  const [texto, setTexto] = useState('');
   const [filas, setFilas] = useState<FilaPlana[] | null>(null);
+  const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
 
@@ -459,31 +438,58 @@ function CargaPlana({ insumos, onCerrar, onListo }:
     return m;
   }, [insumos]);
 
-  function analizar() {
-    const out: FilaPlana[] = [];
-    texto.split(/\r?\n/).forEach((linea) => {
-      const l = linea.trim();
-      if (!l) return;
-      const partes = l.split(/[\t;|]+|\s{2,}/).map((p) => p.trim()).filter(Boolean);
-      const referencia = String(partes[0] || '').toUpperCase();
-      const bruto = String(partes[1] || '').replace(/[^0-9.,-]/g, '');
-      const coste = Number(bruto.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
-      if (!referencia || partes.length < 2 || isNaN(coste) || coste < 0) {
-        out.push({ referencia: referencia || l.slice(0, 18), coste: NaN, incluir: false, estado: 'invalida' });
-        return;
-      }
-      const ins = porRef[referencia];
-      if (!ins) { out.push({ referencia, coste, incluir: false, estado: 'no_encontrado' }); return; }
-      const actual = Number(ins.coste) || 0;
-      const esSub = /^SUB[\s.]/i.test(String(ins.articulo || ''));
-      out.push({
-        referencia, coste, articulo: ins.articulo, actual, esSub,
-        // Preparaciones SUB. con costo ya digitado: piden confirmación manual.
-        incluir: !(esSub && actual > 0),
-        estado: 'ok',
-      });
+  /** v8.1: genera la plantilla CSV con TODOS los insumos y su coste actual. */
+  function descargarPlantilla() {
+    const sep = ';';
+    const lineas = ['referencia' + sep + 'articulo' + sep + 'coste'];
+    insumos.forEach((i) => {
+      if (!i.referencia) return;
+      lineas.push([String(i.referencia), String(i.articulo || '').replace(/;/g, ','), String(Number(i.coste) || 0)].join(sep));
     });
-    setFilas(out);
+    const hoy = new Date().toISOString().slice(0, 10);
+    const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'plantilla-costos-' + hoy + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /** v8.1: lee el CSV (el de la plantilla u otro con referencia y coste). */
+  function analizarArchivo(file: File) {
+    setNombreArchivo(file.name);
+    const lector = new FileReader();
+    lector.onload = () => {
+      const texto = String(lector.result || '').replace(/^\ufeff/, '');
+      const out: FilaPlana[] = [];
+      texto.split(/\r?\n/).forEach((linea, idx) => {
+        const l = linea.trim();
+        if (!l) return;
+        const sep = l.includes(';') ? ';' : l.includes('\t') ? '\t' : ',';
+        const partes = l.split(sep).map((p) => p.trim());
+        const referencia = String(partes[0] || '').toUpperCase();
+        const bruto = String(partes[partes.length - 1] || '').replace(/[^0-9.,-]/g, '');
+        const coste = Number(bruto.replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+        // Cabecera de la plantilla: se ignora en silencio.
+        if (idx === 0 && (isNaN(coste) || /referencia/i.test(referencia))) return;
+        if (!referencia || isNaN(coste) || coste < 0) {
+          out.push({ referencia: referencia || l.slice(0, 18), coste: NaN, incluir: false, estado: 'invalida' });
+          return;
+        }
+        const ins = porRef[referencia];
+        if (!ins) { out.push({ referencia, coste, incluir: false, estado: 'no_encontrado' }); return; }
+        const actual = Number(ins.coste) || 0;
+        const esSub = /^SUB[\s.]/i.test(String(ins.articulo || ''));
+        out.push({
+          referencia, coste, articulo: ins.articulo, actual, esSub,
+          incluir: !(esSub && actual > 0),
+          estado: 'ok',
+        });
+      });
+      setFilas(out);
+    };
+    lector.readAsText(file, 'utf-8');
   }
 
   async function enviar() {
@@ -516,18 +522,26 @@ function CargaPlana({ insumos, onCerrar, onListo }:
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-ink">Carga de costos por plana</h3>
         <p className="mt-1 text-xs text-salvia-600">
-          Pega dos columnas desde Excel: <b>REFERENCIA</b> y <b>COSTE</b> (tab, «;» o espacios).
+          Descarga la plantilla, actualiza la columna <b>coste</b> en Excel y vuelve a subir el CSV.
           El cruce es por referencia; cada cambio queda en el historial y recalcula las recetas en cascada.
         </p>
         {!filas ? (
           <>
-            <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={10}
-              placeholder={'REF001\t4500\nREF002\t12300'}
-              className="mt-3 w-full rounded-lg border border-line p-3 font-mono text-xs focus:border-[#2563EB] focus:outline-none" />
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="mt-4 flex flex-col items-stretch gap-3 sm:flex-row">
+              <button onClick={descargarPlantilla}
+                className="flex-1 rounded-lg border border-line px-4 py-3 text-sm font-medium text-slate-700 hover:bg-neutral-50">
+                ⬇ Descargar plantilla CSV
+                <span className="block text-[11px] font-normal text-salvia-500">Todos los insumos con su coste actual, listos para editar en Excel</span>
+              </button>
+              <label className="flex-1 cursor-pointer rounded-lg border-2 border-dashed border-line px-4 py-3 text-center text-sm font-medium text-slate-700 hover:border-ambar-400 hover:bg-ambar-50/40">
+                📄 {nombreArchivo || 'Elegir archivo CSV…'}
+                <span className="block text-[11px] font-normal text-salvia-500">Columnas: referencia y coste (la plantilla ya viene lista)</span>
+                <input type="file" accept=".csv,text/csv" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) analizarArchivo(f); e.target.value = ''; }} />
+              </label>
+            </div>
+            <div className="mt-3 flex justify-end">
               <button onClick={onCerrar} className="rounded-lg border border-line px-4 py-2 text-sm">Cancelar</button>
-              <button onClick={analizar} disabled={!texto.trim()}
-                className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">Analizar</button>
             </div>
           </>
         ) : (
@@ -563,7 +577,7 @@ function CargaPlana({ insumos, onCerrar, onListo }:
             </div>
             {resultado && <p className="mt-3 text-sm">{resultado}</p>}
             <div className="mt-3 flex justify-between">
-              <button onClick={() => { setFilas(null); setResultado(null); }} className="rounded-lg border border-line px-4 py-2 text-sm">← Corregir texto</button>
+              <button onClick={() => { setFilas(null); setResultado(null); setNombreArchivo(null); }} className="rounded-lg border border-line px-4 py-2 text-sm">← Elegir otro archivo</button>
               <div className="flex gap-2">
                 <button onClick={onCerrar} className="rounded-lg border border-line px-4 py-2 text-sm">Cerrar</button>
                 <button onClick={enviar} disabled={enviando}

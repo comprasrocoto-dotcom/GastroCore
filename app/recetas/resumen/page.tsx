@@ -36,6 +36,8 @@ export default function ResumenClient() {
   const [dir, setDir] = useState<'asc' | 'desc'>('desc');
   const [mostrarFuera, setMostrarFuera] = useState(false);
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>('activos');
+  const [familiaF, setFamiliaF] = useState('');
+  const [subfamiliaF, setSubfamiliaF] = useState('');
   const [nuevoPrecio, setNuevoPrecio] = useState<Record<string, string>>({});
   const [guardando, setGuardando] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string>('');
@@ -73,10 +75,19 @@ export default function ResumenClient() {
   };
 
   const visibles = useMemo(() => {
-    if (estadoFiltro === 'activos') return recetas.filter(esActivo);
-    if (estadoFiltro === 'inactivos') return recetas.filter((r) => !esActivo(r));
-    return recetas;
-  }, [recetas, estadoFiltro]);
+    let base = recetas;
+    if (estadoFiltro === 'activos') base = base.filter(esActivo);
+    else if (estadoFiltro === 'inactivos') base = base.filter((r) => !esActivo(r));
+    // v8.1: filtros de clasificación del panel
+    if (subfamiliaF) base = base.filter((r) => String(r.subfamilia_id) === subfamiliaF);
+    else if (familiaF) {
+      base = base.filter((r) => {
+        const s = subMap.get(r.subfamilia_id);
+        return s && String(s.familia_id) === familiaF;
+      });
+    }
+    return base;
+  }, [recetas, estadoFiltro, familiaF, subfamiliaF, subMap]);
 
   const rows = useMemo(() => {
     const arr = visibles.map((r) => {
@@ -254,8 +265,35 @@ export default function ResumenClient() {
         <p className="py-10 text-center text-salvia-500">Cargando tablero...</p>
       ) : (
         <>
+          {/* v8.1: filtros de clasificación — todo el tablero (KPIs incluidos) responde a ellos */}
+          <section className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 shadow-sm">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-salvia-500">Filtrar</span>
+            <select value={familiaF}
+              onChange={(e) => { setFamiliaF(e.target.value); setSubfamiliaF(''); }}
+              className={'rounded-full border px-3.5 py-1.5 text-sm transition ' + (familiaF ? 'border-ambar-400 bg-ambar-50 font-medium text-ambar-800' : 'border-line text-slate-600 hover:border-slate-300')}>
+              <option value="">🍽 Todas las familias</option>
+              {fams.filter((f: any) => String(f.tipo).toLowerCase() === 'receta').map((f: any) => (
+                <option key={f.id} value={f.id}>{f.nombre}</option>
+              ))}
+            </select>
+            <select value={subfamiliaF}
+              onChange={(e) => setSubfamiliaF(e.target.value)}
+              className={'rounded-full border px-3.5 py-1.5 text-sm transition ' + (subfamiliaF ? 'border-ambar-400 bg-ambar-50 font-medium text-ambar-800' : 'border-line text-slate-600 hover:border-slate-300')}>
+              <option value="">Todas las subfamilias</option>
+              {subs
+                .filter((s: any) => !familiaF || String(s.familia_id) === familiaF)
+                .map((s: any) => (<option key={s.id} value={s.id}>{s.nombre}</option>))}
+            </select>
+            {(familiaF || subfamiliaF) && (
+              <button onClick={() => { setFamiliaF(''); setSubfamiliaF(''); }}
+                className="ml-auto rounded-full px-3 py-1.5 text-xs font-medium text-salvia-600 hover:bg-neutral-100">
+                ✕ Limpiar filtros
+              </button>
+            )}
+          </section>
+
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card label="Recetas activas" value={String(activos.length)} tone="blue" icon="📘" />
+            <Card label="Recetas activas" value={String(rows.filter((x) => x.activo).length)} tone="blue" icon="📘" />
             <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊" />
             <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰" />
             <button type="button" onClick={() => setMostrarFuera((v) => !v)} className="text-left focus:outline-none">

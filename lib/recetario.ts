@@ -95,3 +95,31 @@ export function fotoConAncho(fotoUrl: string, ancho: number): string {
   }
   return fotoUrl;
 }
+
+
+/** Nombre del negocio (config), cacheado 5 min — para la marca del recetario público. */
+const nombreNegocioCache = unstable_cache(
+  async (): Promise<string> => {
+    // Si el backend no responde LANZAMOS: unstable_cache no cachea errores,
+    // así el fallback nunca queda grabado (lección del caché envenenado).
+    const res = await fetch(process.env.GASTROCORE_API_URL as string, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'read', resource: 'parametros', token: process.env.GASTROCORE_API_TOKEN }),
+      cache: 'no-store',
+    });
+    const j = await res.json();
+    if (!j?.ok || !j.data?.nombre_negocio) throw new Error('parametros no disponibles');
+    return String(j.data.nombre_negocio);
+  },
+  ['nombre-negocio'],
+  { revalidate: 300 }
+);
+
+export async function getNombreNegocio(): Promise<string> {
+  try {
+    return await nombreNegocioCache();
+  } catch {
+    return 'Rocoto';
+  }
+}
