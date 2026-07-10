@@ -280,6 +280,60 @@ export default function ResumenClient() {
             </button>
           </section>
 
+          {/* ═══ v9.9: LECTURA DE EXPERTO — ángulos que los KPIs no muestran ═══ */}
+          {(() => {
+            const conP = rows.filter((x) => x.activo && x.precio > 0);
+            if (conP.length < 5) return null;
+            const fuera = conP.filter((x) => x.fc > FC_OBJ);
+            const regalo = fuera.reduce((a, x) => a + Math.max(0, (x.sugeridoPanel || 0) - x.precio), 0);
+            const frontera = conP.filter((x) => x.fc > FC_OBJ - 0.03 && x.fc <= FC_OBJ);
+            const rentables = conP.filter((x) => x.rent > 0);
+            const utilTotal = rentables.reduce((a, x) => a + x.rent, 0);
+            const top5 = [...rentables].sort((a, b) => b.rent - a.rent).slice(0, 5);
+            const pctTop = utilTotal > 0 ? Math.round((top5.reduce((a, x) => a + x.rent, 0) / utilTotal) * 100) : 0;
+            const fantasmas = conP.filter((x) => x.fc > 0 && x.fc < 0.10);
+            const porFam = new Map<string, number[]>();
+            conP.forEach((x) => { if (!porFam.has(x.familia)) porFam.set(x.familia, []); porFam.get(x.familia)!.push(x.fc); });
+            const despareja = Array.from(porFam.entries())
+              .filter(([, v]) => v.length >= 3)
+              .map(([fam, v]) => ({ fam, rango: Math.max(...v) - Math.min(...v), n: v.length }))
+              .sort((a, b) => b.rango - a.rango)[0];
+            const Tarjeta = ({ tono, titulo, cifra, frase, ayuda }: { tono: string; titulo: string; cifra: string; frase: React.ReactNode; ayuda: React.ReactNode }) => (
+              <div className={'rounded-xl border-l-4 bg-white p-4 shadow-sm ' + tono}>
+                <p className="flex items-center text-[11px] font-bold uppercase tracking-wide text-slate-500">{titulo}{ayuda}</p>
+                <p className="mt-1 text-2xl font-extrabold text-ink">{cifra}</p>
+                <p className="mt-1 text-[12.5px] leading-snug text-slate-600">{frase}</p>
+              </div>
+            );
+            return (
+              <section className="mb-6">
+                <div className="mb-3 flex items-center gap-2 border-l-4 border-[#1E3A5F] pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600">
+                  <span>🔬</span>Lectura de experto
+                  <Ayuda titulo="Lectura de experto"><p>Cinco ángulos que los KPIs de arriba NO muestran, calculados en vivo con tus recetas activas con precio. No son promedios: son los puntos exactos donde se gana o se pierde plata esta semana.</p></Ayuda>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <Tarjeta tono="border-red-500" titulo="💸 Dinero en la mesa" cifra={money(regalo)}
+                    frase={<>La carta está <b>{money(regalo)} por debajo</b> del precio que cumple el objetivo, repartidos en <b>{fuera.length} platos</b>. Cada venta de uno de ellos regala margen.</>}
+                    ayuda={<Ayuda titulo="Dinero en la mesa"><p>Suma de (precio sugerido − precio real) de todos los platos fuera del Food Cost objetivo. NO es utilidad perdida del mes — es cuánto le falta a la carta para estar alineada. <b>Cómo usarlo:</b> es tu lista de aumentos priorizada; empieza por los de mayor diferencia y decide plato por plato: subir, reformular o aceptarlo como gancho.</p></Ayuda>} />
+                  <Tarjeta tono="border-amber-500" titulo="⚡ A un paso del rojo" cifra={String(frontera.length) + ' platos'}
+                    frase={<>Están a <b>menos de 3 puntos</b> del objetivo{frontera.length > 0 && <>: <b>{frontera.slice(0, 3).map((x) => x.r.nombre).join(', ')}</b>{frontera.length > 3 ? '…' : ''}</>}. La próxima subida de insumos los cruza.</>}
+                    ayuda={<Ayuda titulo="A un paso del rojo"><p>Platos con Food Cost entre el objetivo y 3 puntos por debajo. Hoy están &quot;bien&quot; — pero sin colchón: un alza del 10% en su insumo principal los pasa al rojo. <b>Cómo usarlo:</b> revísalos ANTES de la próxima negociación con proveedores, no después. Son los primeros candidatos a ajuste preventivo de precio o porción.</p></Ayuda>} />
+                  <Tarjeta tono="border-emerald-500" titulo="🏆 Concentración del margen" cifra={String(pctTop) + '%'}
+                    frase={<>El <b>top 5</b> de platos aporta el <b>{pctTop}%</b> de la utilidad potencial{top5[0] && <> — el #1 es <b>{top5[0].r.nombre}</b></>}. {pctTop >= 40 ? 'Dependencia alta: protege esos 5 con proveedor alterno y ficha impecable.' : 'Margen bien repartido: ningún plato te tiene de rehén.'}</>}
+                    ayuda={<Ayuda titulo="Concentración del margen"><p>Qué % de la utilidad potencial total viene de solo 5 platos. <b>Regla de lectura:</b> arriba de 40% = el negocio depende de pocos platos (si uno sube de costo o sale de temporada, duele en serio) — asegúrales proveedor alterno y merma controlada. Debajo de 25% = cartera sana y diversificada.</p></Ayuda>} />
+                  <Tarjeta tono="border-purple-500" titulo="🩻 Demasiado bueno para ser verdad" cifra={String(fantasmas.length) + ' platos'}
+                    frase={<>Food Cost <b>menor al 10%</b>{fantasmas.length > 0 && <>: <b>{fantasmas.slice(0, 3).map((x) => x.r.nombre).join(', ')}</b>{fantasmas.length > 3 ? '…' : ''}</>}. Eso no es un triunfo: casi siempre es una <b>ficha incompleta</b>. Audítalos hoy.</>}
+                    ayuda={<Ayuda titulo="Demasiado bueno para ser verdad"><p>Un plato real rara vez opera bajo el 10% de Food Cost. Cuando aparece, la causa habitual es una receta con <b>insumos en $0, cantidades faltantes o unidad equivocada</b> (gramos digitados como kilos). <b>Cómo usarlo:</b> abre cada uno y revisa su detalle de ingredientes — estos platos están inflando la utilidad potencial del panel con plata que no existe.</p></Ayuda>} />
+                  {despareja && (
+                    <Tarjeta tono="border-blue-500" titulo="📏 La familia despareja" cifra={despareja.fam}
+                      frase={<>Sus {despareja.n} platos van de punta a punta con <b>{(despareja.rango * 100).toFixed(0)} puntos</b> de diferencia en Food Cost. El pricing de esa familia no sigue una regla.</>}
+                      ayuda={<Ayuda titulo="La familia despareja"><p>La familia con mayor brecha entre su plato de mejor y peor Food Cost. Una brecha grande dice que los precios se pusieron a ojo en momentos distintos. <b>Cómo usarlo:</b> siéntate con esa familia completa en una sola sesión y alinéala con un criterio único — es la corrección de precios más rápida que existe, porque el problema está concentrado en un solo lugar de la carta.</p></Ayuda>} />
+                  )}
+                </div>
+              </section>
+            );
+          })()}
+
           {(() => {
             const criticas = rows.filter((x) => x.fc > FC_OBJ);
             const vigilar = rows.filter((x) => x.fc > 0.33 && x.fc <= FC_OBJ);

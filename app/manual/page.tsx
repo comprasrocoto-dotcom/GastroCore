@@ -43,8 +43,8 @@ export default function ManualPage() {
             y el <K>RECETARIO</K>, el <K>PANEL</K> y <K>ANÁLISIS</K> muestran el resultado a cocina y a los jefes.
           </p>
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm">
-            💡 La merma se costea por <K>rendimiento</K> (gross-up ÷), igual que HioPOS: 100 g con 10% de merma
-            cuestan como 111 g. El desvío de mercancía es un recargo (×).
+            💡 La merma se costea por <K>rendimiento</K> (gross-up ÷): 100 g con 10% de merma
+            cuestan como 111 g — porque para servir 100 g hay que comprar 111. El desvío de mercancía es un recargo (×).
           </p>
         </S>
 
@@ -115,7 +115,7 @@ export default function ManualPage() {
         </S>
 
         <S titulo="Glosario exprés">
-          <p><K>Referencia:</K> el código único de cada insumo — cruza con el ERP y la carga por plano. · <K>Food Cost:</K> % del precio (sin impuesto) que se va en materia prima. · <K>Merma:</K> lo que se pierde al procesar; se costea por rendimiento (÷). · <K>Desvío:</K> recargo por pérdidas operativas (×). · <K>El puente:</K> confirmar el costo calculado de una subreceta hacia su insumo maestro. · <K>🏷 Centro de costo:</K> a qué área contable pertenece cada familia (COCINA, BAR…).</p>
+          <p><K>Referencia:</K> el código único de cada insumo — es la llave de la carga por plano y de todo el sistema. · <K>Food Cost:</K> % del precio (sin impuesto) que se va en materia prima. · <K>Merma:</K> lo que se pierde al procesar; se costea por rendimiento (÷). · <K>Desvío:</K> recargo por pérdidas operativas (×). · <K>El puente:</K> confirmar el costo calculado de una subreceta hacia su insumo maestro. · <K>🏷 Centro de costo:</K> a qué área contable pertenece cada familia (COCINA, BAR…).</p>
         </S>
 
         <p className="pt-2 text-center text-sm text-salvia-500">

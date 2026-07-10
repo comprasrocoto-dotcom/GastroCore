@@ -223,6 +223,25 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
 
   return (
     <div className="space-y-6">
+      {/* ═══ v9.9: LECTURA DEL PERÍODO — los números traducidos a decisiones ═══ */}
+      {(ind.insumo_mas_inflacionario || ind.receta_mas_afectada) && (
+        <section className="rounded-xl border-l-4 border-[#1E3A5F] bg-gradient-to-r from-slate-50 to-white p-4 shadow-sm">
+          <p className="mb-2 flex items-center text-[11px] font-bold uppercase tracking-wide text-slate-500">
+            📣 Lectura del período — qué hacer con estos números
+            <Ayuda titulo="Lectura del período"><p>La traducción de los indicadores a decisiones concretas: quién te está subiendo el costo, qué plato ya lo absorbió y hacia dónde va el menú. Si solo lees una cosa de esta vista, que sea esta.</p></Ayuda>
+          </p>
+          <div className="space-y-1.5 text-[13.5px] leading-relaxed text-slate-700">
+            {ind.insumo_mas_inflacionario && (
+              <p>1. <b>{ind.insumo_mas_inflacionario.articulo}</b> es tu prioridad de negociación: subió <b className="text-red-600">{pct(ind.insumo_mas_inflacionario.variacion_pct)}</b> en el período. Llama al proveedor con este dato en la mano — o busca alterno antes de que el Food Cost lo delate.</p>
+            )}
+            {ind.receta_mas_afectada && (
+              <p>2. <b>{ind.receta_mas_afectada.receta}</b> ya absorbió <b className="text-red-600">+{money(ind.receta_mas_afectada.incremento_costo)}</b> de costo. Decide HOY: subir su precio, ajustar la porción, o aceptar el margen menor a conciencia — lo único prohibido es no decidir.</p>
+            )}
+            <p>3. El costo promedio del menú se movió <b className={ind.variacion_promedio >= 0 ? 'text-red-600' : 'text-green-700'}>{pct(ind.variacion_promedio)}</b>{ind.variacion_promedio > 2 ? ' — con los precios de carta quietos, ese movimiento sale directo de tu margen. Revisa el Panel: la sección "Dinero en la mesa" te dice dónde recuperarlo.' : ind.variacion_promedio < -2 ? ' — los costos bajaron: es la ventana para empujar los platos beneficiados SIN tocar precios y quedarte el margen extra.' : ' — el menú está estable: el momento ideal para trabajar fichas, mermas y subrecetas sin presión.'}</p>
+          </div>
+        </section>
+      )}
+
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="card p-4">
           <p className="text-xs uppercase tracking-wide text-salvia-600">Insumo más inflacionario</p>
