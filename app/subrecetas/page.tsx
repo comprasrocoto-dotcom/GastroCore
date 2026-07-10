@@ -1,4 +1,5 @@
 'use client';
+import { fetchEnCola } from '@/lib/colaGuardado';
 import { useRol } from '@/lib/useRol';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -26,6 +27,7 @@ export default function SubrecetasPage() {
   const [subs, setSubs] = useState<Sub[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [puenteando, setPuenteando] = useState<string | null>(null);
   const [verInactivas, setVerInactivas] = useState(false);
 
   useEffect(() => {
@@ -45,6 +47,28 @@ export default function SubrecetasPage() {
       return true;
     });
   }, [subs, q, verInactivas]);
+
+  async function actualizarMaestro(s: any) {
+    const va = Number(s.insumo_coste) || 0;
+    const viene = Number(s.costo_unitario) || 0;
+    if (!window.confirm('¿Actualizar el costeo del insumo ' + (s.insumo_articulo || s.insumo_referencia) + '?\n$' +
+      va.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + ' → $' + viene.toLocaleString('es-CO', { maximumFractionDigits: 2 }) +
+      '\n(queda en el historial y recalcula las recetas que lo usan)')) return;
+    setPuenteando(s.id);
+    try {
+      const r = await fetchEnCola('/api/subrecetas/actualizar-insumo', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: s.id }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'No se pudo actualizar');
+      setSubs((prev) => prev.map((x) => (x.id === s.id ? { ...x, insumo_coste: viene, desactualizada: false } : x)));
+      if (j.data?.recetas_recalculadas) alert('Insumo actualizado. ' + j.data.recetas_recalculadas);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error inesperado');
+    } finally {
+      setPuenteando(null);
+    }
+  }
 
   const totalActivas = subs.filter((s) => esActivo(s.activo)).length;
 
@@ -94,6 +118,7 @@ export default function SubrecetasPage() {
             <thead className="bg-[#F8FAFC] text-left text-[11px] uppercase tracking-wide text-salvia-500">
               <tr>
                 <th className="px-4 py-2">Nombre</th>
+                <th className="px-4 py-2">Maestro (Insumos)</th>
                 <th className="px-4 py-2 text-right">Rendimiento</th>
                 <th className="px-4 py-2 text-right">Costo total</th>
                 <th className="px-4 py-2 text-right">Costo x unidad</th>
@@ -105,6 +130,18 @@ export default function SubrecetasPage() {
               {filtradas.map((s) => (
                 <tr key={s.id} className="border-t border-line hover:bg-[#F8FAFC]">
                   <td className="px-4 py-2 font-medium text-ink">🥣 {s.nombre}<span className="ml-2 text-[11px] text-salvia-400">{s.id}</span></td>
+                  <td className="px-4 py-2">
+                    <span className="font-mono text-[11px] text-salvia-600">{(s as any).insumo_referencia || '—'}</span>
+                    {(s as any).desactualizada ? (
+                      <button onClick={() => actualizarMaestro(s)} disabled={puenteando === s.id}
+                        title={'Insumo: ' + money(Number((s as any).insumo_coste) || 0) + ' · Calculado: ' + money(Number(s.costo_unitario) || 0)}
+                        className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-200 disabled:opacity-50">
+                        {puenteando === s.id ? '…' : '⇪ Desactualizado — actualizar'}
+                      </button>
+                    ) : (
+                      <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">✓ al día</span>
+                    )}
+                  </td>
                   <td className="px-4 py-2 text-right">{num(Number(s.rendimiento) || 0)} {s.unidad_rendimiento_id || ''}</td>
                   <td className="px-4 py-2 text-right">{money(Number(s.costo_total) || 0)}</td>
                   <td className="px-4 py-2 text-right font-semibold text-[#1E3A5F]">{money(Number(s.costo_unitario) || 0)}</td>

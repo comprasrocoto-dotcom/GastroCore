@@ -36,9 +36,9 @@ function NuevaSubrecetaInner() {
         setNombre(rec.nombre || '');
         setRendimiento(Number(rec.rendimiento) || 1);
         setDesvioPct(Number(rec.desvio_pct) || 0);
-        setPrecioReal(Number(rec.precio_real) || 0);
-        setIva(rec.iva !== undefined && rec.iva !== null && rec.iva !== '' ? Number(rec.iva) : 8);
-        if (rec.subfamilia_id) setSubfamiliaId(String(rec.subfamilia_id));
+        if (rec.insumo) {
+          setInsumoMaestro({ articulo: rec.insumo.articulo, referencia: rec.insumo.referencia, coste: Number(rec.insumo.coste) || 0 });
+        }
         if (rec.unidad_rendimiento_id) setUnidadRendimiento(String(rec.unidad_rendimiento_id));
         const ings = Array.isArray(rec.ingredientes) ? rec.ingredientes : [];
         if (ings.length) {
@@ -47,7 +47,7 @@ function NuevaSubrecetaInner() {
             unidad: g.unidad_id || '',
             cantidad: Number(g.cantidad) || 0,
             merma_pct: Number(g.merma_pct) || 0,
-            tipo_item: (g.tipo_item === 'subreceta' ? 'subreceta' : 'insumo'),
+            tipo_item: 'insumo',
           })));
         }
       } catch {}
@@ -59,41 +59,37 @@ function NuevaSubrecetaInner() {
   const [rendimiento, setRendimiento] = useState(1);
   const [unidadRendimiento, setUnidadRendimiento] = useState('GRAMOS');
   const [desvioPct, setDesvioPct] = useState(0);
-  const [precioReal, setPrecioReal] = useState(0);
-  const foodCostObjetivo = 0.35; // Food Cost objetivo FIJO 35% (no editable)
-  const [iva, setIva] = useState(8);
   const [lineas, setLineas] = useState<Linea[]>([]);
   const cantRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [errores, setErrores] = useState<string[]>([]);
 
-  // v7.8: migracion de un insumo "SUB." existente hacia esta subreceta
-  const [migrarDesde, setMigrarDesde] = useState('');
+  // v9: el MAESTRO de la preparacion vive en INSUMOS — aqui se enlaza uno
+  // existente ("SUB. ...") o se crea uno nuevo (referencia + subfamilia).
+  const [insumoEnlazado, setInsumoEnlazado] = useState('');
   const [busquedaSub, setBusquedaSub] = useState('');
-  const [depsMigrar, setDepsMigrar] = useState<number | null>(null);
+  const [enlazadosIds, setEnlazadosIds] = useState<Set<string>>(new Set());
+  const [referencia, setReferencia] = useState('');
   const [subfamiliaId, setSubfamiliaId] = useState('');
-  const [familiaId, setFamiliaId] = useState('');
-  const [familias, setFamilias] = useState<Cat[]>([]);
   const [subfamilias, setSubfamilias] = useState<Cat[]>([]);
+  const [insumoMaestro, setInsumoMaestro] = useState<{ articulo: string; referencia: string; coste: number } | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/familias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
-      fetch('/api/subfamilias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})),
-    ]).then(([rf, rs]) => {
-      const esSub = (t?: string) => String(t || '').toLowerCase() === 'subreceta';
-      setFamilias((rf?.data || []).filter((f: Cat) => esSub(f.tipo)));
-      setSubfamilias((rs?.data || []).filter((s: Cat) => esSub(s.tipo)));
-    });
+    // v9: la clasificacion del maestro usa las subfamilias de INSUMOS.
+    fetch('/api/subfamilias', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((rs) => {
+        const esIns = (t?: string) => String(t || '').toLowerCase() === 'insumo';
+        setSubfamilias((rs?.data || []).filter((s: Cat) => esIns(s.tipo)));
+      })
+      .catch(() => {});
+    // insumos ya enlazados a otra subreceta: fuera del selector de enlace.
+    fetch('/api/subrecetas?all=true', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => setEnlazadosIds(new Set(((j?.data || []) as { insumo_id?: string }[]).map((s) => String(s.insumo_id)))))
+      .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (subfamiliaId && !familiaId && subfamilias.length) {
-      const s = subfamilias.find((x) => String(x.id) === String(subfamiliaId));
-      if (s && s.familia_id) setFamiliaId(String(s.familia_id));
-    }
-  }, [subfamiliaId, subfamilias, familiaId]);
 
   useEffect(() => {
     fetch('/api/catalogo')
@@ -121,21 +117,13 @@ function NuevaSubrecetaInner() {
   }, [lineas, insumoPorId]);
 
   const costeo = useMemo(() => {
+    // v9: la subreceta es una FABRICACION — solo costeo, sin venta.
     const costoIngredientes = filas.reduce((s, f) => s + f.costoTotal, 0);
     const desvio = costoIngredientes * (desvioPct / 100);
     const costoFinal = costoIngredientes + desvio;
     const costoPorcion = costoFinal / (rendimiento || 1);
-    const fcObj = foodCostObjetivo > 1 ? foodCostObjetivo / 100 : foodCostObjetivo;
-    const precioBaseSugerido = fcObj > 0 ? costoPorcion / fcObj : 0;
-    const ivaSugerido = precioBaseSugerido * ((Number(iva) || 0) / 100);
-    const precioSugerido = precioBaseSugerido + ivaSugerido;
-    const ivaFactor = 1 + (Number(iva) || 0) / 100;
-    const precioRealBase = precioReal > 0 ? precioReal / ivaFactor : 0;
-    const foodCostReal = precioRealBase > 0 ? (costoPorcion / precioRealBase) * 100 : 0;
-    const utilidad = precioRealBase - costoPorcion;
-    const margenBruto = precioRealBase > 0 ? (utilidad / precioRealBase) * 100 : 0;
-    return { costoIngredientes, desvio, costoFinal, costoPorcion, precioBaseSugerido, ivaSugerido, precioSugerido, precioRealBase, foodCostReal, utilidad, margenBruto };
-  }, [filas, desvioPct, rendimiento, foodCostObjetivo, precioReal, iva]);
+    return { costoIngredientes, desvio, costoFinal, costoPorcion };
+  }, [filas, desvioPct, rendimiento]);
 
   const addLinea = () =>
     setLineas((p) => [...p, { item_id: '', unidad: '', cantidad: 1, merma_pct: 0 }]);
@@ -154,6 +142,11 @@ function NuevaSubrecetaInner() {
     if (nombre.trim() === '') e.push('El nombre de la receta es obligatorio.');
     if (!rendimiento || rendimiento < 1) e.push('El rendimiento debe ser al menos 1 porcion.');
     if (lineas.length === 0) e.push('Agrega al menos un ingrediente.');
+    if (!modoEdicion && !insumoEnlazado) {
+      if (!referencia.trim()) e.push('La referencia del maestro es obligatoria (o enlaza un insumo SUB. existente).');
+      if (refDuplicada) e.push('La referencia ya existe: ' + refDuplicada.articulo);
+      if (!subfamiliaId) e.push('Elige la subfamilia del maestro.');
+    }
     lineas.forEach((l, idx) => {
       const n = idx + 1;
       if (!l.item_id) e.push('Ingrediente ' + n + ': selecciona un insumo.');
@@ -174,18 +167,17 @@ function NuevaSubrecetaInner() {
     setGuardando(true);
     try {
       const payload = {
-        migrar_desde: migrarDesde || undefined,
         nombre: nombre.trim(),
         rendimiento,
         merma_pct: 0,
         desvio_pct: desvioPct,
-        precio_real: precioReal,
-        margen_objetivo: foodCostObjetivo,
-        iva: Number(iva) || 0,
-        subfamilia_id: subfamiliaId,
         unidad_rendimiento_id: unidadRendimiento,
+        // v9: maestro — enlazar existente O crear con referencia+subfamilia
+        insumo_id: !modoEdicion && insumoEnlazado ? insumoEnlazado : undefined,
+        referencia: !modoEdicion && !insumoEnlazado ? referencia.trim() : undefined,
+        subfamilia_id: !modoEdicion && !insumoEnlazado ? subfamiliaId : undefined,
         ingredientes: lineas.map((l, idx) => ({
-          tipo_item: l.tipo_item || 'insumo',
+          tipo_item: 'insumo',
           item_id: l.item_id,
           cantidad: Number(l.cantidad),
           merma_pct: Number(l.merma_pct),
@@ -200,13 +192,36 @@ function NuevaSubrecetaInner() {
       });
       const data = await res.json();
       if (data.ok) {
-        const mig = data?.data?.migracion;
-        if (mig && mig.recetas_actualizadas > 0) {
-          alert(`Migración completada: ${mig.recetas_actualizadas} receta(s) ahora costean con esta subreceta.`);
+        const d = data.data || {};
+        // v9: EL PUENTE — si el costo calculado difiere del insumo maestro,
+        // ofrecer actualizarlo (con historial y cascada) en este acto.
+        if (d.insumo_desactualizado && d.insumo) {
+          const va = Number(d.insumo.coste) || 0;
+          const viene = Number(d.costo_unitario) || 0;
+          const ok = window.confirm(
+            'Costo calculado: $' + viene.toLocaleString('es-CO', { maximumFractionDigits: 2 }) +
+            '\nCosto actual del insumo ' + d.insumo.articulo + ': $' + va.toLocaleString('es-CO', { maximumFractionDigits: 2 }) +
+            '\n\n¿Actualizar el costeo del insumo? (queda en el historial y recalcula las recetas que lo usan)'
+          );
+          if (ok) {
+            try {
+              const rp = await fetchEnCola('/api/subrecetas/actualizar-insumo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: d.subreceta?.id || editId }),
+              });
+              const jp = await rp.json();
+              if (jp.ok && !jp.data?.sin_cambio) {
+                alert('Insumo actualizado. ' + (jp.data?.recetas_recalculadas || ''));
+              } else if (!jp.ok) {
+                alert('No se pudo actualizar el insumo: ' + (jp.error || ''));
+              }
+            } catch { alert('No se pudo actualizar el insumo.'); }
+          }
         }
         router.push('/subrecetas');
       } else {
-        setMsg((data.error && data.error.message) || data.error || 'No se pudo guardar la receta.');
+        setMsg((data.error && data.error.message) || data.error || 'No se pudo guardar la subreceta.');
       }
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Error inesperado al guardar.');
@@ -216,32 +231,29 @@ function NuevaSubrecetaInner() {
   }
 
   // Preparaciones del maestro candidatas a migrar (insumos "SUB. ...")
-  const candidatosMigrar = useMemo(() => {
-    const q = busquedaSub.trim().toLowerCase();
-    return insumos
-      .filter((i) => i.tipo_item === 'insumo' && /^sub[\s.]/i.test(String(i.articulo || '')))
-      .filter((i) => !q || String(i.articulo).toLowerCase().includes(q))
-      .slice(0, 60);
-  }, [insumos, busquedaSub]);
+  const refNormal = referencia.trim().toUpperCase();
+  const refDuplicada = useMemo(() => {
+    if (!refNormal || insumoEnlazado) return null;
+    return insumos.find((i) => String((i as { referencia?: string }).referencia || '').trim().toUpperCase() === refNormal) || null;
+  }, [refNormal, insumos, insumoEnlazado]);
 
-  function seleccionarMigracion(id: string) {
-    setMigrarDesde(id);
-    setDepsMigrar(null);
+  const candidatosEnlace = useMemo(() => {
+    const t = busquedaSub.trim().toLowerCase();
+    return insumos
+      .filter((i) => /^SUB[\s.]/i.test(String(i.articulo || '')))
+      .filter((i) => !enlazadosIds.has(String(i.id)))
+      .filter((i) => !t || String(i.articulo).toLowerCase().includes(t))
+      .slice(0, 30);
+  }, [insumos, busquedaSub, enlazadosIds]);
+
+  function seleccionarEnlace(id: string) {
+    setInsumoEnlazado(id);
     const ins = insumoPorId[id];
-    if (ins) {
-      // Prefijo "SUB." fuera del nombre: el sistema ya lo antepone al mostrarla como ingrediente.
-      setNombre(String(ins.articulo).replace(/^sub[\s.]+/i, '').trim());
-      const u = String(ins.unidad || '').toUpperCase();
-      if (UNIDADES.includes(u)) setUnidadRendimiento(u);
+    if (ins && !nombre.trim()) {
+      setNombre(String(ins.articulo).replace(/^SUB[\s.]+/i, '').trim());
     }
-    fetch(`/api/dependencias?item_id=${encodeURIComponent(id)}`)
-      .then((r) => r.json())
-      .then((d) => setDepsMigrar(Array.isArray(d.data) ? d.data.length : Array.isArray(d.dependencias) ? d.dependencias.length : null))
-      .catch(() => setDepsMigrar(null));
   }
 
-  const fcBadge = (fc: number) =>
-    fc <= 0 ? 'text-salvia-400' : fc <= foodCostObjetivo * 100 ? 'text-green-700' : fc <= 40 ? 'text-ambar-600' : 'text-red-600';
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6">
@@ -253,52 +265,76 @@ function NuevaSubrecetaInner() {
         <Link href="/subrecetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
       </div>
 
-      {!modoEdicion && (
+      {!modoEdicion ? (
         <div className="mb-4 card p-4">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold text-ink">¿Digitalizar una preparación que ya existe en Insumos?</h2>
+              <h2 className="text-sm font-semibold text-ink">Maestro en Insumos</h2>
               <p className="text-xs text-salvia-500">
-                Selecciona el insumo &quot;SUB.&quot; del maestro. Al guardar, todas las recetas que lo usan pasarán a
-                costear con esta subreceta y el insumo quedará marcado como migrado. O deja vacío para crear desde cero.
+                Toda preparación vive en INSUMOS (es lo que las recetas usan). Enlaza un insumo
+                &quot;SUB.&quot; existente, o crea el maestro nuevo con su referencia y subfamilia.
               </p>
             </div>
-            {migrarDesde && (
-              <button onClick={() => { setMigrarDesde(''); setDepsMigrar(null); }}
+            {insumoEnlazado && (
+              <button onClick={() => setInsumoEnlazado('')}
                 className="rounded-lg border border-line px-3 py-1.5 text-xs text-salvia-700 hover:bg-neutral-50">
-                ✕ Quitar selección
+                ✕ Quitar enlace (crear maestro nuevo)
               </button>
             )}
           </div>
-          {!migrarDesde ? (
-            <div>
+          {!insumoEnlazado ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-salvia-500">Referencia del maestro (código único)</span>
+                  <input value={referencia} onChange={(e) => setReferencia(e.target.value)}
+                    placeholder="Ej: SUB-ARROZ-01"
+                    className={'w-full rounded-lg border px-3 py-2 text-sm font-mono uppercase focus:outline-none ' + (refDuplicada ? 'border-red-400 bg-red-50' : 'border-line focus:border-[#2563EB]')} />
+                  {refDuplicada && <span className="mt-1 block text-[11px] font-medium text-red-600">✘ Ya existe: {refDuplicada.articulo}</span>}
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-salvia-500">Subfamilia del maestro</span>
+                  <SearchableSelect
+                    value={subfamiliaId}
+                    onChange={(v) => setSubfamiliaId(v)}
+                    options={subfamilias.map((s) => ({ value: s.id, label: s.nombre }))}
+                    placeholder="Elige la subfamilia…"
+                    searchPlaceholder="Buscar subfamilia…"
+                    clearLabel="Sin clasificar"
+                  />
+                </label>
+              </div>
+              <p className="mt-3 text-[11px] text-salvia-500">¿La preparación ya existe como insumo &quot;SUB.&quot;? Enlázala y evita el doble:</p>
               <input value={busquedaSub} onChange={(e) => setBusquedaSub(e.target.value)}
                 placeholder="Buscar preparación… (ej: fondo, salsa, arroz)"
-                className="mb-2 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-[#2563EB] focus:outline-none" />
-              <div className="max-h-44 overflow-y-auto rounded-lg border border-line">
-                {candidatosMigrar.length === 0 ? (
-                  <p className="p-3 text-xs text-salvia-500">No hay preparaciones &quot;SUB.&quot; pendientes que coincidan.</p>
-                ) : candidatosMigrar.map((i) => (
-                  <button key={i.id} onClick={() => seleccionarMigracion(i.id)}
+                className="mb-2 mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-[#2563EB] focus:outline-none" />
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-line">
+                {candidatosEnlace.length === 0 ? (
+                  <p className="p-3 text-xs text-salvia-500">No hay preparaciones &quot;SUB.&quot; sin enlazar que coincidan.</p>
+                ) : candidatosEnlace.map((i) => (
+                  <button key={i.id} onClick={() => seleccionarEnlace(i.id)}
                     className="flex w-full items-center justify-between border-b border-line px-3 py-2 text-left text-sm last:border-0 hover:bg-blue-50">
                     <span>{i.articulo}</span>
                     <span className="text-xs text-salvia-500">${'{'}Number(i.coste).toLocaleString('es-CO'){'}'} / {i.unidad}</span>
                   </button>
                 ))}
               </div>
-            </div>
+            </>
           ) : (
             <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
-              <b>Migrando:</b> {insumoPorId[migrarDesde]?.articulo}
-              {depsMigrar !== null && (
-                <span className="ml-2 text-xs text-salvia-600">
-                  · está en <b>{depsMigrar}</b> receta{depsMigrar === 1 ? '' : 's'} que se actualizarán automáticamente
-                </span>
-              )}
+              <b>Enlazada a:</b> {insumoPorId[insumoEnlazado]?.articulo}
+              <span className="ml-2 text-xs text-salvia-600">
+                · costo actual ${'{'}Number(insumoPorId[insumoEnlazado]?.coste || 0).toLocaleString('es-CO'){'}'} — al guardar podrás actualizarlo con el calculado
+              </span>
             </div>
           )}
         </div>
-      )}
+      ) : insumoMaestro ? (
+        <div className="mb-4 rounded-lg border border-line bg-white px-4 py-3 text-sm">
+          <b>Maestro:</b> {insumoMaestro.articulo} <span className="font-mono text-xs text-salvia-500">({insumoMaestro.referencia})</span>
+          <span className="ml-2 text-xs text-salvia-600">· costo actual en INSUMOS: ${'{'}insumoMaestro.coste.toLocaleString('es-CO'){'}'}</span>
+        </div>
+      ) : null}
 
       <div className="mb-4 grid gap-3 card p-4 sm:grid-cols-3">
         <label className="block sm:col-span-1">
@@ -325,38 +361,7 @@ function NuevaSubrecetaInner() {
         </label>
       </div>
 
-      <div className="mb-4 card p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Clasificacion</h2>
-          <Link href="/recetas/familias" className="text-xs font-medium text-ambar-600 hover:underline">Administrar familias</Link>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-salvia-500">Familia</span>
-            <SearchableSelect
-                  value={familiaId}
-                  onChange={(v) => { setFamiliaId(v); setSubfamiliaId(''); }}
-                  options={familias.map((f) => ({ value: f.id, label: f.nombre }))}
-                  placeholder="Sin clasificar"
-                  searchPlaceholder="Buscar familia…"
-                  clearLabel="Sin clasificar"
-                />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-salvia-500">Subfamilia</span>
-            <SearchableSelect
-                  value={subfamiliaId}
-                  onChange={(v) => setSubfamiliaId(v)}
-                  options={subfamilias.filter((s) => String(s.familia_id) === String(familiaId)).map((s) => ({ value: s.id, label: s.nombre }))}
-                  placeholder={familiaId ? 'Sin subfamilia' : 'Elige una familia primero'}
-                  searchPlaceholder="Buscar subfamilia…"
-                  clearLabel="Sin subfamilia"
-                  disabled={!familiaId}
-                />
-          </label>
-        </div>
-        {familias.length === 0 && (<p className="mt-2 text-xs text-salvia-400">Aun no hay familias de platos de venta. <Link href="/recetas/familias" className="text-ambar-600 hover:underline">Crea la primera aqui</Link>.</p>)}
-      </div>
+      {/* v9: la clasificación vive en el MAESTRO (Insumos) */}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <section className="card">
