@@ -8,6 +8,7 @@ export type InsumoOpt = {
   articulo: string;
   unidad: string;
   coste: number;
+  subfamilia?: string;
   tipo_item?: 'insumo' | 'subreceta';
 };
 
@@ -58,6 +59,25 @@ export default function InsumoAutocomplete({
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // v9.7: el panel se posiciona FIJO desde el input — así nunca lo recorta
+  // el overflow de la tabla de ingredientes (el bug del panel aplastado).
+  useEffect(() => {
+    if (!open) { setPos(null); return; }
+    const calcular = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (!r) return;
+      const width = Math.min(420, Math.max(340, r.width + 140));
+      const left = Math.min(r.left, window.innerWidth - width - 12);
+      const abajo = window.innerHeight - r.bottom;
+      setPos({ top: abajo > 300 ? r.bottom + 4 : Math.max(8, r.top - 304), left: Math.max(8, left), width });
+    };
+    calcular();
+    window.addEventListener('resize', calcular);
+    window.addEventListener('scroll', calcular, true);
+    return () => { window.removeEventListener('resize', calcular); window.removeEventListener('scroll', calcular, true); };
+  }, [open]);
 
   // Indice normalizado precomputado (solo cambia si cambia la lista de insumos).
   const index = useMemo(
@@ -163,7 +183,7 @@ export default function InsumoAutocomplete({
   }
 
   return (
-    <div ref={boxRef} className="relative w-full min-w-[220px]">
+    <div ref={boxRef} className="relative w-full min-w-[200px]">
       {open ? (
         <input
           ref={inputRef}
@@ -199,11 +219,15 @@ export default function InsumoAutocomplete({
         </div>
       ) : null}
 
-      {open && !dupWarn ? (
-        <div className="absolute z-[9999] mt-1 w-[320px] max-w-[80vw] overflow-hidden rounded-lg border border-salvia-200 bg-white shadow-xl">
+      {open && !dupWarn && pos ? (
+        <div style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+          className="overflow-hidden rounded-xl border border-salvia-200 bg-white shadow-2xl ring-1 ring-black/5">
+          <div className="border-b border-salvia-100 bg-[#F8FAFC] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-salvia-400">
+            {resultados.length} insumo{resultados.length === 1 ? '' : 's'} · ↑↓ para navegar · Enter para elegir
+          </div>
           <div ref={listRef} className="max-h-72 overflow-y-auto py-1">
             {resultados.length === 0 ? (
-              <div className="px-3 py-3 text-sm text-salvia-400">Sin resultados</div>
+              <div className="px-4 py-5 text-center text-sm text-salvia-400">Sin resultados para &quot;{q}&quot;<br /><span className="text-xs">Prueba con menos letras o la referencia.</span></div>
             ) : (
               resultados.map((ins, idx) => {
                 const dup = existingIds.includes(ins.id) && ins.id !== value;
@@ -212,35 +236,29 @@ export default function InsumoAutocomplete({
                     key={ins.id}
                     data-active={idx === active}
                     onMouseEnter={() => setActive(idx)}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      elegir(ins);
-                    }}
+                    onMouseDown={(e) => { e.preventDefault(); elegir(ins); }}
                     className={
-                      'flex cursor-pointer items-center justify-between gap-3 px-3 py-2 ' +
-                      (idx === active ? 'bg-ambar-50' : 'hover:bg-salvia-50') +
-                      (dup ? ' opacity-50' : '')
+                      'flex cursor-pointer items-center justify-between gap-3 border-l-2 px-3 py-2 transition-colors ' +
+                      (idx === active ? 'border-ambar-400 bg-ambar-50' : 'border-transparent hover:bg-salvia-50') +
+                      (dup ? ' opacity-45' : '')
                     }
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium text-salvia-900">
-                        <span className="mr-1">{ins.tipo_item === 'subreceta' ? '🥣' : '📦'}</span>{ins.articulo}
-                      </div>
-                      <div className="text-xs text-salvia-500">
-                        {ins.unidad || 'Sin unidad'}
-                        {dup ? ' · ya en la receta' : ''}
+                      <div className="truncate text-sm font-semibold text-slate-800">{ins.articulo}</div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-salvia-500">
+                        {ins.referencia && <span className="rounded bg-slate-100 px-1.5 py-px font-mono text-[10px] text-slate-500">{ins.referencia}</span>}
+                        {ins.subfamilia && <span>{ins.subfamilia}</span>}
+                        {dup && <span className="font-medium text-amber-600">· ya en la receta</span>}
                       </div>
                     </div>
-                    <div className="shrink-0 text-right text-xs font-mono text-salvia-700">
-                      {money(ins.coste)}
+                    <div className="shrink-0 text-right">
+                      <div className="font-mono text-sm font-semibold text-[#1E3A5F]">{money(ins.coste)}</div>
+                      <div className="text-[10px] uppercase text-salvia-400">por {ins.unidad || 'unidad'}</div>
                     </div>
                   </div>
                 );
               })
             )}
-          </div>
-          <div className="border-t border-salvia-100 bg-salvia-50 px-3 py-1.5 text-[10px] text-salvia-400">
-            ↑↓ navegar · Enter seleccionar · Esc cerrar
           </div>
         </div>
       ) : null}

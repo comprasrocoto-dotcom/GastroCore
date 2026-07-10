@@ -270,18 +270,18 @@ function NuevaRecetaInner() {
             <h2 className="font-display text-base font-semibold text-salvia-800">Ingredientes ({lineas.length})</h2>
             <button onClick={addLinea} className="btn-primary text-xs">+ Agregar ingrediente</button>
           </div>
-          <div className="max-h-[calc(100vh-320px)] overflow-y-auto overflow-x-auto">
+          <div className="overflow-x-auto">
             <table className="erp-table">
               <thead>
                 <tr>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC]">Insumo</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC]">Unidad</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">Cantidad</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">% Merma</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">Cant. real</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">C. unitario</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-right">C. total</th>
-                  <th className="sticky top-0 z-[90] bg-[#F8FAFC] !text-center">Accion</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px]">Insumo</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px]">Unidad</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px] !text-right">Cantidad</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px] !text-right">% Merma</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px] !text-right">Cant. real</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px] !text-right">C. unitario</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px] !text-right">C. total</th>
+                  <th className="whitespace-nowrap !px-2 !py-2 !text-[11px] !text-center">Accion</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,21 +297,21 @@ function NuevaRecetaInner() {
                       />
                     </td>
                     <td className="px-2 py-2">
-                      <span className="inline-block min-w-[72px] rounded-md bg-salvia-50 px-2.5 py-1.5 text-center text-sm text-salvia-700" title="La unidad la define el insumo en el maestro">{l.unidad || '—'}</span>
+                      <span className="inline-block min-w-[64px] rounded-md bg-salvia-50 px-2 py-1.5 text-center text-sm text-salvia-700" title="La unidad la define el insumo en el maestro">{l.unidad || '—'}</span>
                     </td>
                     <td className="px-2 py-2 text-right">
                       <input type="number" min={0} value={l.cantidad}
                         ref={(el) => { cantRefs.current[i] = el; }}
                         onChange={(e) => updLinea(i, { cantidad: Number(e.target.value) })}
-                        className="w-20 rounded-md border border-salvia-200 px-2 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
+                        className="w-16 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
                     <td className="px-2 py-2 text-right">
                       <input type="number" min={0} step="0.1" value={l.merma_pct} onChange={(e) => updLinea(i, { merma_pct: Number(e.target.value) })}
-                        className="w-16 rounded-md border border-salvia-200 px-2 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
+                        className="w-14 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
-                    <td className="px-2 py-2 text-right font-mono text-xs text-salvia-700">{num(filas[i]?.cantReal || 0)}</td>
-                    <td className="px-2 py-2 text-right font-mono text-xs text-salvia-700">{money(filas[i]?.costoUnit || 0)}</td>
-                    <td className="px-2 py-2 text-right font-mono text-xs font-semibold text-ambar-700">{money(filas[i]?.costoTotal || 0)}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs text-salvia-700">{num(filas[i]?.cantReal || 0)}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs text-salvia-700">{money(filas[i]?.costoUnit || 0)}</td>
+                    <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs font-semibold text-ambar-700">{money(filas[i]?.costoTotal || 0)}</td>
                     <td className="px-2 py-2">
                       <div className="flex items-center justify-center gap-2">
                         <button onClick={() => dupLinea(i)} title="Duplicar" className="text-salvia-400 hover:text-salvia-700">&#10697;</button>
