@@ -257,6 +257,8 @@ function Tarjeta({ r, modo, onOpen }: { r: RecetaPublica; modo: 'grid' | 'list';
 
 /* ============================ MODAL ====================================== */
 export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () => void }) {
+  const [lupa, setLupa] = useState(false);   // v9.6: visor de foto en grande
+  const [ampliada, setAmpliada] = useState(false);
   const prep = pasos(r.ficha.preparacion);
   const empl = pasos(r.ficha.emplatado);
 
@@ -292,14 +294,37 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
         {/* FOTO: se ve COMPLETA en su proporción natural, adaptándose a
             cualquier resolución (tope ~60% de pantalla / 560px). */}
         {r.ficha.foto_url && (
-          <div className="flex w-full items-center justify-center">
+          <div className="group relative flex w-full items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={fotoConAncho(r.ficha.foto_url, 1200)}
               alt={r.nombre}
-              className="block h-auto w-auto rounded-lg"
+              onClick={() => setLupa(true)}
+              title="Ver en grande"
+              className="block h-auto w-auto cursor-zoom-in rounded-lg"
               style={{ maxWidth: '100%', maxHeight: 'min(60vh, 560px)' }}
             />
+            <button onClick={() => setLupa(true)}
+              className="absolute bottom-2 right-2 rounded-full bg-black/55 px-2.5 py-1.5 text-sm text-white opacity-80 transition group-hover:opacity-100"
+              title="Ver en grande">🔍</button>
+            {lupa && (
+              <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/85 p-3"
+                onClick={() => { setLupa(false); setAmpliada(false); }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={fotoConAncho(r.ficha.foto_url, 1600)}
+                  alt={r.nombre}
+                  onClick={(e) => { e.stopPropagation(); setAmpliada((v) => !v); }}
+                  className={'rounded-lg transition-transform duration-200 ' + (ampliada ? 'cursor-zoom-out' : 'cursor-zoom-in')}
+                  style={{ maxWidth: '95vw', maxHeight: '92vh', transform: ampliada ? 'scale(1.8)' : 'scale(1)' }}
+                />
+                <button onClick={() => { setLupa(false); setAmpliada(false); }}
+                  className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-lg text-white hover:bg-white/30">✕</button>
+                <p className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-[11px] text-white">
+                  Toca la imagen para {ampliada ? 'reducir' : 'ampliar'} · toca afuera para cerrar
+                </p>
+              </div>
+            )}
           </div>
         )}
 
