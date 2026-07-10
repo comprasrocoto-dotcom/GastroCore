@@ -10,8 +10,8 @@ import { precioSugerido as precioSugeridoObjetivo, FC_OBJ, INC } from '@/lib/cos
 import { BookOpen, DollarSign, CheckCircle, TriangleAlert, Tag, CalendarClock } from 'lucide-react';
 
 type Receta = any;
-type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: any };
-type Familia = { id: string; nombre: string; tipo?: string; activo: any };
+type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: any; centrocosto?: string };
+type Familia = { id: string; nombre: string; tipo?: string; activo: any; centrocosto?: string };
 
 const money = (n: number) =>
   new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
@@ -78,6 +78,7 @@ export default function RecetarioClient() {
   const [subSel, setSubSel] = useState('');
   const [fcSel, setFcSel] = useState('');
   const [estadoSel, setEstadoSel] = useState('activos');
+  const [ccSel, setCcSel] = useState('');
 
   useEffect(() => {
     let cancel = false;
@@ -129,6 +130,13 @@ export default function RecetarioClient() {
     return r.activo === true || r.activo === 'true' || r.activo === 'TRUE' || r.activo === 1;
   }
 
+  // v9.2: centro de costo por herencia (subfamilia manda; si no, la familia)
+  const ccDe = (subfamilia_id: string) => {
+    const s = subMap.get(subfamilia_id);
+    if (!s) return '';
+    return String(s.centrocosto || famMap.get(s.familia_id)?.centrocosto || '').toUpperCase();
+  };
+
   const filtradas = useMemo(() => {
     return recetas.filter((r) => {
       if (q && !String(r.nombre || '').toLowerCase().includes(q.toLowerCase())) return false;
@@ -137,6 +145,7 @@ export default function RecetarioClient() {
         const s = subMap.get(r.subfamilia_id);
         if (!s || s.familia_id !== famSel) return false;
       }
+      if (ccSel && ccDe(r.subfamilia_id) !== ccSel) return false;
       if (estadoSel === 'activos' && !esActivo(r)) return false;
       if (estadoSel === 'inactivos' && esActivo(r)) return false;
       const fc = Number(r.food_cost) || 0;
@@ -145,7 +154,13 @@ export default function RecetarioClient() {
       if (fcSel === 'rojo' && !(fc > 0.35)) return false;
       return true;
     });
-  }, [recetas, q, subSel, famSel, estadoSel, fcSel, subMap]);
+  }, [recetas, q, subSel, famSel, estadoSel, fcSel, ccSel, subMap, famMap]);
+
+  const centrosCosto = useMemo(() => {
+    const set = new Set<string>();
+    recetas.forEach((r) => { const c = ccDe(r.subfamilia_id); if (c) set.add(c); });
+    return Array.from(set).sort();
+  }, [recetas, subMap, famMap]);
 
   const grupos = useMemo(() => {
     const map = new Map<string, Receta[]>();
@@ -224,6 +239,7 @@ export default function RecetarioClient() {
           <div className="flex gap-2">
             <Link href="/recetas/familias" className="btn-secondary">Familias</Link>
             <Link href="/recetas/resumen" className="btn-secondary">Panel ejecutivo</Link>
+            <a href="/recetario" target="_blank" rel="noopener" className="rounded-lg border border-ambar-300 bg-ambar-50 px-4 py-2 text-sm font-semibold text-ambar-700 hover:bg-ambar-100">📖 Ver recetario completo</a>
             {puedeEditarRecetas && <Link href="/recetas/nueva" className="btn-primary">+ Nueva receta</Link>}
           </div>
         </header>
@@ -271,6 +287,12 @@ export default function RecetarioClient() {
             <option value="inactivos">Inactivos</option>
             <option value="todos">Todos</option>
           </select>
+          {centrosCosto.length > 0 && (
+            <select value={ccSel} onChange={(e) => setCcSel(e.target.value)} className="min-w-[180px] flex-1 rounded-md border border-salvia-200 px-3 py-2 text-[15px]">
+              <option value="">🏷 Centro de costo (todos)</option>
+              {centrosCosto.map((c) => (<option key={c} value={c}>{c}</option>))}
+            </select>
+          )}
         </section>
 
         {loading ? (

@@ -13,15 +13,33 @@ const fecha = (v: string) => {
   return isNaN(d.getTime()) ? String(v) : d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 };
 
-type Subf = { id: string; nombre: string; tipo?: string };
+type Subf = { id: string; nombre: string; tipo?: string; familia_id?: string; centrocosto?: string };
+type Fam = { id: string; nombre: string; centrocosto?: string };
 
-export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], esAdmin = false }:
-  { insumos: Insumo[]; subfamilias?: Subf[]; esAdmin?: boolean }) {
+export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], familias: familiasCat = [], esAdmin = false }:
+  { insumos: Insumo[]; subfamilias?: Subf[]; familias?: Fam[]; esAdmin?: boolean }) {
   const [lista, setLista] = useState<Insumo[]>(insumos);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState('');
   const [cargaAbierta, setCargaAbierta] = useState(false);
   const [formInsumo, setFormInsumo] = useState<Insumo | 'nuevo' | null>(null);
+  const [ccSel, setCcSel] = useState('');
+
+  // v9.2: centro de costo por herencia (subfamilia manda; si no, su familia)
+  const ccDeInsumo = useMemo(() => {
+    const famPorId = new Map(familiasCat.map((x) => [x.id, x]));
+    const subPorId = new Map(subfamiliasCat.map((x) => [x.id, x]));
+    return (i: Insumo) => {
+      const s = subPorId.get(String((i as { subfamilia_id?: string }).subfamilia_id || ''));
+      if (!s) return '';
+      return String(s.centrocosto || famPorId.get(String(s.familia_id))?.centrocosto || '').toUpperCase();
+    };
+  }, [subfamiliasCat, familiasCat]);
+  const centrosCosto = useMemo(() => {
+    const set = new Set<string>();
+    lista.forEach((i) => { const c = ccDeInsumo(i); if (c) set.add(c); });
+    return Array.from(set).sort();
+  }, [lista, ccDeInsumo]);
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [viendo, setViendo] = useState<Insumo | null>(null);
 
@@ -39,9 +57,10 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], esAdmi
         i.articulo?.toLowerCase().includes(term) ||
         i.referencia?.toLowerCase().includes(term);
       const matchSub = !sub || i.subfamilia === sub;
-      return matchQ && matchSub;
+      const matchCC = !ccSel || ccDeInsumo(i) === ccSel; // v9.2
+      return matchQ && matchSub && matchCC;
     });
-  }, [lista, q, sub]);
+  }, [lista, q, sub, ccSel, ccDeInsumo]);
 
   const onGuardado = useCallback((id: string, coste: number, unidad: string) => {
     setLista((prev) => prev.map((i) => (i.id === id ? { ...i, coste, unidad } : i)));
@@ -78,6 +97,13 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], esAdmi
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+        {centrosCosto.length > 0 && (
+          <select value={ccSel} onChange={(e) => setCcSel(e.target.value)}
+            className="rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-[#2563EB] focus:outline-none">
+            <option value="">🏷 Centro de costo (todos)</option>
+            {centrosCosto.map((c: string) => (<option key={c} value={c}>{c}</option>))}
+          </select>
+        )}
       </div>
 
       <p className="mb-2 text-xs text-salvia-600">{filtrados.length} resultados</p>

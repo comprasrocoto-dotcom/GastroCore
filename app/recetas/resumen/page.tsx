@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { Ayuda } from '@/components/Ayuda';
 import Link from 'next/link';
 import { costearReceta, precioSugerido as calcPrecioSugerido, precioSugeridoPanel, semaforo as calcSem, FC_OBJ, FC_OBJ_PANEL, INC } from '@/lib/costeo';
 
@@ -293,11 +294,15 @@ export default function ResumenClient() {
           </section>
 
           <section className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card label="Recetas activas" value={String(rows.filter((x) => x.activo).length)} tone="blue" icon="📘" />
-            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊" />
-            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰" />
+            <Card label="Recetas activas" value={String(rows.filter((x) => x.activo).length)} tone="blue" icon="📘"
+              ayuda={<Ayuda titulo="Recetas activas"><p>Cuántos platos del menú están <b>activos</b> (a la venta hoy). Las recetas desactivadas no cuentan en ningún número de este panel.</p><p><b>Ejemplo:</b> tienes 86 recetas creadas y desactivas 6 de temporada → este número muestra 80 y todos los KPIs se calculan sobre esas 80.</p></Ayuda>} />
+            <Card label="Food Cost promedio" value={fcPct(rows.filter((x) => x.fc > 0).reduce((a, x, _, arr) => a + x.fc / arr.length, 0))} tone="green" icon="📊"
+              ayuda={<Ayuda titulo="Food Cost promedio"><p>De cada $100 que vendes, cuántos se van en <b>materia prima</b>. Se calcula sobre el precio SIN impuesto: costo ÷ (precio ÷ 1,08).</p><p><b>Ejemplo:</b> un plato a $43.200 tiene base de $40.000; si sus insumos cuestan $12.000, su Food Cost es 30%.</p><p>Este KPI promedia todas las recetas activas con precio. <b>Meta:</b> el objetivo configurado en Parámetros de Costeo. Más bajo = más margen.</p></Ayuda>} />
+            <Card label="Utilidad potencial" value={money(utilidadTotal)} tone="green" icon="💰"
+              ayuda={<Ayuda titulo="Utilidad potencial"><p>La suma de lo que deja cada plato (precio base sin impuesto − costo de insumos) <b>si se vendiera uno de cada uno</b>. No es la utilidad del mes: es el músculo del menú.</p><p><b>Ejemplo:</b> plato con base $40.000 y costo $12.000 aporta $28.000 a este total.</p><p><b>Cómo usarlo:</b> compáralo semana a semana. Si baja sin haber cambiado precios, los insumos subieron y te están comiendo margen en silencio.</p></Ayuda>} />
             <button type="button" onClick={() => setMostrarFuera((v) => !v)} className="text-left focus:outline-none">
-              <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="⚠" />
+              <Card label="Recetas fuera de precio" value={String(fueraPrecio.length)} tone="red" icon="⚠"
+                ayuda={<Ayuda titulo="Recetas fuera de precio"><p>Platos cuyo <b>precio real de venta está por debajo del sugerido</b> para cumplir el Food Cost objetivo: cada venta regala margen.</p><p><b>Ejemplo:</b> si para estar en 30% el sistema sugiere $44.400 y lo vendes a $39.000, el plato aparece aquí.</p><p>Toca esta tarjeta para ver la lista y decidir: subir precio, bajar costo de la receta, o aceptarlo conscientemente (ej: un gancho comercial).</p></Ayuda>} />
             </button>
           </section>
 
@@ -318,6 +323,7 @@ export default function ResumenClient() {
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">🔥</span>
+                    <Ayuda titulo="Semáforo de Food Cost"><p>Clasifica las recetas activas por su Food Cost frente al objetivo:</p><p>🔥 <b>Críticas:</b> superan el objetivo — el costo se comió el margen. Acciones: subir precio, renegociar insumos o ajustar porciones.</p><p>👀 <b>En vigilancia:</b> entre 33% y el objetivo — aún no duelen, pero van en camino.</p><p><b>Ejemplo:</b> con objetivo 30%, un plato en FC 36% y base $40.000 pierde $2.400 de margen por plato frente a la meta.</p></Ayuda>
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-red-700">Alertas de rentabilidad</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -426,7 +432,8 @@ export default function ResumenClient() {
 
           <section className="card">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-salvia-100 px-4 py-3">
-              <div className="flex items-center gap-2 border-l-4 border-ambar-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>📋</span>Detalle por receta</div>
+              <div className="flex items-center gap-2 border-l-4 border-ambar-400 pl-2 text-sm font-semibold uppercase tracking-wide text-salvia-600"><span>📋</span>Detalle por receta
+                <Ayuda titulo="Detalle por receta"><p>Cada fila es una receta activa con su economía completa: costo por porción, precio, Food Cost y utilidad.</p><p><b>El precio de venta es EDITABLE:</b> escribe un valor y el FC y la utilidad se recalculan al instante — es un simulador. Al Guardar, el precio se vuelve oficial y queda registrado en la trazabilidad de la receta.</p><p><b>Rentabilidad</b> = qué % del precio base queda como margen. <b>Ejemplo:</b> base $40.000, costo $12.000 → utilidad $28.000, rentabilidad 70%.</p></Ayuda></div>
               <div className="flex items-center gap-2">
                 <label className="text-xs text-salvia-500">Estado</label>
                 <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value as EstadoFiltro)} className="rounded-md border border-salvia-200 px-2 py-1 text-sm">
@@ -541,12 +548,12 @@ const RTONES: Record<string, { bg: string; ring: string; icon: string; val: stri
   red: { bg: 'bg-[#FEF2F2]', ring: 'border-[#FEE2E2]', icon: 'bg-[#FEE2E2] text-[#DC2626]', val: 'text-[#DC2626]' },
 };
 
-function Card({ label, value, tone = 'neutral', icon }: { label: string; value: string; tone?: string; icon?: string }) {
+function Card({ label, value, tone = 'neutral', icon, ayuda }: { label: string; value: string; tone?: string; icon?: string; ayuda?: React.ReactNode }) {
   const t = RTONES[tone] || RTONES.neutral;
   return (
     <div className={`card-hover rounded-xl border ${t.ring} ${t.bg} p-4 shadow-card`}>
       <div className="flex items-start justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}{ayuda}</p>
         {icon && <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-sm ${t.icon}`}>{icon}</span>}
       </div>
       <p className={`mt-2 text-2xl font-bold tabular-nums tracking-tight ${t.val}`}>{value}</p>

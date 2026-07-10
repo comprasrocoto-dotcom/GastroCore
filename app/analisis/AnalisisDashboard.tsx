@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Ayuda } from '@/components/Ayuda';
 import type { AnalyticsData, SimulacionResult } from '@/lib/api/gastrocore';
 
 const money = (n: number) =>
@@ -126,7 +127,8 @@ function Simulador({ insumos }: { insumos: { id: string; articulo: string; coste
   return (
     <div className="card p-5">
       <div className="mb-1 flex items-center gap-2">
-        <h2 className="font-display text-lg font-bold text-ambar-700">🧪 Simular impacto</h2>
+        <h2 className="font-display text-lg font-bold text-ambar-700">🧪 Simular impacto
+          <Ayuda titulo="Simular impacto"><p>El laboratorio del &quot;¿qué pasa si?&quot;: elige un insumo y un % de subida para ver <b>qué recetas se afectan y cuánto</b>, ANTES de que ocurra — sin tocar los datos reales.</p><p><b>Ejemplo:</b> &quot;aguacate +15%&quot; te lista las recetas que lo usan, el costo nuevo de cada una y cuáles cruzarían el Food Cost objetivo.</p><p><b>Úsalo</b> cuando el proveedor anuncie alzas o antes de negociar: llegas a la mesa sabiendo cuánto te duele cada punto.</p></Ayuda></h2>
         <span className="chip bg-slate-100 text-slate-600">Solo consulta</span>
       </div>
       <p className="mb-4 text-xs text-salvia-700">Prueba un nuevo precio sin guardarlo. Verás qué recetas se afectan, el nuevo Food Cost y el precio de venta sugerido.</p>
@@ -253,7 +255,8 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
 
       {analytics.alertas.length > 0 && (
         <section className="card p-5">
-          <h2 className="mb-3 font-display text-lg font-bold text-ambar-700">🔔 Alertas automáticas</h2>
+          <h2 className="mb-3 font-display text-lg font-bold text-ambar-700">🔔 Alertas automáticas
+            <Ayuda titulo="Alertas automáticas"><p>El sistema vigila solo y avisa de tres cosas:</p><p>1. <b>Insumos que subieron</b> más del umbral configurado en los últimos 30 días (hoy: 5%).</p><p>2. <b>Recetas cuyo Food Cost superó el objetivo</b> — el margen ya está comprometido.</p><p>3. <b>Insumos en $0</b> usados en recetas activas: esos platos están SUBCOSTEADOS (parecen más rentables de lo que son).</p><p><b>Rojo</b> = actuar ya; <b>ámbar</b> = vigilar.</p></Ayuda></h2>
           <ul className="space-y-2">
             {analytics.alertas.map((a, i) => (
               <li key={i} className={'flex items-center gap-2 rounded-md border px-3 py-2 text-sm ' + alertaColor(a.nivel)}>
@@ -292,7 +295,8 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="card p-5">
-              <h3 className="mb-3 font-semibold text-ink">Top 10 insumos con mayor aumento</h3>
+              <h3 className="mb-3 font-semibold text-ink">Top 10 insumos con mayor aumento
+              <Ayuda titulo="Top aumentos"><p>Los insumos que más subieron de precio (%) en el período, según su historial real de compras.</p><p><b>Es tu lista de negociación con proveedores.</b> Ejemplo: si CAMARÓN aparece +18%, revisa los platos marisqueros antes de que el Food Cost lo delate — o busca proveedor alterno.</p></Ayuda></h3>
               {analytics.top_aumentos.length === 0 ? <p className="text-sm text-muted">Sin aumentos registrados.</p> : (
                 <div className="space-y-3">
                   {analytics.top_aumentos.map((t) => (
@@ -306,7 +310,8 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
               )}
             </section>
             <section className="card p-5">
-              <h3 className="mb-3 font-semibold text-ink">Top 10 insumos con mayor reducción</h3>
+              <h3 className="mb-3 font-semibold text-ink">Top 10 insumos con mayor reducción
+              <Ayuda titulo="Top reducciones"><p>Los insumos que más BAJARON de precio: oportunidades escondidas.</p><p><b>Ejemplo:</b> si el pulpo bajó 12%, es momento de empujar los platos que lo usan (sugerencia del mesero, especial del día) — margen extra sin subir un solo precio.</p></Ayuda></h3>
               {analytics.top_reducciones.length === 0 ? <p className="text-sm text-muted">Sin reducciones registradas.</p> : (
                 <div className="space-y-3">
                   {analytics.top_reducciones.map((t) => (
@@ -323,11 +328,13 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="card p-5">
-              <h3 className="mb-3 font-semibold text-ink">Variación por familia</h3>
+              <h3 className="mb-3 font-semibold text-ink">Variación por familia
+              <Ayuda titulo="Variación por familia"><p>Agrupa el movimiento de costos por familia de insumos para ver <b>dónde vive la inflación de tu cocina</b>.</p><p><b>Ejemplo:</b> &quot;FRUVER +8% este mes&quot; te dice más que mirar 50 insumos sueltos — y orienta si el problema es un proveedor, una categoría o el mercado entero.</p></Ayuda></h3>
               <BarChart data={analytics.variacion_familia.map((f) => ({ label: f.familia, value: f.variacion_pct }))} />
             </section>
             <section className="card p-5">
-              <h3 className="mb-3 font-semibold text-ink">Evolución semanal del costo promedio</h3>
+              <h3 className="mb-3 font-semibold text-ink">Evolución semanal del costo promedio
+              <Ayuda titulo="Evolución semanal"><p>La línea del costo promedio del menú: el sistema toma una <b>foto automática cada lunes 6 AM</b>.</p><p><b>Cómo leerla:</b> si la línea sube sostenida y tus precios siguen iguales, tu margen se encoge en silencio. Ejemplo: +4% en el trimestre con precios congelados = 4 puntos de Food Cost regalados.</p></Ayuda></h3>
               <LineChart points={analytics.evolucion_costo.map((e) => ({ x: e.fecha, y: e.costo_promedio }))} label="Costo promedio" />
               <p className="mt-2 text-center text-xs text-muted">Food Cost promedio actual del menú: <span className="font-semibold text-ink">{analytics.food_cost_promedio.toFixed(1)}%</span></p>
             </section>
@@ -337,7 +344,8 @@ export function AnalisisDashboard({ analytics, insumos }: { analytics: Analytics
 
       {tab === 'impacto' && (
         <section className="card p-5">
-          <h3 className="mb-1 font-semibold text-ink">Impacto en el menú</h3>
+          <h3 className="mb-1 font-semibold text-ink">Impacto en el menú
+          <Ayuda titulo="Impacto en el menú"><p>Traduce los movimientos de insumos a <b>platos concretos</b>: qué recetas cambiaron de costo en el período y cuánto.</p><p><b>Úsalo</b> para decidir precios plato por plato: si un ceviche subió $1.800 de costo, aquí lo ves con nombre y apellido — en vez de enterarte a fin de mes en el P&amp;G.</p></Ayuda></h3>
           <p className="mb-3 text-xs text-salvia-700">Recetas afectadas por la variación de precios, ordenadas de mayor a menor impacto.</p>
           {analytics.impacto_menu.length === 0 ? <p className="text-sm text-muted">Aún no hay impacto calculado.</p> : (
             <div className="overflow-x-auto">

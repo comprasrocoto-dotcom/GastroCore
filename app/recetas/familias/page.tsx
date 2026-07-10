@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import SearchableSelect from '@/components/SearchableSelect';
 
-type Familia = { id: string; nombre: string; tipo?: string; activo: boolean | string };
-type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: boolean | string };
+type Familia = { id: string; nombre: string; tipo?: string; activo: boolean | string; centrocosto?: string };
+type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: boolean | string; centrocosto?: string };
 
 const esReceta = (t?: string) => String(t || '').toLowerCase() === 'receta';
 const esActivo = (a: boolean | string) => a === true || a === 'true' || a === 'TRUE' || a === 'VERDADERO';
@@ -25,8 +25,10 @@ export default function FamiliasRecetasPage() {
 
   const [editFamId, setEditFamId] = useState('');
   const [editFamNombre, setEditFamNombre] = useState('');
+  const [editFamCC, setEditFamCC] = useState('');
   const [editSubId, setEditSubId] = useState('');
   const [editSubNombre, setEditSubNombre] = useState('');
+  const [editSubCC, setEditSubCC] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
@@ -116,7 +118,7 @@ export default function FamiliasRecetasPage() {
       const r = await fetchEnCola('/api/familias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, nombre }),
+        body: JSON.stringify({ id, nombre, centrocosto: editFamCC }),
       }).then((res) => res.json());
       if (r.ok) {
         setEditFamId('');
@@ -164,7 +166,7 @@ export default function FamiliasRecetasPage() {
       const r = await fetchEnCola('/api/subfamilias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, nombre }),
+        body: JSON.stringify({ id, nombre, centrocosto: editSubCC }),
       }).then((res) => res.json());
       if (r.ok) {
         setEditSubId('');
@@ -280,6 +282,12 @@ export default function FamiliasRecetasPage() {
                         className="flex-1 rounded-md border border-ambar-300 px-2 py-1 text-sm focus:border-ambar-400 focus:outline-none"
                         autoFocus
                       />
+                      <input
+                        value={editFamCC}
+                        onChange={(e) => setEditFamCC(e.target.value)}
+                        placeholder="Centro de costo (ej: COCINA)"
+                        className="w-44 rounded-md border border-salvia-200 px-2 py-1 text-xs uppercase focus:border-ambar-400 focus:outline-none"
+                      />
                       <button onClick={() => guardarFamilia(f.id)} disabled={ocupado} className="rounded bg-ambar px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">Guardar</button>
                       <button onClick={() => setEditFamId('')} disabled={ocupado} className="rounded border border-salvia-200 px-3 py-1 text-xs text-salvia-600">Cancelar</button>
                     </div>
@@ -288,9 +296,10 @@ export default function FamiliasRecetasPage() {
                       <div>
                         <span className="font-medium text-salvia-700">{f.nombre}</span>
                         <span className="ml-2 text-xs text-salvia-400">{f.id}</span>
+                        {f.centrocosto && <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">🏷 {f.centrocosto}</span>}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button onClick={() => { setEditFamId(f.id); setEditFamNombre(f.nombre); }} className="rounded border border-salvia-200 px-3 py-1 text-xs text-salvia-600 hover:bg-salvia-50">Editar</button>
+                        <button onClick={() => { setEditFamId(f.id); setEditFamNombre(f.nombre); setEditFamCC(String(f.centrocosto || '')); }} className="rounded border border-salvia-200 px-3 py-1 text-xs text-salvia-600 hover:bg-salvia-50">Editar</button>
                         <button onClick={() => desactivarFamilia(f.id, f.nombre)} disabled={ocupado} className="rounded border border-red-200 px-3 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50">Desactivar</button>
                       </div>
                     </>
@@ -308,14 +317,20 @@ export default function FamiliasRecetasPage() {
                               className="flex-1 rounded-md border border-ambar-300 px-2 py-1 text-sm focus:border-ambar-400 focus:outline-none"
                               autoFocus
                             />
+                            <input
+                              value={editSubCC}
+                              onChange={(e) => setEditSubCC(e.target.value)}
+                              placeholder="CC (vacío = hereda)"
+                              className="w-36 rounded-md border border-salvia-200 px-2 py-1 text-xs uppercase focus:border-ambar-400 focus:outline-none"
+                            />
                             <button onClick={() => guardarSubfamilia(s.id)} disabled={ocupado} className="rounded bg-ambar px-3 py-1 text-xs font-semibold text-white disabled:opacity-50">Guardar</button>
                             <button onClick={() => setEditSubId('')} disabled={ocupado} className="rounded border border-salvia-200 px-3 py-1 text-xs text-salvia-600">Cancelar</button>
                           </div>
                         ) : (
                           <>
-                            <span className="rounded-full bg-salvia-50 px-2.5 py-0.5 text-xs text-salvia-600">{s.nombre}</span>
+                            <span className="rounded-full bg-salvia-50 px-2.5 py-0.5 text-xs text-salvia-600">{s.nombre}{s.centrocosto ? <span className="ml-1.5 text-[10px] font-medium text-blue-700">🏷 {s.centrocosto}</span> : null}</span>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => { setEditSubId(s.id); setEditSubNombre(s.nombre); }} className="rounded border border-salvia-200 px-2 py-0.5 text-xs text-salvia-600 hover:bg-salvia-50">Editar</button>
+                              <button onClick={() => { setEditSubId(s.id); setEditSubNombre(s.nombre);  setEditSubCC(String(s.centrocosto || '')); }} className="rounded border border-salvia-200 px-2 py-0.5 text-xs text-salvia-600 hover:bg-salvia-50">Editar</button>
                               <button onClick={() => desactivarSubfamilia(s.id, s.nombre)} disabled={ocupado} className="rounded border border-red-200 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50">Desactivar</button>
                             </div>
                           </>
