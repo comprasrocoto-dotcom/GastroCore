@@ -15,9 +15,16 @@ const fecha = (v: string) => {
 
 type Subf = { id: string; nombre: string; tipo?: string; familia_id?: string; centrocosto?: string };
 type Fam = { id: string; nombre: string; centrocosto?: string };
+type UnidadMedida = { id: string; codigo: string; nombre?: string; activo?: boolean | string };
 
-export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], familias: familiasCat = [], esAdmin = false }:
-  { insumos: Insumo[]; subfamilias?: Subf[]; familias?: Fam[]; esAdmin?: boolean }) {
+export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], familias: familiasCat = [], unidades: unidadesCat = [], esAdmin = false }:
+  { insumos: Insumo[]; subfamilias?: Subf[]; familias?: Fam[]; unidades?: UnidadMedida[]; esAdmin?: boolean }) {
+
+  // v9.8.1: los CÓDIGOS de la tabla UnidadesMedida (la fuente de verdad)
+  const codigosUnidad = useMemo(() => {
+    const act = (v: boolean | string | undefined) => v === true || v === 'TRUE' || v === 'True' || v === undefined || v === '';
+    return unidadesCat.filter((u) => act(u.activo)).map((u) => String(u.codigo || '').toUpperCase()).filter(Boolean);
+  }, [unidadesCat]);
   const [lista, setLista] = useState<Insumo[]>(insumos);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState('');
@@ -168,6 +175,7 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], famili
 
       {formInsumo && esAdmin && (
         <FormularioInsumo
+          codigosUnidad={codigosUnidad}
           insumo={formInsumo === 'nuevo' ? null : formInsumo}
           existentes={lista}
           subfamilias={subfamiliasCat.filter((s) => String(s.tipo || '').toLowerCase() === 'insumo')}
@@ -196,6 +204,7 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], famili
 
       {editando && (
         <EditarInsumoModal
+          codigosUnidad={codigosUnidad}
           insumo={editando}
           onClose={() => setEditando(null)}
           onGuardado={onGuardado}
@@ -212,8 +221,10 @@ function EditarInsumoModal({
   insumo,
   onClose,
   onGuardado,
+  codigosUnidad = [],
 }: {
   insumo: Insumo;
+  codigosUnidad?: string[];
   onClose: () => void;
   onGuardado: (id: string, coste: number, unidad: string) => void;
 }) {
@@ -311,11 +322,15 @@ function EditarInsumoModal({
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-salvia-700">Unidad</span>
-            <input
+            <select
               value={unidad}
               onChange={(e) => setUnidad(e.target.value)}
               className="w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
-            />
+            >
+              <option value="">Elige la unidad…</option>
+              {codigosUnidad.map((u) => (<option key={u} value={u}>{u}</option>))}
+              {unidad && !codigosUnidad.includes(unidad.toUpperCase()) && <option value={unidad}>{unidad}</option>}
+            </select>
           </label>
         </div>
 
@@ -656,7 +671,8 @@ function CargaPlana({ insumos, onCerrar, onListo }:
 //  los datos del maestro. El coste se cambia aparte (💲 con motivo,
 //  para que el historial de precios siga siendo honesto).
 // ══════════════════════════════════════════════════════════════════
-function FormularioInsumo({ insumo, existentes, subfamilias, onCerrar, onListo }: {
+function FormularioInsumo({ insumo, existentes, subfamilias, codigosUnidad = [], onCerrar, onListo }: {
+  codigosUnidad?: string[];
   insumo: Insumo | null;
   existentes: Insumo[];
   subfamilias: { id: string; nombre: string }[];
@@ -666,7 +682,7 @@ function FormularioInsumo({ insumo, existentes, subfamilias, onCerrar, onListo }
   const esNuevo = !insumo;
   const [referencia, setReferencia] = useState(insumo?.referencia || '');
   const [articulo, setArticulo] = useState(insumo?.articulo || '');
-  const [unidad, setUnidad] = useState(insumo?.unidad || 'GRAMOS');
+  const [unidad, setUnidad] = useState(String(insumo?.unidad || '').toUpperCase());
   const [subfamiliaId, setSubfamiliaId] = useState(String((insumo as { subfamilia_id?: string } | null)?.subfamilia_id || ''));
   const [coste, setCoste] = useState(esNuevo ? '' : String(Number(insumo?.coste) || 0));
   const [mermaStd, setMermaStd] = useState(String(Number((insumo as { merma_std?: number } | null)?.merma_std) || 0));
@@ -739,13 +755,13 @@ function FormularioInsumo({ insumo, existentes, subfamilias, onCerrar, onListo }
           </label>
           <label className="block">
             <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Unidad</span>
-            <input value={unidad} onChange={(e) => setUnidad(e.target.value)} list="unidades-conocidas"
-              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm uppercase" />
-            <datalist id="unidades-conocidas">
-              {Array.from(new Set(existentes.map((i) => String(i.unidad || '').toUpperCase()).filter(Boolean))).map((u) => (
-                <option key={u} value={u} />
-              ))}
-            </datalist>
+            {/* v9.8.1: la unidad viene de la tabla UnidadesMedida (columna codigo) */}
+            <select value={unidad} onChange={(e) => setUnidad(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm uppercase focus:border-[#2563EB] focus:outline-none">
+              <option value="">Elige la unidad…</option>
+              {codigosUnidad.map((u) => (<option key={u} value={u}>{u}</option>))}
+              {unidad && !codigosUnidad.includes(unidad) && <option value={unidad}>{unidad} (no está en UnidadesMedida)</option>}
+            </select>
           </label>
           <label className="block sm:col-span-2">
             <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Artículo</span>
