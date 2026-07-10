@@ -13,11 +13,15 @@ const fecha = (v: string) => {
   return isNaN(d.getTime()) ? String(v) : d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 };
 
-export function InsumosTabla({ insumos, esAdmin = false }: { insumos: Insumo[]; esAdmin?: boolean }) {
+type Subf = { id: string; nombre: string; tipo?: string };
+
+export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], esAdmin = false }:
+  { insumos: Insumo[]; subfamilias?: Subf[]; esAdmin?: boolean }) {
   const [lista, setLista] = useState<Insumo[]>(insumos);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState('');
   const [cargaAbierta, setCargaAbierta] = useState(false);
+  const [formInsumo, setFormInsumo] = useState<Insumo | 'nuevo' | null>(null);
   const [editando, setEditando] = useState<Insumo | null>(null);
   const [viendo, setViendo] = useState<Insumo | null>(null);
 
@@ -53,9 +57,15 @@ export function InsumosTabla({ insumos, esAdmin = false }: { insumos: Insumo[]; 
           className="flex-1 min-w-[220px] rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#DBEAFE]"
         />
         {esAdmin && (
+          <button onClick={() => setFormInsumo('nuevo')}
+            className="rounded-lg bg-[#1E3A5F] px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+            + Nuevo insumo
+          </button>
+        )}
+        {esAdmin && (
           <button onClick={() => setCargaAbierta(true)}
             className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white hover:bg-ambar-700">
-            ⇪ Carga por plana
+            ⇪ Carga por plano
           </button>
         )}
         <select
@@ -80,6 +90,7 @@ export function InsumosTabla({ insumos, esAdmin = false }: { insumos: Insumo[]; 
               <th>Articulo</th>
               <th>Unidad</th>
               <th>Subfamilia</th>
+              <th className="!text-right">Merma std</th>
               <th className="!text-right">Coste</th>
               <th className="!text-right">Acciones</th>
             </tr>
@@ -93,8 +104,15 @@ export function InsumosTabla({ insumos, esAdmin = false }: { insumos: Insumo[]; 
                 <td>
                   <span className="chip bg-slate-100 text-slate-600">{i.subfamilia}</span>
                 </td>
+                <td className="text-right text-salvia-600">{Number((i as { merma_std?: number }).merma_std) ? Number((i as { merma_std?: number }).merma_std) + '%' : '—'}</td>
                 <td className="text-right fin-value text-[#1E3A5F]">{money(i.coste)}</td>
                 <td className="text-right whitespace-nowrap">
+                  <button
+                    onClick={() => esAdmin && setFormInsumo(i)}
+                    hidden={!esAdmin}
+                    className="mr-1 rounded border border-line px-2 py-1 text-xs hover:bg-neutral-50"
+                    title="Editar datos del insumo"
+                  >✏️</button>
                   <button
                     onClick={() => esAdmin && setEditando(i)}
                     hidden={!esAdmin}
@@ -121,6 +139,19 @@ export function InsumosTabla({ insumos, esAdmin = false }: { insumos: Insumo[]; 
           </tbody>
         </table>
       </div>
+
+      {formInsumo && esAdmin && (
+        <FormularioInsumo
+          insumo={formInsumo === 'nuevo' ? null : formInsumo}
+          existentes={lista}
+          subfamilias={subfamiliasCat.filter((s) => String(s.tipo || '').toLowerCase() === 'insumo')}
+          onCerrar={() => setFormInsumo(null)}
+          onListo={(ins, esNuevo) => {
+            setFormInsumo(null);
+            setLista((prev) => esNuevo ? [ins, ...prev] : prev.map((x) => (x.id === ins.id ? { ...x, ...ins } : x)));
+          }}
+        />
+      )}
 
       {cargaAbierta && esAdmin && (
         <CargaPlana
@@ -520,7 +551,7 @@ function CargaPlana({ insumos, onCerrar, onListo }:
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={onCerrar}>
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-ink">Carga de costos por plana</h3>
+        <h3 className="text-lg font-bold text-ink">Carga de costos por plano</h3>
         <p className="mt-1 text-xs text-salvia-600">
           Descarga la plantilla, actualiza la columna <b>coste</b> en Excel y vuelve a subir el CSV.
           El cruce es por referencia; cada cambio queda en el historial y recalcula las recetas en cascada.
@@ -588,6 +619,146 @@ function CargaPlana({ insumos, onCerrar, onListo }:
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+//  FORMULARIO DE INSUMO (v8.2): crear con referencia ÚNICA y editar
+//  los datos del maestro. El coste se cambia aparte (💲 con motivo,
+//  para que el historial de precios siga siendo honesto).
+// ══════════════════════════════════════════════════════════════════
+function FormularioInsumo({ insumo, existentes, subfamilias, onCerrar, onListo }: {
+  insumo: Insumo | null;
+  existentes: Insumo[];
+  subfamilias: { id: string; nombre: string }[];
+  onCerrar: () => void;
+  onListo: (ins: Insumo, esNuevo: boolean) => void;
+}) {
+  const esNuevo = !insumo;
+  const [referencia, setReferencia] = useState(insumo?.referencia || '');
+  const [articulo, setArticulo] = useState(insumo?.articulo || '');
+  const [unidad, setUnidad] = useState(insumo?.unidad || 'GRAMOS');
+  const [subfamiliaId, setSubfamiliaId] = useState(String((insumo as { subfamilia_id?: string } | null)?.subfamilia_id || ''));
+  const [coste, setCoste] = useState(esNuevo ? '' : String(Number(insumo?.coste) || 0));
+  const [mermaStd, setMermaStd] = useState(String(Number((insumo as { merma_std?: number } | null)?.merma_std) || 0));
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Verificación de referencia duplicada EN VIVO (el backend re-valida al guardar).
+  const refNormal = referencia.trim().toUpperCase();
+  const duplicada = useMemo(() => {
+    if (!refNormal) return null;
+    return existentes.find((i) => String(i.referencia || '').trim().toUpperCase() === refNormal && i.id !== insumo?.id) || null;
+  }, [refNormal, existentes, insumo]);
+
+  const valido = Boolean(refNormal && articulo.trim() && unidad.trim() && subfamiliaId && !duplicada);
+
+  async function guardar() {
+    if (!valido) return;
+    setGuardando(true);
+    setError(null);
+    try {
+      const payload: Record<string, unknown> = {
+        referencia: referencia.trim(),
+        articulo: articulo.trim(),
+        unidad: unidad.trim(),
+        subfamilia_id: subfamiliaId,
+        merma_std: Number(mermaStd) || 0,
+      };
+      let r: Response;
+      if (esNuevo) {
+        payload.coste = Number(coste) || 0;
+        r = await fetchEnCola('/api/insumos', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+      } else {
+        payload.id = insumo!.id;
+        r = await fetchEnCola('/api/insumos/actualizar', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        });
+      }
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'No se pudo guardar');
+      const guardado = (j.insumo || j.data) as Insumo;
+      onListo({ ...(insumo || {}), ...guardado } as Insumo, esNuevo);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error inesperado');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={onCerrar}>
+      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-ink">{esNuevo ? 'Nuevo insumo' : 'Editar insumo'}</h3>
+        {!esNuevo && (
+          <p className="mt-0.5 text-[11px] text-salvia-500">
+            {insumo!.id} — el <b>coste</b> se cambia con el botón 💲 de la tabla (pide motivo y queda en el historial).
+          </p>
+        )}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Referencia (código único)</span>
+            <input value={referencia} onChange={(e) => setReferencia(e.target.value)}
+              className={'mt-1 w-full rounded-lg border px-3 py-2 text-sm font-mono uppercase ' + (duplicada ? 'border-red-400 bg-red-50' : 'border-line')} />
+            {duplicada && (
+              <span className="mt-1 block text-[11px] font-medium text-red-600">
+                ✘ Ya existe: {duplicada.articulo}
+              </span>
+            )}
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Unidad</span>
+            <input value={unidad} onChange={(e) => setUnidad(e.target.value)} list="unidades-conocidas"
+              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm uppercase" />
+            <datalist id="unidades-conocidas">
+              {Array.from(new Set(existentes.map((i) => String(i.unidad || '').toUpperCase()).filter(Boolean))).map((u) => (
+                <option key={u} value={u} />
+              ))}
+            </datalist>
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Artículo</span>
+            <input value={articulo} onChange={(e) => setArticulo(e.target.value)}
+              placeholder="Ej: CEBOLLA MORADA LIMPIA X KILO"
+              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm uppercase" />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Subfamilia</span>
+            <select value={subfamiliaId} onChange={(e) => setSubfamiliaId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm">
+              <option value="">Elige una subfamilia…</option>
+              {subfamilias.map((s) => (<option key={s.id} value={s.id}>{s.nombre}</option>))}
+            </select>
+          </label>
+          {esNuevo && (
+            <label className="block">
+              <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Coste inicial ($ por unidad)</span>
+              <input type="number" min={0} value={coste} onChange={(e) => setCoste(e.target.value)}
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" />
+              {(!coste || Number(coste) === 0) && (
+                <span className="mt-1 block text-[11px] text-amber-600">⚠ En $0 subcostea las recetas donde se use (Análisis lo alertará).</span>
+              )}
+            </label>
+          )}
+          <label className="block">
+            <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Merma estándar (%)</span>
+            <input type="number" min={0} max={94.9} step={0.5} value={mermaStd} onChange={(e) => setMermaStd(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm" />
+          </label>
+        </div>
+        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={onCerrar} className="rounded-lg border border-line px-4 py-2 text-sm">Cancelar</button>
+          <button onClick={guardar} disabled={!valido || guardando}
+            className="rounded-lg bg-[#1E3A5F] px-5 py-2 text-sm font-semibold text-white disabled:opacity-40">
+            {guardando ? 'Guardando…' : esNuevo ? 'Crear insumo' : 'Guardar cambios'}
+          </button>
+        </div>
       </div>
     </div>
   );

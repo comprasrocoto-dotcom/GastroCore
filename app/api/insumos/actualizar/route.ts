@@ -23,6 +23,10 @@ export async function POST(req: NextRequest) {
     if (typeof body.unidad === 'string' && body.unidad.trim()) {
       data.unidad = body.unidad.trim();
     }
+    // v8.2: edición de datos del insumo (el backend valida referencia única, etc.)
+    for (const campo of ['referencia', 'articulo', 'subfamilia_id'] as const) {
+      if (typeof body[campo] === 'string' && body[campo].trim()) data[campo] = body[campo].trim();
+    }
     // v8.0: merma estándar del insumo (se precarga en los editores de recetas).
     if (body.merma_std !== undefined && body.merma_std !== null && body.merma_std !== '') {
       const m = Number(body.merma_std);

@@ -11,8 +11,8 @@ export async function POST(req: NextRequest) {
     const filas = Array.isArray(body?.filas) ? body.filas : [];
     if (!filas.length) return NextResponse.json({ ok: false, error: 'No llegaron filas' }, { status: 400 });
     if (filas.length > 200) return NextResponse.json({ ok: false, error: 'Máximo 200 filas por tanda' }, { status: 400 });
-    const usuario = await getUsuario('Carga por plana');
-    const j = await accionBackend<Record<string, unknown>>('insumos', 'cargaplana', { data: { filas, usuario, motivo: 'Carga por plana' } });
+    const usuario = await getUsuario('Carga por plano');
+    const j = await accionBackend<Record<string, unknown>>('insumos', 'cargaplana', { data: { filas, usuario, motivo: 'Carga por plano' } });
     if (!j.ok) return NextResponse.json({ ok: false, error: (j.error && (j.error as { message?: string }).message) || 'Error del backend' }, { status: 502 });
     return NextResponse.json({ ok: true, data: j.data });
   } catch (e) {
