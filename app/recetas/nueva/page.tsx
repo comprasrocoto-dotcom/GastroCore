@@ -1,5 +1,6 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
+import { CampoNumero } from '@/components/CampoNumero';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -233,12 +234,12 @@ function NuevaRecetaInner() {
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Rendimiento (porciones)</span>
-          <input type="number" min={1} value={rendimiento} onChange={(e) => setRendimiento(Number(e.target.value))}
+          <CampoNumero valor={rendimiento} onCambio={setRendimiento} decimales={0}
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Desvio mercancia (%)</span>
-          <input type="number" step="0.1" value={desvioPct} onChange={(e) => setDesvioPct(Number(e.target.value))}
+          <CampoNumero valor={desvioPct} onCambio={setDesvioPct} decimales={1} sufijo="%"
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
       </div>
@@ -300,14 +301,13 @@ function NuevaRecetaInner() {
                       <span className="inline-block min-w-[64px] rounded-md bg-salvia-50 px-2 py-1.5 text-center text-sm text-salvia-700" title="La unidad la define el insumo en el maestro">{l.unidad || '—'}</span>
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <input type="number" min={0} value={l.cantidad}
-                        ref={(el) => { cantRefs.current[i] = el; }}
-                        onChange={(e) => updLinea(i, { cantidad: Number(e.target.value) })}
-                        className="w-16 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
+                      <CampoNumero valor={l.cantidad} onCambio={(n) => updLinea(i, { cantidad: n })} decimales={2}
+                        inputRef={(el) => { cantRefs.current[i] = el; }}
+                        className="w-20 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <input type="number" min={0} step="0.1" value={l.merma_pct} onChange={(e) => updLinea(i, { merma_pct: Number(e.target.value) })}
-                        className="w-14 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
+                      <CampoNumero valor={l.merma_pct} onCambio={(n) => updLinea(i, { merma_pct: n })} decimales={1} sufijo="%"
+                        className="w-16 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs text-salvia-700">{num(filas[i]?.cantReal || 0)}</td>
                     <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs text-salvia-700">{money(filas[i]?.costoUnit || 0)}</td>
@@ -357,7 +357,7 @@ function NuevaRecetaInner() {
           <div className="card p-4 space-y-3">
             <label className="block">
               <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Precio real de venta</span>
-              <input type="number" min={0} value={precioReal} onChange={(e) => setPrecioReal(Number(e.target.value))}
+              <CampoNumero valor={precioReal} onCambio={setPrecioReal} decimales={0}
                 className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
             </label>
           </div>

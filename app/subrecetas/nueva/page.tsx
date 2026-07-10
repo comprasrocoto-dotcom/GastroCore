@@ -1,5 +1,6 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
+import { CampoNumero } from '@/components/CampoNumero';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -125,6 +126,35 @@ function NuevaSubrecetaInner() {
     return { costoIngredientes, desvio, costoFinal, costoPorcion };
   }, [filas, desvioPct, rendimiento]);
 
+  const [actualizandoInsumo, setActualizandoInsumo] = useState(false);
+  // v9.10: EL PUENTE a un clic — empuja el costo calculado al insumo maestro.
+  async function actualizarCostoInsumo() {
+    if (!editId) return;
+    setActualizandoInsumo(true);
+    try {
+      const rp = await fetchEnCola('/api/subrecetas/actualizar-insumo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editId }),
+      });
+      const jp = await rp.json();
+      if (jp.ok) {
+        if (jp.data?.sin_cambio) {
+          setMsg('El insumo ya estaba al día con lo calculado.');
+        } else {
+          setMsg('✓ Insumo actualizado. ' + (jp.data?.recetas_recalculadas || ''));
+          setInsumoMaestro((prev) => (prev ? { ...prev, coste: costeo.costoPorcion } : prev));
+        }
+      } else {
+        setMsg('No se pudo actualizar el insumo: ' + ((jp.error && jp.error.message) || jp.error || ''));
+      }
+    } catch {
+      setMsg('No se pudo actualizar el insumo.');
+    } finally {
+      setActualizandoInsumo(false);
+    }
+  }
+
   const addLinea = () =>
     setLineas((p) => [...p, { item_id: '', unidad: '', cantidad: 1, merma_pct: 0 }]);
   const updLinea = (i: number, patch: Partial<Linea>) =>
@@ -193,32 +223,8 @@ function NuevaSubrecetaInner() {
       const data = await res.json();
       if (data.ok) {
         const d = data.data || {};
-        // v9: EL PUENTE — si el costo calculado difiere del insumo maestro,
-        // ofrecer actualizarlo (con historial y cascada) en este acto.
-        if (d.insumo_desactualizado && d.insumo) {
-          const va = Number(d.insumo.coste) || 0;
-          const viene = Number(d.costo_unitario) || 0;
-          const ok = window.confirm(
-            'Costo calculado: $' + viene.toLocaleString('es-CO', { maximumFractionDigits: 2 }) +
-            '\nCosto actual del insumo ' + d.insumo.articulo + ': $' + va.toLocaleString('es-CO', { maximumFractionDigits: 2 }) +
-            '\n\n¿Actualizar el costeo del insumo? (queda en el historial y recalcula las recetas que lo usan)'
-          );
-          if (ok) {
-            try {
-              const rp = await fetchEnCola('/api/subrecetas/actualizar-insumo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: d.subreceta?.id || editId }),
-              });
-              const jp = await rp.json();
-              if (jp.ok && !jp.data?.sin_cambio) {
-                alert('Insumo actualizado. ' + (jp.data?.recetas_recalculadas || ''));
-              } else if (!jp.ok) {
-                alert('No se pudo actualizar el insumo: ' + (jp.error || ''));
-              }
-            } catch { alert('No se pudo actualizar el insumo.'); }
-          }
-        }
+        // v9.10: guardar y ya — sin interrogatorio. El puente vive como botón
+        // consciente DENTRO de la subreceta (tarjeta del maestro en edición).
         router.push('/subrecetas');
       } else {
         setMsg((data.error && data.error.message) || data.error || 'No se pudo guardar la subreceta.');
@@ -346,6 +352,25 @@ function NuevaSubrecetaInner() {
             ${Number(insumoMaestro.coste).toLocaleString('es-CO')}
           </span>
           <span className="text-xs text-salvia-500">costo actual en INSUMOS</span>
+          {/* v9.10: EL PUENTE como botón consciente — reemplaza la pregunta al guardar */}
+          {Math.abs(costeo.costoPorcion - Number(insumoMaestro.coste)) > 0.01 ? (
+            <span className="flex w-full flex-wrap items-center gap-2 border-t border-amber-100 pt-2">
+              <span className="text-xs text-salvia-600">
+                La calculadora dice <b className="font-mono text-amber-700">${costeo.costoPorcion.toLocaleString('es-CO', { maximumFractionDigits: 2 })}</b> por {unidadRendimiento || 'unidad'}:
+              </span>
+              <button
+                type="button"
+                disabled={actualizandoInsumo}
+                onClick={actualizarCostoInsumo}
+                className="rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50"
+              >
+                {actualizandoInsumo ? 'Actualizando…' : '⇪ Actualizar el costo del insumo según lo calculado'}
+              </button>
+              <span className="text-[11px] text-salvia-400">queda en el historial y recalcula las recetas que lo usan</span>
+            </span>
+          ) : (
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">✓ al día con lo calculado</span>
+          )}
         </div>
       ) : null}
 
@@ -357,7 +382,7 @@ function NuevaSubrecetaInner() {
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Rendimiento producido</span>
-          <input type="number" min={1} value={rendimiento} onChange={(e) => setRendimiento(Number(e.target.value))}
+          <CampoNumero valor={rendimiento} onCambio={setRendimiento} decimales={2}
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
         <label className="block">
@@ -369,7 +394,7 @@ function NuevaSubrecetaInner() {
         </label>
         <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Desvio mercancia (%)</span>
-          <input type="number" step="0.1" value={desvioPct} onChange={(e) => setDesvioPct(Number(e.target.value))}
+          <CampoNumero valor={desvioPct} onCambio={setDesvioPct} decimales={1} sufijo="%"
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
       </div>
@@ -412,14 +437,13 @@ function NuevaSubrecetaInner() {
                       <span className="inline-block min-w-[64px] rounded-md bg-salvia-50 px-2 py-1.5 text-center text-sm text-salvia-700" title="La unidad la define el insumo en el maestro">{l.unidad || '—'}</span>
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <input type="number" min={0} value={l.cantidad}
-                        ref={(el) => { cantRefs.current[i] = el; }}
-                        onChange={(e) => updLinea(i, { cantidad: Number(e.target.value) })}
-                        className="w-16 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
+                      <CampoNumero valor={l.cantidad} onCambio={(n) => updLinea(i, { cantidad: n })} decimales={2}
+                        inputRef={(el) => { cantRefs.current[i] = el; }}
+                        className="w-20 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
                     <td className="px-2 py-2 text-right">
-                      <input type="number" min={0} step="0.1" value={l.merma_pct} onChange={(e) => updLinea(i, { merma_pct: Number(e.target.value) })}
-                        className="w-14 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
+                      <CampoNumero valor={l.merma_pct} onCambio={(n) => updLinea(i, { merma_pct: n })} decimales={1} sufijo="%"
+                        className="w-16 rounded-md border border-salvia-200 px-1.5 py-1.5 text-right text-sm focus:border-ambar-400 focus:outline-none" />
                     </td>
                     <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs text-salvia-700">{num(filas[i]?.cantReal || 0)}</td>
                     <td className="px-2 py-2 whitespace-nowrap text-right font-mono text-xs text-salvia-700">{money(filas[i]?.costoUnit || 0)}</td>
