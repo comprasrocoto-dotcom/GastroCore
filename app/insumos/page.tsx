@@ -1,4 +1,4 @@
-import { getInsumos, getSubfamilias } from '@/lib/api/gastrocore';
+import { getInsumos, getSubfamilias, getFamilias, getUnidades } from '@/lib/api/gastrocore';
 import { esAdmin } from '@/lib/session';
 import { InsumosTabla } from './InsumosTabla';
 
@@ -7,10 +7,12 @@ export const dynamic = 'force-dynamic';
 export default async function InsumosPage() {
   let insumos: any[] = [];
   let subfamilias: any[] = [];
+  let familias: any[] = [];
+  let unidades: any[] = [];
   let admin = false;
   let error: string | null = null;
   try {
-    [insumos, subfamilias, admin] = await Promise.all([getInsumos(), getSubfamilias().catch(() => []), esAdmin()]);
+    [insumos, subfamilias, familias, unidades, admin] = await Promise.all([getInsumos(), getSubfamilias().catch(() => []), getFamilias().catch(() => []), getUnidades().catch(() => []), esAdmin()]);
   } catch (e) {
     error = e instanceof Error ? e.message : 'Error desconocido';
   }
@@ -39,7 +41,7 @@ export default async function InsumosPage() {
           </p>
         </div>
       ) : (
-        <InsumosTabla insumos={insumos} subfamilias={subfamilias} esAdmin={admin} />
+        <InsumosTabla insumos={insumos} subfamilias={subfamilias} familias={familias} unidades={unidades} esAdmin={admin} />
       )}
     </main>
   );
