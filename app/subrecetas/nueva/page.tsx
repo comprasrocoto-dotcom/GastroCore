@@ -310,29 +310,42 @@ function NuevaSubrecetaInner() {
                 className="mb-2 mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm focus:border-[#2563EB] focus:outline-none" />
               <div className="max-h-40 overflow-y-auto rounded-lg border border-line">
                 {candidatosEnlace.length === 0 ? (
-                  <p className="p-3 text-xs text-salvia-500">No hay preparaciones &quot;SUB.&quot; sin enlazar que coincidan.</p>
+                  <p className="p-4 text-center text-xs text-salvia-500">No hay preparaciones &quot;SUB.&quot; sin enlazar que coincidan.</p>
                 ) : candidatosEnlace.map((i) => (
                   <button key={i.id} onClick={() => seleccionarEnlace(i.id)}
-                    className="flex w-full items-center justify-between border-b border-line px-3 py-2 text-left text-sm last:border-0 hover:bg-blue-50">
-                    <span>{i.articulo}</span>
-                    <span className="text-xs text-salvia-500">${'{'}Number(i.coste).toLocaleString('es-CO'){'}'} / {i.unidad}</span>
+                    className="group flex w-full items-center justify-between gap-3 border-b border-l-2 border-b-line border-l-transparent px-3 py-2.5 text-left transition-colors last:border-b-0 hover:border-l-[#2563EB] hover:bg-blue-50/60">
+                    <span className="min-w-0 truncate text-sm font-medium text-slate-800">{i.articulo}</span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <span className="font-mono text-sm font-semibold text-[#1E3A5F]">${Number(i.coste).toLocaleString('es-CO')}</span>
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase text-slate-500">{i.unidad}</span>
+                      <span className="text-xs text-[#2563EB] opacity-0 transition group-hover:opacity-100">Enlazar →</span>
+                    </span>
                   </button>
                 ))}
               </div>
             </>
           ) : (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
-              <b>Enlazada a:</b> {insumoPorId[insumoEnlazado]?.articulo}
-              <span className="ml-2 text-xs text-salvia-600">
-                · costo actual ${'{'}Number(insumoPorId[insumoEnlazado]?.coste || 0).toLocaleString('es-CO'){'}'} — al guardar podrás actualizarlo con el calculado
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2.5 text-sm">
+              <span className="text-base">🔗</span>
+              <span><span className="text-xs uppercase tracking-wide text-blue-500">Enlazada a</span>{' '}
+                <b className="text-slate-800">{insumoPorId[insumoEnlazado]?.articulo}</b></span>
+              <span className="rounded-full bg-white px-2.5 py-0.5 font-mono text-xs font-semibold text-[#1E3A5F] ring-1 ring-blue-200">
+                ${Number(insumoPorId[insumoEnlazado]?.coste || 0).toLocaleString('es-CO')}
               </span>
+              <span className="text-xs text-salvia-600">al guardar podrás actualizarlo con el costo calculado</span>
             </div>
           )}
         </div>
       ) : insumoMaestro ? (
-        <div className="mb-4 rounded-lg border border-line bg-white px-4 py-3 text-sm">
-          <b>Maestro:</b> {insumoMaestro.articulo} <span className="font-mono text-xs text-salvia-500">({insumoMaestro.referencia})</span>
-          <span className="ml-2 text-xs text-salvia-600">· costo actual en INSUMOS: ${'{'}insumoMaestro.coste.toLocaleString('es-CO'){'}'}</span>
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-line bg-white px-4 py-3 text-sm shadow-sm">
+          <span className="text-base">🔗</span>
+          <span><span className="text-xs uppercase tracking-wide text-salvia-500">Maestro en Insumos</span>{' '}
+            <b className="text-slate-800">{insumoMaestro.articulo}</b></span>
+          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">{insumoMaestro.referencia}</span>
+          <span className="rounded-full bg-slate-50 px-2.5 py-0.5 font-mono text-xs font-semibold text-[#1E3A5F] ring-1 ring-slate-200">
+            ${Number(insumoMaestro.coste).toLocaleString('es-CO')}
+          </span>
+          <span className="text-xs text-salvia-500">costo actual en INSUMOS</span>
         </div>
       ) : null}
 
