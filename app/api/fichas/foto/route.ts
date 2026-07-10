@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { getUsuario } from '@/lib/session';
 import { accionBackend } from '@/lib/api/gastrocore';
 
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
       data: { receta_id, base64, mime: mime || 'image/jpeg', usuario },
     });
     if (!j.ok) return NextResponse.json({ ok: false, error: j.error?.message || 'Error al subir la foto' }, { status: 502 });
+    revalidateTag('recetario'); // v9.6.1: la foto/ficha se ve al instante
     return NextResponse.json({ ok: true, ...j.data });
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Error' }, { status: 500 });

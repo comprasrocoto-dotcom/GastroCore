@@ -66,7 +66,7 @@ export const getRecetario = unstable_cache(
     return Array.isArray(data) ? (data as RecetaPublica[]) : [];
   },
   ['recetario-publico'],
-  { revalidate: 300 },
+  { revalidate: 300, tags: ['recetario'] },
 );
 
 /** Una receta puntual para el detalle público. Caché 5 min. */
@@ -76,7 +76,7 @@ export const getRecetaPublica = unstable_cache(
     return (data as RecetaPublica) || null;
   },
   ['recetario-publico-detalle'],
-  { revalidate: 300 },
+  { revalidate: 300, tags: ['recetario'] },
 );
 
 /** Formatea COP sin decimales: 35000 -> "$ 35.000". */
