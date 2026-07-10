@@ -312,10 +312,10 @@ export async function restaurarVersion(id: string, version: number, usuario?: st
   return apiPost<Receta>('recetas', 'restaurar', { data: { id, version, usuario: usuario || 'Sistema', _origen: 'Web' } });
 }
 
-export async function crearFamilia(data: { nombre: string; tipo?: string; activo?: boolean }) {
+export async function crearFamilia(data: { nombre: string; tipo?: string; activo?: boolean; centrocosto?: string }) {
   return apiPost<Familia>('familias', 'create', { data: { tipo: 'receta', activo: true, ...data } });
 }
-export async function crearSubfamilia(data: { familia_id: string; nombre: string; tipo?: string; activo?: boolean }) {
+export async function crearSubfamilia(data: { familia_id: string; nombre: string; tipo?: string; activo?: boolean; centrocosto?: string }) {
   return apiPost<Subfamilia>('subfamilias', 'create', { data: { tipo: 'receta', activo: true, ...data } });
 }
 

@@ -20,7 +20,8 @@ export async function POST(req: Request) {
     if (!nombre) {
       return NextResponse.json({ ok: false, error: 'El nombre es obligatorio' }, { status: 400 });
     }
-    const r = await crearFamilia({ nombre, tipo: 'receta' });
+    const centrocosto = typeof body?.centrocosto === 'string' ? body.centrocosto.trim().toUpperCase() : '';
+    const r = await crearFamilia({ nombre, tipo: 'receta', centrocosto });
     return NextResponse.json(r);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error';
