@@ -428,7 +428,10 @@ export async function getSubrecetas(all = false): Promise<Receta[]> {
   return r.ok && Array.isArray(r.data) ? r.data : [];
 }
 export async function getSubreceta(id: string): Promise<Receta | null> {
-  return getReceta(id);
+  // v9.11.1: pedir al recurso SUBRECETAS (el fósil pedía a recetas — del
+  // mundo pre-v9, cuando las subrecetas vivían en la hoja Recetas).
+  const r = await apiGet<Receta>('subrecetas', { id });
+  return r.ok && r.data ? (r.data as Receta) : null;
 }
 export async function crearSubreceta(data: Partial<Receta>) {
   return apiPost<Receta>('subrecetas', 'create', { data });
