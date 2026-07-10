@@ -4,6 +4,7 @@ import { useRol } from '@/lib/useRol';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type Sub = {
   id: string;
@@ -24,10 +25,10 @@ const esActivo = (v: unknown) => v === true || v === 'TRUE' || v === 'true';
 
 export default function SubrecetasPage() {
   const { puedeEditarRecetas } = useRol();
+  const router = useRouter();
   const [subs, setSubs] = useState<Sub[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [puenteando, setPuenteando] = useState<string | null>(null);
   const [verInactivas, setVerInactivas] = useState(false);
 
   useEffect(() => {
@@ -48,27 +49,6 @@ export default function SubrecetasPage() {
     });
   }, [subs, q, verInactivas]);
 
-  async function actualizarMaestro(s: any) {
-    const va = Number(s.insumo_coste) || 0;
-    const viene = Number(s.costo_unitario) || 0;
-    if (!window.confirm('¿Actualizar el costeo del insumo ' + (s.insumo_articulo || s.insumo_referencia) + '?\n$' +
-      va.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + ' → $' + viene.toLocaleString('es-CO', { maximumFractionDigits: 2 }) +
-      '\n(queda en el historial y recalcula las recetas que lo usan)')) return;
-    setPuenteando(s.id);
-    try {
-      const r = await fetchEnCola('/api/subrecetas/actualizar-insumo', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: s.id }),
-      });
-      const j = await r.json();
-      if (!j.ok) throw new Error(j.error || 'No se pudo actualizar');
-      setSubs((prev) => prev.map((x) => (x.id === s.id ? { ...x, insumo_coste: viene, desactualizada: false } : x)));
-      if (j.data?.recetas_recalculadas) alert('Insumo actualizado. ' + j.data.recetas_recalculadas);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error inesperado');
-    } finally {
-      setPuenteando(null);
-    }
-  }
 
   const totalActivas = subs.filter((s) => esActivo(s.activo)).length;
 
@@ -118,43 +98,44 @@ export default function SubrecetasPage() {
             <thead className="bg-[#F8FAFC] text-left text-[11px] uppercase tracking-wide text-salvia-500">
               <tr>
                 <th className="px-4 py-2">Nombre</th>
-                <th className="px-4 py-2">Maestro (Insumos)</th>
+                <th className="px-4 py-2">Referencia</th>
                 <th className="px-4 py-2 text-right">Rendimiento</th>
                 <th className="px-4 py-2 text-right">Costo total</th>
-                <th className="px-4 py-2 text-right">Costo x unidad</th>
                 <th className="px-4 py-2 text-center">Estado</th>
-                <th className="px-4 py-2"></th>
+                <th className="px-4 py-2 text-right">💲 Insumos vs Subreceta</th>
               </tr>
             </thead>
             <tbody>
-              {filtradas.map((s) => (
-                <tr key={s.id} className="border-t border-line hover:bg-[#F8FAFC]">
-                  <td className="px-4 py-2 font-medium text-ink">🥣 {s.nombre}<span className="ml-2 text-[11px] text-salvia-400">{s.id}</span></td>
-                  <td className="px-4 py-2">
-                    <span className="font-mono text-[11px] text-salvia-600">{(s as any).insumo_referencia || '—'}</span>
-                    {(s as any).desactualizada ? (
-                      <button onClick={() => actualizarMaestro(s)} disabled={puenteando === s.id}
-                        title={'Insumo: ' + money(Number((s as any).insumo_coste) || 0) + ' · Calculado: ' + money(Number(s.costo_unitario) || 0)}
-                        className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-200 disabled:opacity-50">
-                        {puenteando === s.id ? '…' : '⇪ Desactualizado — actualizar'}
-                      </button>
-                    ) : (
-                      <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700">✓ al día</span>
-                    )}
-                  </td>
+              {filtradas.map((s) => {
+                const cIns = Number((s as any).insumo_coste) || 0;
+                const cSub = Number(s.costo_unitario) || 0;
+                const igual = Math.abs(cIns - cSub) <= 0.01;
+                return (
+                <tr key={s.id}
+                  onClick={() => router.push(`/subrecetas/nueva?edit=${s.id}`)}
+                  title="Entrar a la subreceta"
+                  className="cursor-pointer border-t border-line transition hover:bg-blue-50/40">
+                  <td className="px-4 py-2 font-medium text-ink">🥣 <span className="text-[#2563EB]">{s.nombre}</span><span className="ml-2 text-[11px] text-salvia-400">{s.id}</span></td>
+                  <td className="px-4 py-2"><span className="font-mono text-[11px] text-salvia-600">{(s as any).insumo_referencia || '—'}</span></td>
                   <td className="px-4 py-2 text-right">{num(Number(s.rendimiento) || 0)} {s.unidad_rendimiento_id || ''}</td>
                   <td className="px-4 py-2 text-right">{money(Number(s.costo_total) || 0)}</td>
-                  <td className="px-4 py-2 text-right font-semibold text-[#1E3A5F]">{money(Number(s.costo_unitario) || 0)}</td>
                   <td className="px-4 py-2 text-center">
                     {esActivo(s.activo)
                       ? <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Activa</span>
                       : <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600">Inactiva</span>}
                   </td>
+                  {/* v9.11: los DOS costos, lado a lado — verde si coinciden, ámbar si no */}
                   <td className="px-4 py-2 text-right">
-                    {puedeEditarRecetas && <Link href={`/subrecetas/nueva?edit=${s.id}`} className="text-xs font-medium text-ambar-600 hover:underline">Editar</Link>}
+                    <div className="inline-flex flex-col items-end gap-0.5">
+                      <span className="font-mono text-xs text-salvia-600">Insumos: <b className="text-[#1E3A5F]">{money(cIns)}</b></span>
+                      <span className={'font-mono text-xs ' + (igual ? 'text-emerald-600' : 'text-amber-700')}>
+                        Subreceta: <b>{money(cSub)}</b> {igual ? '✓' : '≠'}
+                      </span>
+                    </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
 import { CampoNumero } from '@/components/CampoNumero';
+import { useRol } from '@/lib/useRol';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -22,8 +23,12 @@ const UNIDADES = ['GRAMOS', 'KILOS', 'ML', 'LITROS', 'ONZA', 'COPA', 'UNIDADES']
 function NuevaSubrecetaInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { puedeEditarRecetas } = useRol();
   const editId = searchParams.get('edit');
   const modoEdicion = !!editId;
+  // v9.11: al ENTRAR a una subreceta se ve en modo lectura (como cuando se
+  // registra, pero sin tocar nada). El botón ✏️ Editar desbloquea los campos.
+  const [soloLectura, setSoloLectura] = useState(modoEdicion);
 
   useEffect(() => {
     if (!editId) return;
@@ -265,10 +270,18 @@ function NuevaSubrecetaInner() {
     <main className="mx-auto max-w-7xl px-4 py-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ambar-700">{modoEdicion ? 'Editar subreceta' : 'Nueva subreceta'}</h1>
+          <h1 className="font-display text-2xl font-bold text-ambar-700">{!modoEdicion ? 'Nueva subreceta' : soloLectura ? 'Subreceta' : 'Editar subreceta'}</h1>
           <p className="text-xs text-salvia-500">Preparación base costeada por ingrediente. Su costo por unidad se usa como insumo en otras recetas.</p>
         </div>
-        <Link href="/subrecetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
+        <div className="flex items-center gap-3">
+          {modoEdicion && soloLectura && puedeEditarRecetas && (
+            <button onClick={() => setSoloLectura(false)}
+              className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-ambar-700">
+              ✏️ Editar
+            </button>
+          )}
+          <Link href="/subrecetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
+        </div>
       </div>
 
       {!modoEdicion ? (
@@ -374,6 +387,8 @@ function NuevaSubrecetaInner() {
         </div>
       ) : null}
 
+      {/* v9.11: en modo lectura TODO lo editable queda apagado de un golpe */}
+      <fieldset disabled={soloLectura} className="contents">
       <div className="mb-4 grid gap-3 card p-4 sm:grid-cols-3">
         <label className="block sm:col-span-1">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Nombre de la receta</span>
@@ -500,11 +515,19 @@ function NuevaSubrecetaInner() {
           )}
           {msg && <p className="rounded-lg border border-ambar-200 bg-ambar-50 p-2 text-sm text-ambar-700">{msg}</p>}
 
-          <button onClick={guardar} disabled={guardando} className="btn-primary w-full disabled:opacity-50">
-            {guardando ? 'Guardando...' : modoEdicion ? 'Actualizar receta' : 'Guardar receta'}
-          </button>
+          {!soloLectura && (
+            <button onClick={guardar} disabled={guardando} className="btn-primary w-full disabled:opacity-50">
+              {guardando ? 'Guardando...' : modoEdicion ? 'Actualizar receta' : 'Guardar receta'}
+            </button>
+          )}
+          {soloLectura && puedeEditarRecetas && (
+            <button onClick={() => setSoloLectura(false)} className="w-full rounded-lg border-2 border-ambar-500 px-4 py-2 text-sm font-semibold text-ambar-700 transition hover:bg-ambar-50">
+              ✏️ Editar esta subreceta
+            </button>
+          )}
         </aside>
       </div>
+      </fieldset>
     </main>
   );
 }
