@@ -149,6 +149,25 @@ export default function RecetarioClient() {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [filtradas, famMap]);
 
+  // v9.5: bloques por CENTRO DE COSTO — familias adentro. Sin CC digitado,
+  // todo queda en el bloque plano y la vista es idéntica a la de siempre.
+  const bloquesCC = useMemo(() => {
+    const sin: [string, Receta[]][] = [];
+    const por = new Map<string, Map<string, Receta[]>>();
+    for (const [fam, items] of grupos) {
+      const cc = items.length ? ccDe(items[0].familia_id) : '';
+      if (!cc) { sin.push([fam, items]); continue; }
+      if (!por.has(cc)) por.set(cc, new Map());
+      por.get(cc)!.set(fam, items);
+    }
+    return {
+      sin,
+      grupos: Array.from(por.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([cc, m]) => [cc, Array.from(m.entries())] as [string, [string, Receta[]][]]),
+    };
+  }, [grupos, famMap]);
+
   const stats = useMemo(() => {
     const act = recetas.filter(esActivo);
     const n = act.length;
@@ -249,57 +268,122 @@ export default function RecetarioClient() {
         ) : grupos.length === 0 ? (
           <div className="rounded-lg border border-dashed border-salvia-200 p-10 text-center text-salvia-500">No hay recetas que coincidan con los filtros.</div>
         ) : (
-          <div className="space-y-6">
-            {grupos.map(([sub, items]) => (
-              <div key={sub}>
-                <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-salvia-700"><span>{sub}</span><span className="rounded-full bg-salvia-100 px-2 text-xs text-salvia-500">{items.length}</span></h3>
-                <div className="card overflow-hidden">
-                  <div className="erp-scroll">
-                  <table className="erp-table recetas-table">
-                    <thead>
-                      <tr>
-                        <th>Receta</th>
-                        <th className="!text-right">Costo porcion</th>
-                        <th className="!text-right">Precio venta</th>
-                        <th className="!text-right">Precio sugerido</th>
-                        <th className="!text-center">Food Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((r) => {
-                        const fc = Number(r.food_cost);
-                        const sinPrecio = !(Number(r.precio_real) > 0);
-                        const sugerido = precioSugeridoObjetivo(Number(r.costo_porcion));
-                        return (
-                        <tr
-                          key={r.id}
-                          onClick={() => router.push(`/recetas/${r.id}`)}
-                          className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}
-                        >
-                          <td className="font-medium"><span className="text-[#2563EB]">{r.nombre}</span></td>
-                          <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
-                          <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
-                          <td className="text-right fin-value">
-                            {sinPrecio || !(fc > 0) ? (
-                              <span className="text-xs text-slate-400">-</span>
-                            ) : fc > 0.35 ? (
-                              <span className="font-semibold text-[#DC2626]" title="El precio debe aumentar para cumplir el objetivo">{money(sugerido)}</span>
-                            ) : fc <= 0.33 ? (
-                              <span className="font-semibold text-[#B45309]" title="El precio podria disminuir">{money(sugerido)}</span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 font-semibold text-[#16A34A]" title="El precio actual cumple el objetivo"><span className="h-2 w-2 rounded-full bg-[#16A34A]" />&#10003; Correcto</span>
-                            )}
-                          </td>
-                          <td className="text-center">{fc > 0 ? <Semaforo fc={fc} /> : <span className="text-xs text-slate-400">-</span>}</td>
-                        </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+          <div className="space-y-8">
+            {bloquesCC.sin.length > 0 && (
+              <div className="space-y-6">
+            {bloquesCC.sin.map(([sub, items]) => (
+                  <div key={sub}>
+                    <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-salvia-700"><span>{sub}</span><span className="rounded-full bg-salvia-100 px-2 text-xs text-salvia-500">{items.length}</span></h3>
+                    <div className="card overflow-hidden">
+                      <div className="erp-scroll">
+                      <table className="erp-table recetas-table">
+                        <thead>
+                          <tr>
+                            <th>Receta</th>
+                            <th className="!text-right">Costo porcion</th>
+                            <th className="!text-right">Precio venta</th>
+                            <th className="!text-right">Precio sugerido</th>
+                            <th className="!text-center">Food Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((r) => {
+                            const fc = Number(r.food_cost);
+                            const sinPrecio = !(Number(r.precio_real) > 0);
+                            const sugerido = precioSugeridoObjetivo(Number(r.costo_porcion));
+                            return (
+                            <tr
+                              key={r.id}
+                              onClick={() => router.push(`/recetas/${r.id}`)}
+                              className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}
+                            >
+                              <td className="font-medium"><span className="text-[#2563EB]">{r.nombre}</span></td>
+                              <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
+                              <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
+                              <td className="text-right fin-value">
+                                {sinPrecio || !(fc > 0) ? (
+                                  <span className="text-xs text-slate-400">-</span>
+                                ) : fc > 0.35 ? (
+                                  <span className="font-semibold text-[#DC2626]" title="El precio debe aumentar para cumplir el objetivo">{money(sugerido)}</span>
+                                ) : fc <= 0.33 ? (
+                                  <span className="font-semibold text-[#B45309]" title="El precio podria disminuir">{money(sugerido)}</span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 font-semibold text-[#16A34A]" title="El precio actual cumple el objetivo"><span className="h-2 w-2 rounded-full bg-[#16A34A]" />&#10003; Correcto</span>
+                                )}
+                              </td>
+                              <td className="text-center">{fc > 0 ? <Semaforo fc={fc} /> : <span className="text-xs text-slate-400">-</span>}</td>
+                            </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      </div>
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+            {bloquesCC.grupos.map(([cc, fams]) => (
+              <div key={cc}>
+                <h2 className="mb-3 flex items-center gap-2 border-b border-ambar-200 pb-1.5 text-sm font-bold uppercase tracking-wide text-ambar-700">
+                  🏷 {cc}
+                  <span className="rounded-full bg-ambar-50 px-2 text-xs font-medium text-ambar-600">{fams.reduce((a, [, its]) => a + its.length, 0)} recetas</span>
+                </h2>
+                <div className="space-y-6">
+            {fams.map(([sub, items]) => (
+                    <div key={sub}>
+                      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-salvia-700"><span>{sub}</span><span className="rounded-full bg-salvia-100 px-2 text-xs text-salvia-500">{items.length}</span></h3>
+                      <div className="card overflow-hidden">
+                        <div className="erp-scroll">
+                        <table className="erp-table recetas-table">
+                          <thead>
+                            <tr>
+                              <th>Receta</th>
+                              <th className="!text-right">Costo porcion</th>
+                              <th className="!text-right">Precio venta</th>
+                              <th className="!text-right">Precio sugerido</th>
+                              <th className="!text-center">Food Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {items.map((r) => {
+                              const fc = Number(r.food_cost);
+                              const sinPrecio = !(Number(r.precio_real) > 0);
+                              const sugerido = precioSugeridoObjetivo(Number(r.costo_porcion));
+                              return (
+                              <tr
+                                key={r.id}
+                                onClick={() => router.push(`/recetas/${r.id}`)}
+                                className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}
+                              >
+                                <td className="font-medium"><span className="text-[#2563EB]">{r.nombre}</span></td>
+                                <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
+                                <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
+                                <td className="text-right fin-value">
+                                  {sinPrecio || !(fc > 0) ? (
+                                    <span className="text-xs text-slate-400">-</span>
+                                  ) : fc > 0.35 ? (
+                                    <span className="font-semibold text-[#DC2626]" title="El precio debe aumentar para cumplir el objetivo">{money(sugerido)}</span>
+                                  ) : fc <= 0.33 ? (
+                                    <span className="font-semibold text-[#B45309]" title="El precio podria disminuir">{money(sugerido)}</span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 font-semibold text-[#16A34A]" title="El precio actual cumple el objetivo"><span className="h-2 w-2 rounded-full bg-[#16A34A]" />&#10003; Correcto</span>
+                                  )}
+                                </td>
+                                <td className="text-center">{fc > 0 ? <Semaforo fc={fc} /> : <span className="text-xs text-slate-400">-</span>}</td>
+                              </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
+
           </div>
         )}
       </main>

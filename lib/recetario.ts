@@ -34,6 +34,7 @@ export type RecetaPublica = {
   nombre: string;
   categoria: string;
   subcategoria: string;
+  centro_costo?: string; // v9.5
   rendimiento: number;
   costo_total: number;
   costo_porcion: number;

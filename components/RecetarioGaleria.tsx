@@ -35,6 +35,7 @@ function pasos(texto: string): string[] {
 export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: { recetas: RecetaPublica[]; nombreNegocio?: string }) {
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState<string>('TODAS');
+  const [centro, setCentro] = useState<string>('TODOS'); // v9.5: filtro por centro de costo
   const [modo, setModo] = useState<'grid' | 'list'>('grid');
   const [abierta, setAbierta] = useState<RecetaPublica | null>(null);
 
@@ -44,17 +45,39 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
     return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [recetas]);
 
+  // v9.5: centros de costo presentes (si nadie los digitó, la vista no cambia)
+  const centros = useMemo(() => {
+    const m = new Map<string, number>();
+    recetas.forEach((r) => { const c = String(r.centro_costo || '').trim(); if (c) m.set(c, (m.get(c) || 0) + 1); });
+    return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [recetas]);
+
   const visibles = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
     return recetas.filter((r) => {
       if (categoria !== 'TODAS' && r.categoria !== categoria) return false;
+      if (centro !== 'TODOS' && String(r.centro_costo || '') !== centro) return false;
       if (!q) return true;
       return (
         r.nombre.toLowerCase().includes(q) ||
         r.ingredientes.some((i) => i.nombre.toLowerCase().includes(q))
       );
     });
-  }, [recetas, busqueda, categoria]);
+  }, [recetas, busqueda, categoria, centro]);
+
+  // v9.5: el grid se SECCIONA por centro de costo; lo que no tiene CC va
+  // plano y de primero, tal como se veía antes (cero secciones vacías).
+  const seccionesCC = useMemo(() => {
+    const sin: RecetaPublica[] = [];
+    const por = new Map<string, RecetaPublica[]>();
+    visibles.forEach((r) => {
+      const c = String(r.centro_costo || '').trim();
+      if (!c) { sin.push(r); return; }
+      if (!por.has(c)) por.set(c, []);
+      por.get(c)!.push(r);
+    });
+    return { sin, grupos: Array.from(por.entries()).sort((a, b) => a[0].localeCompare(b[0])) };
+  }, [visibles]);
 
   // Cerrar el modal con Escape.
   useEffect(() => {
@@ -111,6 +134,17 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
             </div>
           </div>
 
+          {/* v9.5: filtro por centro de costo (solo si hay alguno digitado) */}
+          {centros.length > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">🏷 Centro de costo:</span>
+              <ChipCat activa={centro === 'TODOS'} onClick={() => setCentro('TODOS')} nombre="Todos" />
+              {centros.map(([c, n]) => (
+                <ChipCat key={c} activa={centro === c} onClick={() => setCentro(c)} nombre={c + ' (' + n + ')'} />
+              ))}
+            </div>
+          )}
+
           {/* Selector de categoría en móvil */}
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
             <ChipCat activa={categoria === 'TODAS'} onClick={() => setCategoria('TODAS')} nombre="Todas" />
@@ -137,9 +171,25 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
               No hay recetas que coincidan con la búsqueda.
             </div>
           ) : (
-            <div className={modo === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5' : 'flex flex-col gap-3'}>
-              {visibles.map((r) => (
-                <Tarjeta key={r.id} r={r} modo={modo} onOpen={() => setAbierta(r)} />
+            <div className="space-y-6">
+              {seccionesCC.sin.length > 0 && (
+                <div className={modo === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5' : 'flex flex-col gap-3'}>
+                  {seccionesCC.sin.map((r) => (
+                    <Tarjeta key={r.id} r={r} modo={modo} onOpen={() => setAbierta(r)} />
+                  ))}
+                </div>
+              )}
+              {seccionesCC.grupos.map(([cc, items]) => (
+                <div key={cc}>
+                  <h2 className="mb-2 flex items-center gap-2 border-b pb-1 text-sm font-bold uppercase tracking-wide" style={{ color: VERDE, borderColor: '#DDD4C0' }}>
+                    🏷 {cc} <span className="rounded-full bg-neutral-100 px-2 text-xs font-medium text-neutral-500">{items.length}</span>
+                  </h2>
+                  <div className={modo === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5' : 'flex flex-col gap-3'}>
+                    {items.map((r) => (
+                      <Tarjeta key={r.id} r={r} modo={modo} onOpen={() => setAbierta(r)} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
