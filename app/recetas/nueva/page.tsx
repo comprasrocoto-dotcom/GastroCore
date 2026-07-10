@@ -297,12 +297,7 @@ function NuevaRecetaInner() {
                       />
                     </td>
                     <td className="px-2 py-2">
-                      <select value={l.unidad} onChange={(e) => updLinea(i, { unidad: e.target.value })}
-                        className="w-24 rounded-md border border-salvia-200 px-2 py-1.5 text-sm focus:border-ambar-400 focus:outline-none">
-                        <option value="">--</option>
-                        {UNIDADES.map((u) => (<option key={u} value={u}>{u}</option>))}
-                        {l.unidad && !UNIDADES.includes(l.unidad) && (<option value={l.unidad}>{l.unidad}</option>)}
-                      </select>
+                      <span className="inline-block min-w-[72px] rounded-md bg-salvia-50 px-2.5 py-1.5 text-center text-sm text-salvia-700" title="La unidad la define el insumo en el maestro">{l.unidad || '—'}</span>
                     </td>
                     <td className="px-2 py-2 text-right">
                       <input type="number" min={0} value={l.cantidad}
