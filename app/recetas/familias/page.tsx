@@ -16,7 +16,7 @@
  *   - Solo Admin muta; Chef y Lector ven todo en modo lectura.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { fetchEnCola } from '@/lib/colaGuardado';
 import { useRol } from '@/lib/useRol';
@@ -46,6 +46,13 @@ export default function FamiliasPage() {
 
   // ── edición en línea (un solo mecanismo para familias y subfamilias) ──
   const [edit, setEdit] = useState<{ clase: 'fam' | 'sub'; id: string; nombre: string; cc: string } | null>(null);
+  const nombreRef = useRef<HTMLInputElement>(null);
+  // v9.8.4b: BLINDAJE del foco. El foco al nombre se da UNA sola vez, cuando se
+  // abre o cambia la edicion (clase+id) — nunca por teclear en otro campo.
+  const editKey = edit ? edit.clase + ':' + edit.id : '';
+  useEffect(() => {
+    if (editKey) nombreRef.current?.focus();
+  }, [editKey]);
 
   const cargar = useCallback(async () => {
     try {
@@ -144,15 +151,18 @@ export default function FamiliasPage() {
     return null;
   }
 
-  function FilaEdicion() {
+  // v9.8.4: función normal (NO componente). Si fuera <FilaEdicion/>, React la
+  // recrearía en cada tecla, remontaría los inputs y el autoFocus del nombre
+  // robaría el cursor al escribir el centro de costo (el bug reportado).
+  function filaEdicion() {
     if (!edit) return null;
     return (
       <div className="flex flex-1 flex-wrap items-center gap-2">
         <input
+          ref={nombreRef}
           value={edit.nombre}
           onChange={(e) => setEdit({ ...edit, nombre: e.target.value })}
           className="min-w-[180px] flex-1 rounded-md border border-ambar-300 px-2 py-1.5 text-sm uppercase focus:border-ambar-400 focus:outline-none"
-          autoFocus
         />
         <input
           value={edit.cc}
@@ -237,7 +247,7 @@ export default function FamiliasPage() {
                 return (
                   <li key={f.id} className="rounded-xl border border-salvia-100 bg-white p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      {edit && edit.clase === 'fam' && edit.id === f.id ? <FilaEdicion /> : (
+                      {edit && edit.clase === 'fam' && edit.id === f.id ? filaEdicion() : (
                         <>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-semibold text-ink">{f.nombre}</span>
@@ -295,7 +305,7 @@ export default function FamiliasPage() {
             <ul className="grid gap-2 sm:grid-cols-2">
               {clasifInsumos.map((s) => (
                 <li key={s.id} className="flex items-center justify-between gap-2 rounded-xl border border-salvia-100 bg-white px-3 py-2.5">
-                  {edit && edit.clase === 'sub' && edit.id === s.id ? <FilaEdicion /> : (
+                  {edit && edit.clase === 'sub' && edit.id === s.id ? filaEdicion() : (
                     <>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium text-ink">{s.nombre}</span>

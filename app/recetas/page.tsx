@@ -182,12 +182,23 @@ export default function RecetarioClient() {
     return { n, costoProm, fcProm, rentables, fuera, sinPrecio, actualizadasHoy };
   }, [recetas]);
 
+  // v9.8.4: el sidebar se agrupa por CENTRO DE COSTO — familias sin CC
+  // primero (planas, como siempre); las que tienen, bajo su encabezado 🏷.
   const familiasSidebar = useMemo(() => {
     const counts = new Map<string, number>();
     for (const r of recetas.filter(esActivo)) {
       counts.set(String(r.familia_id), (counts.get(String(r.familia_id)) || 0) + 1);
     }
-    return famRecetas.map((f) => ({ fam: f, count: counts.get(String(f.id)) || 0 }));
+    const todas = famRecetas.map((f) => ({ fam: f, count: counts.get(String(f.id)) || 0 }));
+    const sin = todas.filter((x) => !String(x.fam.centrocosto || '').trim());
+    const por = new Map<string, typeof todas>();
+    for (const x of todas) {
+      const cc = String(x.fam.centrocosto || '').trim().toUpperCase();
+      if (!cc) continue;
+      if (!por.has(cc)) por.set(cc, []);
+      por.get(cc)!.push(x);
+    }
+    return { sin, grupos: Array.from(por.entries()).sort((a, b) => a[0].localeCompare(b[0])) };
   }, [recetas, famRecetas]);
 
   return (
@@ -195,12 +206,28 @@ export default function RecetarioClient() {
       <aside className="hidden w-60 shrink-0 border-r border-salvia-100 bg-salvia-50/40 p-4 lg:block">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-salvia-500">Familias</h2>
         <button onClick={() => setFamSel('')} className={`mb-1 block w-full rounded-md px-2 py-1.5 text-left text-sm ${!famSel ? 'bg-ambar-100 font-semibold text-ambar-800' : 'text-salvia-700 hover:bg-salvia-100'}`}>Todas las recetas</button>
-        {familiasSidebar.map((g, i) => (
-          <div key={i} className="mb-1">
+        {familiasSidebar.sin.map((g, i) => (
+          <div key={'s' + i} className="mb-1">
             <button onClick={() => setFamSel(famSel === g.fam.id ? '' : g.fam.id)} className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium ${famSel === g.fam.id ? 'bg-ambar-100 text-ambar-800' : 'text-salvia-800 hover:bg-salvia-100'}`}>
               <span>{g.fam.nombre}</span>
               <span className="text-xs text-salvia-400">{g.count}</span>
             </button>
+          </div>
+        ))}
+        {familiasSidebar.grupos.map(([cc, fams]) => (
+          <div key={cc} className="mb-1 mt-3">
+            <button onClick={() => setCcSel(ccSel === cc ? '' : cc)}
+              title="Filtrar por este centro de costo"
+              className={`mb-0.5 flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-[11px] font-bold uppercase tracking-wide ${ccSel === cc ? 'bg-ambar-100 text-ambar-800' : 'text-ambar-700 hover:bg-ambar-50'}`}>
+              <span>🏷 {cc}</span>
+              <span className="font-normal text-salvia-400">{fams.reduce((a, x) => a + x.count, 0)}</span>
+            </button>
+            {fams.map((g, i) => (
+              <button key={i} onClick={() => setFamSel(famSel === g.fam.id ? '' : g.fam.id)} className={`flex w-full items-center justify-between rounded-md py-1.5 pl-5 pr-2 text-left text-sm font-medium ${famSel === g.fam.id ? 'bg-ambar-100 text-ambar-800' : 'text-salvia-800 hover:bg-salvia-100'}`}>
+                <span>{g.fam.nombre}</span>
+                <span className="text-xs text-salvia-400">{g.count}</span>
+              </button>
+            ))}
           </div>
         ))}
       </aside>
