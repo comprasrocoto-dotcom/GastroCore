@@ -38,7 +38,7 @@ function NuevaRecetaInner() {
         setDesvioPct(Number(rec.desvio_pct) || 0);
         setPrecioReal(Number(rec.precio_real) || 0);
         setIva(rec.iva !== undefined && rec.iva !== null && rec.iva !== '' ? Number(rec.iva) : 8);
-        if (rec.subfamilia_id) setSubfamiliaId(String(rec.subfamilia_id));
+        if (rec.familia_id) setFamiliaId(String(rec.familia_id)); // v9.4
         const ings = Array.isArray(rec.ingredientes) ? rec.ingredientes : [];
         if (ings.length) {
           setLineas(ings.map((g: any) => ({
@@ -68,10 +68,8 @@ function NuevaRecetaInner() {
   const [msg, setMsg] = useState<string | null>(null);
   const [errores, setErrores] = useState<string[]>([]);
 
-  const [subfamiliaId, setSubfamiliaId] = useState('');
   const [familiaId, setFamiliaId] = useState('');
   const [familias, setFamilias] = useState<Cat[]>([]);
-  const [subfamilias, setSubfamilias] = useState<Cat[]>([]);
 
   useEffect(() => {
     // v7: UNA sola llamada trae familias + subfamilias + unidades + catálogo
@@ -82,7 +80,6 @@ function NuevaRecetaInner() {
         if (!d?.ok || !d.data) return;
         const esRec = (t?: string) => String(t || '').toLowerCase() === 'receta';
         setFamilias((d.data.familias || []).filter((f: Cat) => esRec(f.tipo)));
-        setSubfamilias((d.data.subfamilias || []).filter((s: Cat) => esRec(s.tipo)));
         setInsumos(d.data.catalogo || []);
         // v8.0: parámetros de negocio (Configuración): FC objetivo, FC por
         // familia e impuesto — con valores de respaldo si aún no llegan.
@@ -96,12 +93,6 @@ function NuevaRecetaInner() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (subfamiliaId && !familiaId && subfamilias.length) {
-      const s = subfamilias.find((x) => String(x.id) === String(subfamiliaId));
-      if (s && s.familia_id) setFamiliaId(String(s.familia_id));
-    }
-  }, [subfamiliaId, subfamilias, familiaId]);
 
 
 
@@ -125,10 +116,10 @@ function NuevaRecetaInner() {
   }, [lineas, insumoPorId]);
 
   const foodCostObjetivo = useMemo(() => {
-    const subf = subfamilias.find((s) => String(s.id) === String(subfamiliaId));
-    const fcFam = subf && subf.familia_id ? fcPorFamilia[String(subf.familia_id)] : undefined;
+    // v9.4: la excepción de FC se resuelve por la familia directa de la receta.
+    const fcFam = familiaId ? fcPorFamilia[String(familiaId)] : undefined;
     return ((fcFam && fcFam > 0 ? fcFam : fcGlobal) || 35) / 100;
-  }, [subfamiliaId, subfamilias, fcPorFamilia, fcGlobal]);
+  }, [familiaId, fcPorFamilia, fcGlobal]);
 
   const costeo = useMemo(() => {
     const costoIngredientes = filas.reduce((s, f) => s + f.costoTotal, 0);
@@ -164,6 +155,7 @@ function NuevaRecetaInner() {
     const e: string[] = [];
     if (nombre.trim() === '') e.push('El nombre de la receta es obligatorio.');
     if (!rendimiento || rendimiento < 1) e.push('El rendimiento debe ser al menos 1 porcion.');
+    if (!familiaId) e.push('Elige la familia (categoría de la carta).');
     if (lineas.length === 0) e.push('Agrega al menos un ingrediente.');
     lineas.forEach((l, idx) => {
       const n = idx + 1;
@@ -192,7 +184,7 @@ function NuevaRecetaInner() {
         precio_real: precioReal,
         margen_objetivo: foodCostObjetivo,
         iva: Number(iva) || 0,
-        subfamilia_id: subfamiliaId,
+        familia_id: familiaId, // v9.4: familia directa
         ingredientes: lineas.map((l, idx) => ({
           tipo_item: l.tipo_item || 'insumo',
           item_id: l.item_id,
@@ -258,26 +250,14 @@ function NuevaRecetaInner() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-salvia-500">Familia</span>
+            <span className="mb-1 block text-xs font-medium text-salvia-500">Familia (categoría de la carta)</span>
             <SearchableSelect
                   value={familiaId}
-                  onChange={(v) => { setFamiliaId(v); setSubfamiliaId(''); }}
+                  onChange={(v) => setFamiliaId(v)}
                   options={familias.map((f) => ({ value: f.id, label: f.nombre }))}
-                  placeholder="Sin clasificar"
+                  placeholder="Elige la familia…"
                   searchPlaceholder="Buscar familia…"
                   clearLabel="Sin clasificar"
-                />
-          </label>
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-salvia-500">Subfamilia</span>
-            <SearchableSelect
-                  value={subfamiliaId}
-                  onChange={(v) => setSubfamiliaId(v)}
-                  options={subfamilias.filter((s) => String(s.familia_id) === String(familiaId)).map((s) => ({ value: s.id, label: s.nombre }))}
-                  placeholder={familiaId ? 'Sin subfamilia' : 'Elige una familia primero'}
-                  searchPlaceholder="Buscar subfamilia…"
-                  clearLabel="Sin subfamilia"
-                  disabled={!familiaId}
                 />
           </label>
         </div>

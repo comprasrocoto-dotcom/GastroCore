@@ -10,7 +10,6 @@ import { precioSugerido as precioSugeridoObjetivo, FC_OBJ, INC } from '@/lib/cos
 import { BookOpen, DollarSign, CheckCircle, TriangleAlert, Tag, CalendarClock } from 'lucide-react';
 
 type Receta = any;
-type Subfamilia = { id: string; familia_id: string; nombre: string; tipo?: string; activo: any; centrocosto?: string };
 type Familia = { id: string; nombre: string; tipo?: string; activo: any; centrocosto?: string };
 
 const money = (n: number) =>
@@ -44,7 +43,6 @@ export default function RecetarioClient() {
   const router = useRouter();
   const { puedeEditarRecetas } = useRol();
   const [recetas, setRecetas] = useState<Receta[]>([]);
-  const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +73,6 @@ export default function RecetarioClient() {
 
   const [q, setQ] = useState('');
   const [famSel, setFamSel] = useState('');
-  const [subSel, setSubSel] = useState('');
   const [fcSel, setFcSel] = useState('');
   const [estadoSel, setEstadoSel] = useState('activos');
   const [ccSel, setCcSel] = useState('');
@@ -85,14 +82,12 @@ export default function RecetarioClient() {
     async function load() {
       try {
         setLoading(true);
-        const [rR, rS, rF] = await Promise.all([
+        const [rR, rF] = await Promise.all([
           fetch('/api/recetas?all=true', { cache: 'no-store' }).then((r) => r.json()),
-          fetch('/api/subfamilias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ data: [] })),
           fetch('/api/familias', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({ data: [] })),
         ]);
         if (cancel) return;
         setRecetas(Array.isArray(rR?.data) ? rR.data : []);
-        setSubfamilias(Array.isArray(rS?.data) ? rS.data : []);
         setFamilias(Array.isArray(rF?.data) ? rF.data : []);
       } catch (e: any) {
         if (!cancel) setError(e?.message || 'Error al cargar');
@@ -104,7 +99,6 @@ export default function RecetarioClient() {
     return () => { cancel = true; };
   }, []);
 
-  const subMap = useMemo(() => new Map(subfamilias.map((s) => [s.id, s])), [subfamilias]);
   const famMap = useMemo(() => new Map(familias.map((f) => [f.id, f])), [familias]);
 
   const esReceta = (t?: string) => String(t || '').toLowerCase() === 'receta';
@@ -112,40 +106,23 @@ export default function RecetarioClient() {
     () => familias.filter((f) => esReceta(f.tipo) || (!f.tipo && f.id !== 'FAM-000001')),
     [familias]
   );
-  const subRecetas = useMemo(
-    () => subfamilias.filter((s) => esReceta(s.tipo) || (!s.tipo && s.familia_id !== 'FAM-000001')),
-    [subfamilias]
-  );
 
-  function subNombre(r: Receta) {
-    const s = subMap.get(r.subfamilia_id);
-    return s ? s.nombre : 'Sin clasificar';
-  }
   function famNombre(r: Receta) {
-    const s = subMap.get(r.subfamilia_id);
-    const f = s ? famMap.get(s.familia_id) : null;
-    return f ? f.nombre : 'General';
+    const f = famMap.get(r.familia_id); // v9.4: familia directa
+    return f ? f.nombre : 'Sin clasificar';
   }
   function esActivo(r: Receta) {
     return r.activo === true || r.activo === 'true' || r.activo === 'TRUE' || r.activo === 1;
   }
 
-  // v9.2: centro de costo por herencia (subfamilia manda; si no, la familia)
-  const ccDe = (subfamilia_id: string) => {
-    const s = subMap.get(subfamilia_id);
-    if (!s) return '';
-    return String(s.centrocosto || famMap.get(s.familia_id)?.centrocosto || '').toUpperCase();
-  };
+  // v9.4: el centro de costo de la receta es el de su FAMILIA (directo).
+  const ccDe = (familia_id: string) => String(famMap.get(familia_id)?.centrocosto || '').toUpperCase();
 
   const filtradas = useMemo(() => {
     return recetas.filter((r) => {
       if (q && !String(r.nombre || '').toLowerCase().includes(q.toLowerCase())) return false;
-      if (subSel && r.subfamilia_id !== subSel) return false;
-      if (famSel) {
-        const s = subMap.get(r.subfamilia_id);
-        if (!s || s.familia_id !== famSel) return false;
-      }
-      if (ccSel && ccDe(r.subfamilia_id) !== ccSel) return false;
+      if (famSel && String(r.familia_id) !== String(famSel)) return false;
+      if (ccSel && ccDe(r.familia_id) !== ccSel) return false;
       if (estadoSel === 'activos' && !esActivo(r)) return false;
       if (estadoSel === 'inactivos' && esActivo(r)) return false;
       const fc = Number(r.food_cost) || 0;
@@ -154,23 +131,23 @@ export default function RecetarioClient() {
       if (fcSel === 'rojo' && !(fc > 0.35)) return false;
       return true;
     });
-  }, [recetas, q, subSel, famSel, estadoSel, fcSel, ccSel, subMap, famMap]);
+  }, [recetas, q, famSel, estadoSel, fcSel, ccSel, famMap]);
 
   const centrosCosto = useMemo(() => {
     const set = new Set<string>();
-    recetas.forEach((r) => { const c = ccDe(r.subfamilia_id); if (c) set.add(c); });
+    recetas.forEach((r) => { const c = ccDe(r.familia_id); if (c) set.add(c); });
     return Array.from(set).sort();
-  }, [recetas, subMap, famMap]);
+  }, [recetas, famMap]);
 
   const grupos = useMemo(() => {
     const map = new Map<string, Receta[]>();
     for (const r of filtradas) {
-      const key = subNombre(r);
+      const key = famNombre(r); // v9.4: agrupar por familia, como el recetario
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(r);
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [filtradas, subMap]);
+  }, [filtradas, famMap]);
 
   const stats = useMemo(() => {
     const act = recetas.filter(esActivo);
@@ -187,44 +164,24 @@ export default function RecetarioClient() {
   }, [recetas]);
 
   const familiasSidebar = useMemo(() => {
-    const m = new Map<string, { fam: Familia | null; subs: Map<string, { sub: Subfamilia | null; count: number }> }>();
-    for (const f of famRecetas) {
-      m.set(f.id, { fam: f, subs: new Map() });
-      for (const s of subRecetas.filter((x) => String(x.familia_id) === String(f.id))) {
-        m.get(f.id)!.subs.set(s.id, { sub: s, count: 0 });
-      }
-    }
+    const counts = new Map<string, number>();
     for (const r of recetas.filter(esActivo)) {
-      const s = subMap.get(r.subfamilia_id) || null;
-      const f = s ? famMap.get(s.familia_id) || null : null;
-      const fkey = f ? f.id : '__gen';
-      if (!m.has(fkey)) m.set(fkey, { fam: f, subs: new Map() });
-      const grp = m.get(fkey)!;
-      const skey = s ? s.id : '__none';
-      if (!grp.subs.has(skey)) grp.subs.set(skey, { sub: s, count: 0 });
-      grp.subs.get(skey)!.count++;
+      counts.set(String(r.familia_id), (counts.get(String(r.familia_id)) || 0) + 1);
     }
-    return Array.from(m.values());
-  }, [recetas, subMap, famMap, famRecetas, subRecetas]);
+    return famRecetas.map((f) => ({ fam: f, count: counts.get(String(f.id)) || 0 }));
+  }, [recetas, famRecetas]);
 
   return (
     <div className="app-shell flex min-h-screen gap-4">
       <aside className="hidden w-60 shrink-0 border-r border-salvia-100 bg-salvia-50/40 p-4 lg:block">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-salvia-500">Familias</h2>
-        <button onClick={() => { setFamSel(''); setSubSel(''); }} className={`mb-1 block w-full rounded-md px-2 py-1.5 text-left text-sm ${!famSel ? 'bg-ambar-100 font-semibold text-ambar-800' : 'text-salvia-700 hover:bg-salvia-100'}`}>Todas las recetas</button>
+        <button onClick={() => setFamSel('')} className={`mb-1 block w-full rounded-md px-2 py-1.5 text-left text-sm ${!famSel ? 'bg-ambar-100 font-semibold text-ambar-800' : 'text-salvia-700 hover:bg-salvia-100'}`}>Todas las recetas</button>
         {familiasSidebar.map((g, i) => (
-          <div key={i} className="mb-2">
-            <button onClick={() => { setFamSel(g.fam ? g.fam.id : ''); setSubSel(''); }} className={`block w-full rounded-md px-2 py-1.5 text-left text-sm font-medium ${g.fam && famSel === g.fam.id ? 'bg-ambar-100 text-ambar-800' : 'text-salvia-800 hover:bg-salvia-100'}`}>
-              {g.fam ? g.fam.nombre : 'General'}
+          <div key={i} className="mb-1">
+            <button onClick={() => setFamSel(famSel === g.fam.id ? '' : g.fam.id)} className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium ${famSel === g.fam.id ? 'bg-ambar-100 text-ambar-800' : 'text-salvia-800 hover:bg-salvia-100'}`}>
+              <span>{g.fam.nombre}</span>
+              <span className="text-xs text-salvia-400">{g.count}</span>
             </button>
-            <div className="ml-2 mt-0.5">
-              {Array.from(g.subs.values()).map((sc, j) => (
-                <button key={j} onClick={() => { setSubSel(sc.sub ? sc.sub.id : ''); setFamSel(g.fam ? g.fam.id : ''); }} className={`flex w-full items-center justify-between rounded px-2 py-1 text-left text-xs ${sc.sub && subSel === sc.sub.id ? 'bg-ambar-50 font-semibold text-ambar-700' : 'text-salvia-600 hover:bg-salvia-100'}`}>
-                  <span>{sc.sub ? sc.sub.nombre : 'Sin clasificar'}</span>
-                  <span className="text-salvia-400">{sc.count}</span>
-                </button>
-              ))}
-            </div>
           </div>
         ))}
       </aside>
@@ -259,21 +216,11 @@ export default function RecetarioClient() {
           <div className="min-w-[250px] flex-1">
               <SearchableSelect
                 value={famSel}
-                onChange={(v) => { setFamSel(v); setSubSel(''); }}
+                onChange={(v) => setFamSel(v)}
                 options={famRecetas.map((f) => ({ value: f.id, label: f.nombre }))}
                 placeholder="Todas las familias"
                 searchPlaceholder="Buscar familia…"
                 clearLabel="Todas las familias"
-              />
-            </div>
-          <div className="min-w-[250px] flex-1">
-              <SearchableSelect
-                value={subSel}
-                onChange={(v) => setSubSel(v)}
-                options={subRecetas.filter((s) => !famSel || String(s.familia_id) === String(famSel)).map((s) => ({ value: s.id, label: s.nombre }))}
-                placeholder="Todas las subfamilias"
-                searchPlaceholder="Buscar subfamilia…"
-                clearLabel="Todas las subfamilias"
               />
             </div>
           <select value={fcSel} onChange={(e) => setFcSel(e.target.value)} className="min-w-[220px] flex-1 rounded-md border border-salvia-200 px-3 py-2 text-[15px]">
@@ -312,8 +259,6 @@ export default function RecetarioClient() {
                     <thead>
                       <tr>
                         <th>Receta</th>
-                        <th>Familia</th>
-                        <th>Subfamilia</th>
                         <th className="!text-right">Costo porcion</th>
                         <th className="!text-right">Precio venta</th>
                         <th className="!text-right">Precio sugerido</th>
@@ -332,8 +277,6 @@ export default function RecetarioClient() {
                           className={esActivo(r) ? '' : 'bg-slate-50 text-slate-400 opacity-70'}
                         >
                           <td className="font-medium"><span className="text-[#2563EB]">{r.nombre}</span></td>
-                          <td className="text-muted">{famNombre(r)}</td>
-                          <td className="text-muted">{subNombre(r)}</td>
                           <td className="text-right fin-value">{money(Number(r.costo_porcion))}</td>
                           <td className="text-right fin-value">{Number(r.precio_real) > 0 ? money(Number(r.precio_real)) : <span className="text-[#B45309] font-medium">sin precio</span>}</td>
                           <td className="text-right fin-value">

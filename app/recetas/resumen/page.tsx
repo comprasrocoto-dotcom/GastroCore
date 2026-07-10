@@ -30,7 +30,6 @@ type EstadoFiltro = 'activos' | 'inactivos' | 'todos';
 
 export default function ResumenClient() {
   const [recetas, setRecetas] = useState<any[]>([]);
-  const [subs, setSubs] = useState<any[]>([]);
   const [fams, setFams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<Sort>('food_cost');
@@ -38,19 +37,16 @@ export default function ResumenClient() {
   const [mostrarFuera, setMostrarFuera] = useState(false);
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>('activos');
   const [familiaF, setFamiliaF] = useState('');
-  const [subfamiliaF, setSubfamiliaF] = useState('');
   const [nuevoPrecio, setNuevoPrecio] = useState<Record<string, string>>({});
   const [guardando, setGuardando] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string>('');
 
   const cargar = useCallback(async () => {
-    const [r, s, f] = await Promise.all([
+    const [r, f] = await Promise.all([
       fetch('/api/recetas?all=true', { cache: 'no-store' }).then((x) => x.json()),
-      fetch('/api/subfamilias', { cache: 'no-store' }).then((x) => x.json()).catch(() => ({ data: [] })),
       fetch('/api/familias', { cache: 'no-store' }).then((x) => x.json()).catch(() => ({ data: [] })),
     ]);
     setRecetas(Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : []);
-    setSubs(Array.isArray(s?.data) ? s.data : []);
     setFams(Array.isArray(f?.data) ? f.data : []);
   }, []);
 
@@ -62,33 +58,21 @@ export default function ResumenClient() {
     return () => { cancel = true; };
   }, [cargar]);
 
-  const subMap = useMemo(() => new Map(subs.map((s) => [s.id, s])), [subs]);
   const famMap = useMemo(() => new Map(fams.map((f) => [f.id, f])), [fams]);
   const esActivo = (r: any) => r.activo === true || r.activo === 'true' || r.activo === 'TRUE' || r.activo === 1;
-  const subfamiliaDe = (r: any) => {
-    const s = subMap.get(r.subfamilia_id);
-    return s ? s.nombre : '';
-  };
   const familiaDe = (r: any) => {
-    const s = subMap.get(r.subfamilia_id);
-    const f = s ? famMap.get(s.familia_id) : null;
-    return f ? f.nombre : 'General';
+    const f = famMap.get(r.familia_id); // v9.4: familia directa
+    return f ? f.nombre : 'Sin clasificar';
   };
 
   const visibles = useMemo(() => {
     let base = recetas;
     if (estadoFiltro === 'activos') base = base.filter(esActivo);
     else if (estadoFiltro === 'inactivos') base = base.filter((r) => !esActivo(r));
-    // v8.1: filtros de clasificación del panel
-    if (subfamiliaF) base = base.filter((r) => String(r.subfamilia_id) === subfamiliaF);
-    else if (familiaF) {
-      base = base.filter((r) => {
-        const s = subMap.get(r.subfamilia_id);
-        return s && String(s.familia_id) === familiaF;
-      });
-    }
+    // v9.4: filtro por familia directa
+    if (familiaF) base = base.filter((r) => String(r.familia_id) === familiaF);
     return base;
-  }, [recetas, estadoFiltro, familiaF, subfamiliaF, subMap]);
+  }, [recetas, estadoFiltro, familiaF]);
 
   const rows = useMemo(() => {
     const arr = visibles.map((r) => {
@@ -103,7 +87,6 @@ export default function ResumenClient() {
       return {
         r,
         familia: familiaDe(r),
-        subfamilia: subfamiliaDe(r),
         activo: esActivo(r),
         costo: base.costoPorcion,
         precio: base.precioReal,
@@ -127,7 +110,7 @@ export default function ResumenClient() {
       return dir === 'asc' ? c : -c;
     });
     return s;
-  }, [visibles, sort, dir, subMap, famMap, nuevoPrecio]);
+  }, [visibles, sort, dir, famMap, nuevoPrecio]);
 
   const activos = useMemo(() => recetas.filter(esActivo), [recetas]);
   const porFamilia = useMemo(() => {
@@ -202,7 +185,7 @@ export default function ResumenClient() {
   }
 
   function exportarExcel() {
-    const cols = ['Codigo', 'Receta', 'Familia', 'Subfamilia', 'Estado', 'Costo por porcion', 'Precio de venta', 'Precio sugerido', 'Food Cost', 'Rentabilidad', 'Utilidad', 'Ultima actualizacion'];
+    const cols = ['Codigo', 'Receta', 'Familia', 'Estado', 'Costo por porcion', 'Precio de venta', 'Precio sugerido', 'Food Cost', 'Rentabilidad', 'Utilidad', 'Ultima actualizacion'];
     const esc = (v: any) => {
       const s = String(v ?? '');
       return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -211,7 +194,6 @@ export default function ResumenClient() {
       x.r.id,
       x.r.nombre,
       x.familia,
-      x.subfamilia,
       x.activo ? 'Activo' : 'Inactivo',
       Math.round(x.costo),
       Math.round(x.precio),
@@ -270,23 +252,15 @@ export default function ResumenClient() {
           <section className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 shadow-sm">
             <span className="text-[11px] font-bold uppercase tracking-widest text-salvia-500">Filtrar</span>
             <select value={familiaF}
-              onChange={(e) => { setFamiliaF(e.target.value); setSubfamiliaF(''); }}
+              onChange={(e) => setFamiliaF(e.target.value)}
               className={'rounded-full border px-3.5 py-1.5 text-sm transition ' + (familiaF ? 'border-ambar-400 bg-ambar-50 font-medium text-ambar-800' : 'border-line text-slate-600 hover:border-slate-300')}>
               <option value="">🍽 Todas las familias</option>
               {fams.filter((f: any) => String(f.tipo).toLowerCase() === 'receta').map((f: any) => (
                 <option key={f.id} value={f.id}>{f.nombre}</option>
               ))}
             </select>
-            <select value={subfamiliaF}
-              onChange={(e) => setSubfamiliaF(e.target.value)}
-              className={'rounded-full border px-3.5 py-1.5 text-sm transition ' + (subfamiliaF ? 'border-ambar-400 bg-ambar-50 font-medium text-ambar-800' : 'border-line text-slate-600 hover:border-slate-300')}>
-              <option value="">Todas las subfamilias</option>
-              {subs
-                .filter((s: any) => !familiaF || String(s.familia_id) === familiaF)
-                .map((s: any) => (<option key={s.id} value={s.id}>{s.nombre}</option>))}
-            </select>
-            {(familiaF || subfamiliaF) && (
-              <button onClick={() => { setFamiliaF(''); setSubfamiliaF(''); }}
+            {familiaF && (
+              <button onClick={() => setFamiliaF('')}
                 className="ml-auto rounded-full px-3 py-1.5 text-xs font-medium text-salvia-600 hover:bg-neutral-100">
                 ✕ Limpiar filtros
               </button>

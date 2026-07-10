@@ -43,7 +43,6 @@ export default function FamiliasPage() {
   const [nuevaFamiliaCC, setNuevaFamiliaCC] = useState('');
   const [nuevaClasif, setNuevaClasif] = useState('');
   const [nuevaClasifCC, setNuevaClasifCC] = useState('');
-  const [subNueva, setSubNueva] = useState<{ familia_id: string; nombre: string } | null>(null);
 
   // ── edición en línea (un solo mecanismo para familias y subfamilias) ──
   const [edit, setEdit] = useState<{ clase: 'fam' | 'sub'; id: string; nombre: string; cc: string } | null>(null);
@@ -59,8 +58,8 @@ export default function FamiliasPage() {
       setFamilias((rf?.data || []).filter((f: Familia) => esActivo(f.activo)));
       setSubfamilias((rs?.data || []).filter((s: Subfamilia) => esActivo(s.activo)));
       const ur = new Map<string, number>();
-      (rr?.data || []).forEach((x: { subfamilia_id?: string }) => {
-        const k = String(x.subfamilia_id || '');
+      (rr?.data || []).forEach((x: { familia_id?: string }) => {
+        const k = String(x.familia_id || ''); // v9.4: las recetas apuntan a la familia
         ur.set(k, (ur.get(k) || 0) + 1);
       });
       setUsoRecetas(ur);
@@ -89,7 +88,7 @@ export default function FamiliasPage() {
     () => famInsumos.flatMap((f) => subsDe(f.id)).sort((a, b) => a.nombre.localeCompare(b.nombre)),
     [famInsumos, subsDe]
   );
-  const recetasDeFamilia = (fid: string) => subsDe(fid).reduce((a, s) => a + (usoRecetas.get(s.id) || 0), 0);
+  const recetasDeFamilia = (fid: string) => usoRecetas.get(String(fid)) || 0; // v9.4: conteo directo
 
   // ─────────────────────────── acciones ───────────────────────────
   async function llamar(url: string, method: string, body: Record<string, unknown>, okTexto: string) {
@@ -120,13 +119,6 @@ export default function FamiliasPage() {
     if (!nombre || !famInsumoPrincipal) return;
     if (await llamar('/api/subfamilias', 'POST', { nombre, familia_id: famInsumoPrincipal.id, tipo: 'insumo', centrocosto: nuevaClasifCC.trim() }, `Clasificación "${nombre}" creada.`)) {
       setNuevaClasif(''); setNuevaClasifCC('');
-    }
-  }
-  async function crearSubfamiliaDe(familia_id: string) {
-    const nombre = (subNueva?.nombre || '').trim().toUpperCase();
-    if (!nombre) return;
-    if (await llamar('/api/subfamilias', 'POST', { nombre, familia_id, tipo: 'receta' }, `Subfamilia "${nombre}" creada.`)) {
-      setSubNueva(null);
     }
   }
   async function guardarEdicion() {
@@ -262,45 +254,7 @@ export default function FamiliasPage() {
                       )}
                     </div>
 
-                    {/* la unión familia → subfamilias, visible y editable adentro */}
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-salvia-50 pt-2">
-                      {subs.map((s) => (
-                        edit && edit.clase === 'sub' && edit.id === s.id ? <FilaEdicion key={s.id} /> : (
-                          <span key={s.id} className="group inline-flex items-center gap-1 rounded-full bg-salvia-50 px-2.5 py-1 text-xs text-salvia-700">
-                            {s.nombre}
-                            <ChipCC cc={s.centrocosto} heredado={f.centrocosto} />
-                            <span className="text-[10px] text-salvia-400">({usoRecetas.get(s.id) || 0})</span>
-                            {esAdmin && (
-                              <>
-                                <button onClick={() => setEdit({ clase: 'sub', id: s.id, nombre: s.nombre, cc: String(s.centrocosto || '') })} title="Editar" className="opacity-40 transition hover:opacity-100">✏️</button>
-                                <button onClick={() => desactivar('sub', s.id, s.nombre, usoRecetas.get(s.id) || 0)} title="Desactivar" className="opacity-40 transition hover:opacity-100">✕</button>
-                              </>
-                            )}
-                          </span>
-                        )
-                      ))}
-                      {esAdmin && (
-                        subNueva && subNueva.familia_id === f.id ? (
-                          <span className="inline-flex items-center gap-1">
-                            <input
-                              value={subNueva.nombre}
-                              onChange={(e) => setSubNueva({ familia_id: f.id, nombre: e.target.value })}
-                              onKeyDown={(e) => e.key === 'Enter' && crearSubfamiliaDe(f.id)}
-                              placeholder="Nombre…"
-                              autoFocus
-                              className="w-36 rounded-full border border-ambar-300 px-2.5 py-1 text-xs uppercase focus:outline-none"
-                            />
-                            <button onClick={() => crearSubfamiliaDe(f.id)} disabled={ocupado} className="text-xs font-semibold text-ambar-600">OK</button>
-                            <button onClick={() => setSubNueva(null)} className="text-xs text-salvia-400">✕</button>
-                          </span>
-                        ) : (
-                          <button onClick={() => setSubNueva({ familia_id: f.id, nombre: '' })} className="rounded-full border border-dashed border-salvia-300 px-2.5 py-1 text-xs text-salvia-500 hover:border-ambar-400 hover:text-ambar-600">
-                            + subfamilia
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </li>
+                                      </li>
                 );
               })}
             </ul>

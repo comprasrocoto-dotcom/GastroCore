@@ -17,11 +17,10 @@ export async function GET(req: NextRequest) {
     if (!id) return NextResponse.json({ ok: false, error: 'Falta id' }, { status: 400 });
     const usuario = req.nextUrl.searchParams.get('usuario') || 'Sistema';
 
-    const [receta, subs, fams, par] = await Promise.all([getReceta(id), getSubfamilias(), getFamilias(), getParametros().catch(() => null)]);
+    const [receta, fams, par] = await Promise.all([getReceta(id), getFamilias(), getParametros().catch(() => null)]);
     if (!receta) return NextResponse.json({ ok: false, error: 'Receta no encontrada' }, { status: 404 });
 
-    const sub = subs.find((s) => String(s.id) === String(receta.subfamilia_id));
-    const fam = sub ? fams.find((f) => String(f.id) === String(sub.familia_id)) : undefined;
+    const fam = fams.find((f) => String(f.id) === String((receta as { familia_id?: string }).familia_id)); // v9.4
 
     const ings = (receta.ingredientes || []).slice().sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
     const costoIngredientes = ings.reduce((s, x) => s + (Number(x.costo_linea) || 0), 0);

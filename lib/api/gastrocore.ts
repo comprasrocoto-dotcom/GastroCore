@@ -43,7 +43,7 @@ export type IngredienteReceta = {
 export type Receta = {
   id: string;
   nombre: string;
-  subfamilia_id: string;
+  familia_id: string; // v9.4: las recetas clasifican por familia directa
   rendimiento: number;
   unidad_rendimiento_id: string;
   merma_pct: number;

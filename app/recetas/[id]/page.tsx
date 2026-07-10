@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getReceta, getSubfamilias, getFamilias } from '@/lib/api/gastrocore';
+import { getReceta, getFamilias } from '@/lib/api/gastrocore';
 import { getRol } from '@/lib/session';
 import { foodCost as calcFoodCost, precioSugerido as calcPrecioSugerido, utilidad as calcUtilidad, margenBruto as calcMargenBruto } from '@/lib/costeo';
 
@@ -29,16 +29,14 @@ function semaforo(fc: number) {
 
 export default async function RecetaDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [receta, subfamilias, familias, rol] = await Promise.all([
+  const [receta, familias, rol] = await Promise.all([
     getReceta(id),
-    getSubfamilias().catch(() => []),
     getFamilias().catch(() => []),
     getRol('Lector'),
   ]);
   if (!receta) notFound();
 
-  const sub = subfamilias.find((s: any) => s.id === receta.subfamilia_id);
-  const fam = sub ? familias.find((f: any) => f.id === sub.familia_id) : null;
+  const fam = familias.find((f: any) => f.id === (receta as any).familia_id) || null; // v9.4
   const ingredientes = receta.ingredientes || [];
 
   const rendimiento = Number(receta.rendimiento) || 1;
@@ -95,7 +93,6 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm lg:grid-cols-3 xl:grid-cols-4">
               <Info label="Codigo" value={receta.id} mono />
               <Info label="Familia" value={fam ? fam.nombre : 'General'} />
-              <Info label="Subfamilia" value={sub ? sub.nombre : 'Sin clasificar'} />
               <Info label="Rendimiento" value={`${num(rendimiento, 0)} porciones`} />
               <Info label="Creada" value={fecha(receta.creado_en)} />
               <Info label="Actualizada" value={fecha(receta.actualizado_en)} />
@@ -249,7 +246,7 @@ function Row({ label, value, sub, strong, accent }: { label: string; value: stri
       <span className="text-salvia-600">{label}</span>
       <span className="text-right">
         <span className={`font-mono ${strong ? 'font-bold' : ''} ${accent || 'text-salvia-800'}`}>{value}</span>
-        {sub ? <span className="ml-2 font-mono text-xs text-salvia-400">{sub}</span> : null}
+        
       </span>
     </div>
   );
