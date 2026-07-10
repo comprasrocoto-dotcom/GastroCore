@@ -23,7 +23,6 @@ export const metadata: Metadata = {
 };
 
 const NAV = [
-  { href: '/', label: 'Inicio', icon: '\uD83C\uDFE0' },
   { href: '/insumos', label: 'Insumos', icon: '\uD83D\uDCE6' },
   { href: '/subrecetas', label: 'Subrecetas', icon: '\uD83E\uDD63' },
   { href: '/recetas', label: 'Recetas', icon: '\uD83D\uDCD8' },

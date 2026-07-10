@@ -198,6 +198,50 @@ export default function UsuariosPage() {
         Los usuarios nunca se eliminan (auditoría): se desactivan y pueden reactivarse. La clave se
         escribe pero jamás se muestra.
       </p>
+      {/* ═══ v9.8: qué puede hacer cada rol ═══ */}
+      <section className="mt-8 rounded-xl border border-salvia-100 bg-white p-5 shadow-sm">
+        <h2 className="mb-1 font-display text-lg font-bold text-ink">¿Qué puede hacer cada rol?</h2>
+        <p className="mb-3 text-xs text-salvia-500">
+          Los permisos los aplica el servidor en cada petición (no son solo botones ocultos). El rol se asigna en la columna de cada usuario.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-salvia-200 text-left text-[11px] uppercase tracking-wide text-salvia-500">
+                <th className="py-2 pr-3">Vista / función</th>
+                <th className="px-2 py-2 text-center">👑 Admin</th>
+                <th className="px-2 py-2 text-center">👨‍🍳 Chef</th>
+                <th className="px-2 py-2 text-center">👁 Lector</th>
+              </tr>
+            </thead>
+            <tbody className="[&_td]:py-2 [&_tr]:border-b [&_tr]:border-salvia-50">
+              {[
+                ['Ver recetas, subrecetas, insumos, panel, análisis y recetario', true, true, true],
+                ['Crear y editar recetas, fichas y fotos · activar/desactivar', true, true, false],
+                ['Crear y editar subrecetas · actualizar el insumo maestro (el puente)', true, true, false],
+                ['Crear/editar insumos · cambiar costos · carga por plano', true, false, false],
+                ['Familias, clasificaciones y centros de costo', true, false, false],
+                ['Usuarios (esta vista)', true, false, false],
+                ['Configuración: parámetros de costeo, respaldo, credenciales', true, false, false],
+              ].map(([txt, a, c, l], i) => (
+                <tr key={i}>
+                  <td className="pr-3 text-slate-700">{txt as string}</td>
+                  {[a, c, l].map((v, j) => (
+                    <td key={j} className="text-center">
+                      {v ? <span className="font-semibold text-emerald-600">✓</span> : <span className="text-slate-300">—</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-[11.5px] text-slate-500">
+          👨‍🍳 <b>Chef</b> es el rol de cocina: dueño de recetas, preparaciones y fichas — sin acceso a costos del maestro ni a la administración.
+          👁 <b>Lector</b> consulta todo sin tocar nada (ideal para socios o auditoría).
+        </p>
+      </section>
+
     </main>
   );
 }

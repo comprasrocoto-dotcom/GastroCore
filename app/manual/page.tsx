@@ -1,204 +1,126 @@
 import Link from 'next/link';
 
-export const metadata = {
-  title: 'Manual de uso — GastroCore',
-  description: 'Guía paso a paso de GastroCore: cada módulo, cómo se usa y la lógica de costeo.',
-};
+/**
+ * MANUAL DE GASTROCORE — v9.8 (actualizado a la arquitectura actual)
+ * Esta es también la PORTADA de la aplicación: la raíz (/) redirige aquí.
+ */
 
-const toc = [
-  { href: '#logica', label: 'Cómo funciona GastroCore' },
-  { href: '#insumos', label: '1. Insumos' },
-  { href: '#subrecetas', label: '2. Subrecetas' },
-  { href: '#recetas', label: '3. Recetas' },
-  { href: '#familias', label: '4. Familias' },
-  { href: '#panel', label: '5. Panel Ejecutivo' },
-  { href: '#analisis', label: '6. Análisis de Costos' },
-  { href: '#glosario', label: 'Glosario de términos' },
-];
+export const metadata = { title: 'Manual · GastroCore' };
+
+function S({ n, titulo, children }: { n?: string; titulo: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-salvia-100 bg-white p-6 shadow-sm">
+      <h2 className="mb-3 font-display text-xl font-bold text-ink">
+        {n && <span className="mr-2 text-ambar-600">{n}.</span>}
+        {titulo}
+      </h2>
+      <div className="space-y-2 text-[15px] leading-relaxed text-slate-700">{children}</div>
+    </section>
+  );
+}
+
+function K({ children }: { children: React.ReactNode }) {
+  return <b className="text-slate-900">{children}</b>;
+}
 
 export default function ManualPage() {
   return (
-    <main className="app-shell py-10">
-      <header className="mb-8 max-w-3xl">
-        <span className="eyebrow">Centro de ayuda</span>
-        <h1 className="mt-2 text-4xl font-bold text-[#1E3A5F]">Manual de uso</h1>
-        <p className="mt-3 text-base text-muted">
-          Guía paso a paso de GastroCore: qué hace cada módulo, cómo se usa y por qué los números se calculan como se calculan.
+    <main className="mx-auto max-w-4xl px-4 py-8">
+      <header className="mb-6 border-b border-salvia-100 pb-4">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-salvia-400">GastroCore · Manual</p>
+        <h1 className="font-display text-3xl font-bold text-ink">Cómo funciona GastroCore</h1>
+        <p className="mt-1 text-sm text-salvia-500">
+          El sistema de costeo y recetario de la operación. Esta página es la portada: aquí está todo lo que hace cada vista.
         </p>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-        <aside className="h-fit lg:sticky lg:top-20">
-          <nav className="card p-4 text-sm">
-            <p className="eyebrow mb-3">Contenido</p>
-            <ul className="space-y-1">
-              {toc.map((item) => (
-                <li key={item.href}>
-                  <a href={item.href} className="block rounded-lg px-2.5 py-1.5 font-medium text-[#1E3A5F] hover:bg-[#EFF6FF]">
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
+      <div className="space-y-5">
+        <S titulo="El flujo, en una frase">
+          <p>
+            <K>INSUMOS</K> es el único maestro de compras (cada uno con su <K>referencia única</K> y su costo) →
+            las <K>SUBRECETAS</K> son la calculadora de tus preparaciones y proponen el costo del insumo &quot;SUB.&quot; →
+            las <K>RECETAS</K> (los platos de la carta, clasificados por <K>FAMILIA</K>) se costean leyendo SOLO insumos →
+            y el <K>RECETARIO</K>, el <K>PANEL</K> y <K>ANÁLISIS</K> muestran el resultado a cocina y a los jefes.
+          </p>
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm">
+            💡 La merma se costea por <K>rendimiento</K> (gross-up ÷), igual que HioPOS: 100 g con 10% de merma
+            cuestan como 111 g. El desvío de mercancía es un recargo (×).
+          </p>
+        </S>
 
-        <div className="space-y-8">
-          <section id="logica" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">Cómo funciona GastroCore</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              GastroCore organiza el costeo de un restaurante en tres niveles que se alimentan uno del otro. El primer nivel son los <strong>insumos</strong>: las materias primas que se compran (verduras, carnes, licores, abarrotes, etc.), cada una con un costo por unidad de medida. El segundo nivel son las <strong>subrecetas</strong>: preparaciones intermedias como salsas, fondos, masas o mixes, armadas combinando insumos, cuyo resultado (costo por unidad producida) puede usarse como si fuera un insumo más. El tercer nivel son las <strong>recetas finales</strong>: los platos que se venden, que pueden combinar insumos y subrecetas en cualquier proporción.
-            </p>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              La clave del sistema es la propagación automática de costos: si el precio de un insumo cambia, ese cambio recalcula al instante el costo de toda subreceta o receta que lo utilice, sin que nadie tenga que actualizar nada a mano. Por eso, mantener actualizado el precio de los insumos en la sección Insumos es lo que garantiza que el food cost de todo el menú sea correcto.
-            </p>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              El indicador central del sistema es el <strong>food cost</strong>: el porcentaje que representa el costo de un plato sobre su precio de venta (costo del plato dividido por precio de venta). Cada receta tiene un food cost objetivo (35% por defecto) contra el cual se compara el food cost real. Según ese resultado, el sistema asigna un semáforo:
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="chip chip-success">Verde · Rentable: el food cost está dentro del objetivo</span>
-              <span className="chip chip-warning">Amarillo · Vigilar: el food cost está cerca del límite</span>
-              <span className="chip chip-danger">Rojo · Acción inmediata: el food cost supera el objetivo</span>
-            </div>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Un punto clave: el food cost <strong>no</strong> se calcula sobre el precio de venta total que paga el cliente, sino sobre el <strong>precio base sin impuesto</strong>. GastroCore aplica un Impuesto al Consumo (INC) fijo del 8%, que ya viene incluido en el precio de venta. Por eso, antes de calcular el food cost, el sistema quita ese impuesto (precio base = precio de venta ÷ 1.08) y solo entonces divide el costo del plato entre ese precio base. El precio sugerido de venta funciona al revés: primero calcula el precio sin impuesto necesario para llegar al food cost objetivo y luego le suma el 8% de impuesto para mostrar el precio final con el que se vende.
-            </p>
-            <p className="mt-4 text-[15px] leading-relaxed">
-              Además del food cost, el sistema calcula automáticamente el <strong>precio sugerido de venta</strong> (el precio necesario para lograr el food cost objetivo), la <strong>utilidad</strong> (precio de venta menos costo del plato), el <strong>margen bruto</strong>, el impacto de la <strong>merma</strong> (pérdida de producto al preparar un ingrediente) y el <strong>desvío de mercancía</strong> (un porcentaje adicional que cubre diferencias de inventario no explicadas por la merma normal).
-            </p>
-          </section>
+        <S n="1" titulo="Insumos — el maestro">
+          <p><K>➕ Nuevo insumo:</K> referencia (código único — el sistema avisa EN VIVO si ya existe), artículo, unidad, subfamilia, costo inicial y merma estándar. Si nace con costo, queda el primer punto en su historial.</p>
+          <p><K>✏️ Editar</K> cambia los datos del maestro. <K>💲 El costo se cambia aparte</K>: pide motivo, queda en el historial de precios y <K>recalcula en cascada</K> todas las recetas y calculadoras que lo usan.</p>
+          <p><K>⇪ Carga por plano:</K> sube un CSV (descarga la plantilla con los costos actuales) y actualiza cientos de costos de un golpe — solo cambia lo que trae el archivo.</p>
+          <p><K>Filtros:</K> por subfamilia y por 🏷 centro de costo. La <K>unidad</K> de cada insumo se define aquí y las recetas la heredan (no es editable en la línea).</p>
+        </S>
 
-          <section id="insumos" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">1. Insumos</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Es el catálogo maestro de materias primas. Cada insumo tiene una referencia, un nombre, una unidad de medida, una subfamilia y un costo. Desde aquí se mantiene actualizado el precio real de compra de cada producto, que es el dato que alimenta todo el resto del sistema.
-            </p>
-            <h3 className="mt-5 text-lg font-semibold">Paso a paso</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-[15px] leading-relaxed">
-              <li>Entra a <strong>Insumos</strong> desde el menú superior.</li>
-              <li>Usa el buscador para encontrar un insumo por nombre o referencia, o filtra por subfamilia con el desplegable.</li>
-              <li>Para actualizar un precio, haz clic en <strong>Editar</strong> en la fila del insumo, ingresa el nuevo precio (y opcionalmente un motivo del cambio) y guarda. El cambio se propaga automáticamente a todas las subrecetas y recetas que usan ese insumo.</li>
-              <li>Para saber en qué preparaciones se usa un insumo antes de cambiar su precio, haz clic en <strong>Dónde se usa</strong>: se abre la lista de subrecetas y recetas que lo incluyen, con acceso directo a cada una.</li>
-              <li>Desde la ventana de edición también puedes consultar el <strong>historial de precios</strong> del insumo.</li>
-            </ol>
-          </section>
+        <S n="2" titulo="Subrecetas — la calculadora de preparaciones">
+          <p>Toda preparación vive en INSUMOS como un artículo &quot;SUB.&quot; — la subreceta es su <K>calculadora</K>: ingredientes + rendimiento → costo por unidad.</p>
+          <p><K>Al crear:</K> enlaza un insumo &quot;SUB.&quot; existente (el buscador excluye los ya enlazados) o crea el maestro nuevo con referencia única y subfamilia.</p>
+          <p><K>EL PUENTE:</K> al guardar, si el costo calculado difiere del costo del insumo, el sistema pregunta si lo actualizas — con tu confirmación, queda en el historial (&quot;Actualizado desde subreceta X&quot;) y recalcula las recetas. En la lista, cada subreceta muestra <K>&quot;✓ al día&quot;</K> o <K>&quot;⇪ Desactualizado&quot;</K> con el puente a un clic.</p>
+          <p>Cuando cambia el precio de un ingrediente, la calculadora <K>se refresca sola</K> (sin tocar el maestro) — el estado siempre dice la verdad.</p>
+        </S>
 
-          <section id="subrecetas" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">2. Subrecetas</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Las subrecetas son preparaciones base (salsas, fondos, masas, mixes) que luego se agregan como ingrediente dentro de otras recetas o subrecetas. Sirven para no repetir la misma preparación en el costeo de cada plato: se costea una sola vez y su costo por unidad se reutiliza donde haga falta.
-            </p>
-            <h3 className="mt-5 text-lg font-semibold">Paso a paso para crear una subreceta</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-[15px] leading-relaxed">
-              <li>Entra a <strong>Subrecetas</strong> y haz clic en <strong>+ Nueva subreceta</strong>.</li>
-              <li>Completa el nombre, el rendimiento producido (cuánto rinde la preparación) y su unidad (gramos, kilos, mililitros, litros, onza, copa o unidades).</li>
-              <li>Define el porcentaje de desvío de mercancía y clasifica la subreceta por familia y subfamilia (puedes crear una familia nueva desde el mismo formulario con "Administrar familias").</li>
-              <li>Agrega los ingredientes uno por uno con <strong>+ Agregar ingrediente</strong>: elige el insumo (u otra subreceta), la cantidad usada y el porcentaje de merma. El costo unitario y el costo total de cada ingrediente se calculan solos.</li>
-              <li>Revisa el resumen de costeo (costo de ingredientes, desvío de mercancía, costo final, costo por unidad, food cost y precio sugerido) y guarda con <strong>Guardar receta</strong>.</li>
-              <li>Desde ese momento, la subreceta queda disponible como ingrediente al armar cualquier receta o subreceta nueva.</li>
-            </ol>
-          </section>
+        <S n="3" titulo="Recetas — los platos de la carta">
+          <p>Cada receta pertenece a <K>UNA familia</K> (la categoría de la carta: ENTRADAS, CEVICHES…). La lista se agrupa por familia — y si digitaste centros de costo, en bloques 🏷 por centro.</p>
+          <p><K>El buscador de ingredientes:</K> escribe nombre o referencia (ignora tildes y mayúsculas), navega con ↑↓ y elige con Enter. Cada resultado muestra la referencia, la subfamilia y el costo <K>por su unidad</K>. Los repetidos se marcan &quot;ya en la receta&quot;.</p>
+          <p><K>Costeo en vivo:</K> cantidad + % de merma por línea → cantidad real y costo; desvío global; el <K>precio sugerido</K> sale del Food Cost objetivo vigente (el global de Configuración, o la excepción de la familia si existe) más el impuesto.</p>
+          <p>Cada guardado crea una <K>versión con snapshot</K> — desde Trazabilidad puedes comparar y restaurar. El botón <K>📖 Ver recetario completo</K> abre la vista de cocina.</p>
+        </S>
 
-          <section id="recetas" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">3. Recetas</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Es el recetario final: los platos que se venden en el menú. La lista se agrupa por familia y muestra, para cada receta, el costo por porción, el precio de venta, el precio sugerido y el food cost con su semáforo de color.
-            </p>
-            <h3 className="mt-5 text-lg font-semibold">Consultar una receta</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-[15px] leading-relaxed">
-              <li>Entra a <strong>Recetas</strong> y filtra por familia, subfamilia, rango de food cost o estado si lo necesitas.</li>
-              <li>Haz clic en el nombre de una receta para ver su ficha completa: ingredientes con cantidad, merma, costo unitario y costo total; resumen de costos; y botones para descargar la ficha en PDF o ver la trazabilidad completa.</li>
-              <li>Desde la ficha puedes entrar a <strong>Editar receta</strong> para modificar sus ingredientes, cantidades o clasificación.</li>
-            </ol>
-            <h3 className="mt-5 text-lg font-semibold">Paso a paso para crear una receta nueva</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-[15px] leading-relaxed">
-              <li>Haz clic en <strong>+ Nueva receta</strong>.</li>
-              <li>Completa el nombre, el rendimiento en porciones, el desvío de mercancía y la clasificación por familia y subfamilia.</li>
-              <li>Agrega los ingredientes (insumos o subrecetas) uno por uno, indicando cantidad y merma.</li>
-              <li>Define el precio real de venta para que el sistema calcule el food cost real y la utilidad, y guarda la receta.</li>
-            </ol>
-          </section>
+        <S n="4" titulo="Ficha técnica y Recetario">
+          <p>La ficha lleva preparación, emplatado, notas, tiempo, gramaje y la <K>foto</K>. El editor de foto tiene dos modos: <K>📐 Encuadrar</K> (marcos 4:3, cuadrada, vertical o panorámica; aleja el zoom para que quepa completa) e <K>🖼 Imagen completa</K> (se sube tal cual es).</p>
+          <p>El <K>Recetario</K> es la vista pública de cocina: galería por categorías, secciones 🏷 por centro de costo (con su filtro), buscador por plato o ingrediente, y <K>🔍 lupa</K> en la foto (toca para ampliar 1.8x). Guardar una ficha o foto se refleja <K>al instante</K>.</p>
+        </S>
 
-          <section id="familias" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">4. Familias</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Las familias y subfamilias son la forma de clasificar y ordenar insumos, subrecetas y recetas (por ejemplo Entradas, Arroces, Fruver, Licores). Se usan como filtro en todas las demás secciones y en los reportes del Panel y de Análisis.
-            </p>
-            <h3 className="mt-5 text-lg font-semibold">Paso a paso</h3>
-            <ol className="mt-2 list-decimal space-y-2 pl-5 text-[15px] leading-relaxed">
-              <li>Entra a <strong>Familias</strong> desde el menú.</li>
-              <li>Para crear una familia nueva, escribe el nombre en "Nueva familia" y haz clic en <strong>Crear familia</strong>.</li>
-              <li>Para crear una subfamilia, elige primero la familia a la que pertenecerá y haz clic en <strong>Crear subfamilia</strong>.</li>
-              <li>Desde el listado "Familias existentes" puedes <strong>editar</strong> el nombre de una familia o subfamilia, o <strong>desactivarla</strong> si ya no se usa.</li>
-            </ol>
-          </section>
+        <S n="5" titulo="Familias — las clasificaciones">
+          <p>Dos mundos: <K>🍽 Familias de recetas</K> (las categorías de la carta, con su conteo de platos) y <K>📦 Clasificaciones de insumos</K> (FRUVER, ABARROTES…, con su conteo de insumos).</p>
+          <p><K>🏷 Centro de costo:</K> se digita en la familia (y en las clasificaciones de insumos, que si están vacías heredan). Agrupa y filtra Recetas, Insumos y el Recetario. Crear y editar es en línea (nombre + CC juntos); desactivar avisa cuántos elementos quedan sin clasificar.</p>
+        </S>
 
-          <section id="panel" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">5. Panel Ejecutivo</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Es el tablero de indicadores para revisar la salud del menú de un vistazo: recetas activas, food cost promedio, utilidad potencial y recetas fuera de precio, además de alertas de rentabilidad separadas en "acción inmediata" y "a vigilar".
-            </p>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Incluye un ranking de las recetas más rentables, un ranking de las que más se alejan del objetivo, el food cost promedio por familia y una tabla detallada donde se puede simular un precio sugerido editable y ver de inmediato el food cost resultante y la utilidad, además de activar, desactivar o actualizar el precio de cada receta directamente desde ahí. Todo el panel se puede exportar a Excel con el botón correspondiente.
-            </p>
-          </section>
+        <S n="6" titulo="Panel ejecutivo y Análisis">
+          <p><K>Panel:</K> KPIs (activas, Food Cost promedio, utilidad potencial, fuera de precio), semáforo de críticas, y la tabla con <K>precio editable</K> que simula el FC al instante antes de guardar. Exporta a CSV.</p>
+          <p><K>Análisis:</K> simulador de impacto (&quot;¿y si el aguacate sube 15%?&quot;), alertas automáticas (subidas sobre el umbral, FC vencido, insumos en $0), tops de aumentos y bajadas, variación por familia de insumos, evolución semanal (foto de cada lunes 6 AM) e impacto en el menú.</p>
+          <p>Cada sección tiene un <K>?</K> con la explicación y un ejemplo — para que cualquier jefe lea los números sin traductor.</p>
+        </S>
 
-          <section id="analisis" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">6. Análisis de Costos</h2>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Esta sección muestra cómo varían los precios de los insumos a lo largo del tiempo y cuánto afecta esa variación al menú. En la parte superior aparecen el insumo más inflacionario, la receta más afectada, la variación promedio de costos y alertas automáticas cuando un insumo sube mucho de precio o una receta supera su food cost objetivo.
-            </p>
-            <p className="mt-3 text-[15px] leading-relaxed">
-              Tiene tres pestañas: <strong>Variación de costos</strong> (top de insumos que más subieron o bajaron y variación por familia), <strong>Impacto en el menú</strong> (qué recetas se ven afectadas por cada variación de insumo) y <strong>Simulación</strong>, donde puedes elegir un insumo, escribir un precio hipotético y ver qué pasaría con el food cost y el precio sugerido de las recetas afectadas, sin guardar ningún cambio real. También puedes descargar reportes en Excel o exportar la vista completa en PDF.
-            </p>
-          </section>
+        <S n="7" titulo="Configuración (solo Admin)">
+          <p><K>Parámetros de costeo:</K> Food Cost objetivo (con excepciones por familia), impuesto y umbral de alertas. Guardarlos con cambios de precio <K>recalcula todo el menú automáticamente</K> y sincroniza la columna de margen.</p>
+          <p><K>Identidad</K> (nombre del negocio en recetario y PDF), <K>respaldo</K> del Sheet completo a Excel con un clic, y <K>rotación del token</K> de la API (se muestra una sola vez).</p>
+        </S>
 
-          <section id="glosario" className="card scroll-mt-24 p-6">
-            <h2 className="text-2xl font-semibold">Glosario de términos</h2>
-            <dl className="mt-3 divide-y divide-line">
-              <div className="py-3">
-                <dt className="font-semibold">Food cost</dt>
-                <dd className="text-muted">Porcentaje que representa el costo de un plato sobre su precio de venta.</dd>
-              </div>
-              <div className="py-3">
-                <dt className="font-semibold">Food cost objetivo</dt>
-                <dd className="text-muted">El porcentaje máximo de food cost que la receta debería tener (35% por defecto).</dd>
-              </div>
-              <div className="py-3">
-                <dt className="font-semibold">Precio sugerido</dt>
-                <dd className="text-muted">El precio de venta necesario para alcanzar el food cost objetivo.</dd>
-              </div>
-              <div className="py-3">
-                <dt className="font-semibold">Merma</dt>
-                <dd className="text-muted">Porcentaje de producto que se pierde al preparar un ingrediente (limpieza, cocción, corte).</dd>
-              </div>
-              <div className="py-3">
-                <dt className="font-semibold">Desvío de mercancía</dt>
-                <dd className="text-muted">Porcentaje adicional que cubre diferencias de inventario no explicadas por la merma normal.</dd>
-              </div>
-              <div className="py-3">
-                <dt className="font-semibold">Margen bruto</dt>
-                <dd className="text-muted">Porcentaje de utilidad sobre el precio de venta (utilidad dividida por precio de venta).</dd>
-              </div>
-              <div className="py-3">
-                <dt className="font-semibold">Utilidad</dt>
-                <dd className="text-muted">Diferencia entre el precio de venta y el costo total del plato.</dd>
-              </div>
-            <div className="py-3">
-              <dt className="font-semibold">Impuesto al Consumo (INC)</dt>
-              <dd className="text-muted">Impuesto fijo del 8% que ya viene incluido en el precio de venta de cada receta.</dd>
-            </div>
-            <div className="py-3">
-              <dt className="font-semibold">Precio base sin impuesto</dt>
-              <dd className="text-muted">El precio de venta sin el Impuesto al Consumo (precio de venta ÷ 1.08). El food cost se calcula sobre este valor, no sobre el precio de venta total.</dd>
-            </div>
-            </dl>
-          </section>
-
-          <div className="text-center">
-            <Link href="/" className="btn-secondary">Volver al inicio</Link>
+        <S n="8" titulo="Roles — quién puede qué">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-salvia-200 text-left text-[11px] uppercase tracking-wide text-salvia-500">
+                  <th className="py-2 pr-3">Vista / función</th>
+                  <th className="px-2 py-2 text-center">Admin</th>
+                  <th className="px-2 py-2 text-center">Chef</th>
+                  <th className="px-2 py-2 text-center">Lector</th>
+                </tr>
+              </thead>
+              <tbody className="[&_td]:py-1.5 [&_tr]:border-b [&_tr]:border-salvia-50">
+                <tr><td>Ver recetas, subrecetas, insumos, panel, análisis y recetario</td><td className="text-center">✓</td><td className="text-center">✓</td><td className="text-center">✓</td></tr>
+                <tr><td>Crear y editar recetas, fichas y fotos · activar/desactivar</td><td className="text-center">✓</td><td className="text-center">✓</td><td className="text-center">—</td></tr>
+                <tr><td>Crear y editar subrecetas · el puente al insumo maestro</td><td className="text-center">✓</td><td className="text-center">✓</td><td className="text-center">—</td></tr>
+                <tr><td>Crear/editar insumos, cambiar costos, carga por plano</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
+                <tr><td>Familias, clasificaciones y centros de costo</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
+                <tr><td>Usuarios (la vista completa)</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
+                <tr><td>Configuración: parámetros, respaldo, credenciales</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
+              </tbody>
+            </table>
           </div>
-        </div>
+        </S>
+
+        <S titulo="Glosario exprés">
+          <p><K>Referencia:</K> el código único de cada insumo — cruza con el ERP y la carga por plano. · <K>Food Cost:</K> % del precio (sin impuesto) que se va en materia prima. · <K>Merma:</K> lo que se pierde al procesar; se costea por rendimiento (÷). · <K>Desvío:</K> recargo por pérdidas operativas (×). · <K>El puente:</K> confirmar el costo calculado de una subreceta hacia su insumo maestro. · <K>🏷 Centro de costo:</K> a qué área contable pertenece cada familia (COCINA, BAR…).</p>
+        </S>
+
+        <p className="pt-2 text-center text-sm text-salvia-500">
+          ¿Listo? Empieza por <Link href="/insumos" className="font-medium text-ambar-600 hover:underline">Insumos</Link> o ve directo a <Link href="/recetas" className="font-medium text-ambar-600 hover:underline">Recetas</Link>.
+        </p>
       </div>
     </main>
   );
