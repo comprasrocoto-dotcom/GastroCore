@@ -45,6 +45,24 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
     return Array.from(m.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [recetas]);
 
+  // v9.8.4: sidebar por CC — categorías sin centro primero, las demás bajo su 🏷.
+  const seccionesSidebar = useMemo(() => {
+    const ccDeCat = new Map<string, string>();
+    recetas.forEach((r) => {
+      const c = String(r.centro_costo || '').trim();
+      if (c && !ccDeCat.has(r.categoria)) ccDeCat.set(r.categoria, c);
+    });
+    const sin: [string, number][] = [];
+    const por = new Map<string, [string, number][]>();
+    categorias.forEach(([cat, n]) => {
+      const cc = ccDeCat.get(cat) || '';
+      if (!cc) { sin.push([cat, n]); return; }
+      if (!por.has(cc)) por.set(cc, []);
+      por.get(cc)!.push([cat, n]);
+    });
+    return { sin, grupos: Array.from(por.entries()).sort((a, b) => a[0].localeCompare(b[0])) };
+  }, [recetas, categorias]);
+
   // v9.5: centros de costo presentes (si nadie los digitó, la vista no cambia)
   const centros = useMemo(() => {
     const m = new Map<string, number>();
@@ -113,8 +131,24 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
             Secciones
           </p>
           <CategoriaBtn activa={categoria === 'TODAS'} onClick={() => setCategoria('TODAS')} nombre="Todas" n={recetas.length} />
-          {categorias.map(([cat, n]) => (
+          {seccionesSidebar.sin.map(([cat, n]) => (
             <CategoriaBtn key={cat} activa={categoria === cat} onClick={() => setCategoria(cat)} nombre={cat} n={n} />
+          ))}
+          {seccionesSidebar.grupos.map(([cc, cats]) => (
+            <div key={cc} className="mt-3">
+              <button onClick={() => setCentro(centro === cc ? 'TODOS' : cc)}
+                title="Filtrar por este centro de costo"
+                className={'mb-0.5 flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-[10px] font-bold uppercase tracking-widest transition ' + (centro === cc ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:bg-neutral-100')}
+                style={centro === cc ? {} : { color: ROJO }}>
+                <span>🏷 {cc}</span>
+                <span className="font-normal text-neutral-400">{cats.reduce((a, [, n]) => a + n, 0)}</span>
+              </button>
+              <div className="pl-2">
+                {cats.map(([cat, n]) => (
+                  <CategoriaBtn key={cat} activa={categoria === cat} onClick={() => setCategoria(cat)} nombre={cat} n={n} />
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
