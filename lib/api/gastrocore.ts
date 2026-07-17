@@ -240,6 +240,9 @@ async function apiPost<T>(
   });
   if (!res.ok) throw new Error('Error de red al escribir en la API: ' + res.status);
   const json = (await res.json()) as ApiResponse<T>;
+  // v9.13.1: cualquier mutación exitosa vacía el caché de lecturas — un insumo
+  // creado aparece en el catálogo del editor AL INSTANTE, sin esperar el TTL.
+  if ((json as { ok?: boolean }).ok) readCache.clear();
   limpiarCacheLecturas(); // los datos cambiaron: la próxima lectura trae lo nuevo
   return json;
 }
@@ -408,6 +411,9 @@ export async function accionBackend<T>(
   });
   if (!res.ok) throw new Error('Error de red al escribir en la API: ' + res.status);
   const json = (await res.json()) as ApiResponse<T>;
+  // v9.13.1: cualquier mutación exitosa vacía el caché de lecturas — un insumo
+  // creado aparece en el catálogo del editor AL INSTANTE, sin esperar el TTL.
+  if ((json as { ok?: boolean }).ok) readCache.clear();
   limpiarCacheLecturas();
   return json;
 }

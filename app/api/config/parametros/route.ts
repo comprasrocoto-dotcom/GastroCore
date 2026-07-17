@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { getParametros, accionBackend } from '@/lib/api/gastrocore';
 
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,7 @@ export async function GET() {
   try {
     const p = await getParametros();
     if (!p) return NextResponse.json({ ok: false, error: 'Backend no disponible' }, { status: 502 });
+    revalidateTag('recetario'); // v9.13.1: el estilo y el nombre se ven al instante
     return NextResponse.json({ ok: true, parametros: p });
   } catch (e) {
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : 'Error' }, { status: 500 });

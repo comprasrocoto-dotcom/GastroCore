@@ -4,6 +4,10 @@ import { getRecetaPublica, getTemaRecetarioId } from '@/lib/recetario';
 import { temaPorId } from '@/lib/temasRecetario';
 import { DetalleReceta } from '@/components/RecetarioGaleria';
 
+// v9.13.1: render por petición — los datos siguen cacheados 5 min por etiquetas,
+// pero al purgarse (guardar foto/ficha/estilo) el cambio se ve en el PRIMER refresco.
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata() {
   const { getNombreNegocio } = await import('@/lib/recetario');
   return { title: 'Receta · ' + (await getNombreNegocio()) };
