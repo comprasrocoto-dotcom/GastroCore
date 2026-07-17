@@ -641,7 +641,7 @@ function SeccionAcercaDe() {
         <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1E3A5F] font-display text-sm font-bold text-white">GC</span>
         <div>
           <p className="font-display text-sm font-bold text-ink">GastroCore <span className="text-salvia-500">·</span> Versión {APP_VERSION}</p>
-          <p className="text-[11px] text-salvia-500">Sistema de costeo y recetario · Restaurantes Rocoto</p>
+          <p className="text-[11px] text-salvia-500">Sistema de costeo y recetario</p>
         </div>
       </div>
       <div className="text-right text-[11px] leading-relaxed text-salvia-500">
@@ -651,4 +651,3 @@ function SeccionAcercaDe() {
     </section>
   );
 }
-
