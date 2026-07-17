@@ -274,6 +274,12 @@ function NuevaSubrecetaInner() {
           <p className="text-xs text-salvia-500">Preparación base costeada por ingrediente. Su costo por unidad se usa como insumo en otras recetas.</p>
         </div>
         <div className="flex items-center gap-3">
+          {modoEdicion && (
+            <Link href={`/subrecetas/${editId}/ficha`}
+              className="rounded-lg border border-[#1E3A5F] px-4 py-2 text-sm font-semibold text-[#1E3A5F] transition hover:bg-blue-50">
+              📝 Ficha técnica
+            </Link>
+          )}
           {modoEdicion && soloLectura && puedeEditarRecetas && (
             <button onClick={() => setSoloLectura(false)}
               className="rounded-lg bg-ambar-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-ambar-700">
