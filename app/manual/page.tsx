@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 /**
- * MANUAL DE GASTROCORE — v9.8 (actualizado a la arquitectura actual)
+ * MANUAL DE GASTROCORE — v10.0 (versión de cierre)
  * Esta es también la PORTADA de la aplicación: la raíz (/) redirige aquí.
  */
 
@@ -58,7 +58,9 @@ export default function ManualPage() {
         <S n="2" titulo="Subrecetas — la calculadora de preparaciones">
           <p>Toda preparación vive en INSUMOS como un artículo &quot;SUB.&quot; — la subreceta es su <K>calculadora</K>: ingredientes + rendimiento → costo por unidad.</p>
           <p><K>Al crear:</K> enlaza un insumo &quot;SUB.&quot; existente (el buscador excluye los ya enlazados) o crea el maestro nuevo con referencia única y subfamilia.</p>
-          <p><K>EL PUENTE:</K> al guardar, si el costo calculado difiere del costo del insumo, el sistema pregunta si lo actualizas — con tu confirmación, queda en el historial (&quot;Actualizado desde subreceta X&quot;) y recalcula las recetas. En la lista, cada subreceta muestra <K>&quot;✓ al día&quot;</K> o <K>&quot;⇪ Desactualizado&quot;</K> con el puente a un clic.</p>
+          <p><K>Al entrar</K> a una subreceta se ve en <K>modo lectura</K> (nada se toca por accidente); el botón <K>✏️ Editar</K> desbloquea. La lista muestra al final <K>💲 Insumos vs Subreceta</K>: los dos costos lado a lado (✓ si coinciden, ≠ si no) — toda la fila es clicable.</p>
+          <p><K>EL PUENTE:</K> guardar ya no pregunta nada. La decisión vive dentro de la subreceta: la tarjeta del maestro muestra el costo actual y el calculado, y el botón <K>⇪ Actualizar el costo del insumo</K> lo empuja con historial y recálculo en cascada de las recetas que lo usan.</p>
+          <p>Cada subreceta tiene su <K>📝 Ficha técnica</K> (sin foto): preparación, uso/montaje, notas, tiempo y rinde — y aparece en el Recetario en la sección <K>SUB. RECETAS</K>.</p>
           <p>Cuando cambia el precio de un ingrediente, la calculadora <K>se refresca sola</K> (sin tocar el maestro) — el estado siempre dice la verdad.</p>
         </S>
 
@@ -71,7 +73,7 @@ export default function ManualPage() {
 
         <S n="4" titulo="Ficha técnica y Recetario">
           <p>La ficha lleva preparación, emplatado, notas, tiempo, gramaje y la <K>foto</K>. El editor de foto tiene dos modos: <K>📐 Encuadrar</K> (marcos 4:3, cuadrada, vertical o panorámica; aleja el zoom para que quepa completa) e <K>🖼 Imagen completa</K> (se sube tal cual es).</p>
-          <p>El <K>Recetario</K> es la vista pública de cocina: galería por categorías, secciones 🏷 por centro de costo (con su filtro), buscador por plato o ingrediente, y <K>🔍 lupa</K> en la foto (toca para ampliar 1.8x). Guardar una ficha o foto se refleja <K>al instante</K>.</p>
+          <p>El <K>Recetario</K> es la vista pública de cocina: galería por categorías, secciones 🏷 por centro de costo (con su filtro), la sección <K>SUB. RECETAS</K> con las preparaciones (misma tarjeta y detalle, sin foto ni precios), buscador por plato o ingrediente, y <K>🔍 lupa</K> en la foto. Guardar una ficha, foto o estilo se refleja <K>al instante</K>.</p>
         </S>
 
         <S n="5" titulo="Familias — las clasificaciones">
@@ -82,12 +84,13 @@ export default function ManualPage() {
         <S n="6" titulo="Panel ejecutivo y Análisis">
           <p><K>Panel:</K> KPIs (activas, Food Cost promedio, utilidad potencial, fuera de precio), semáforo de críticas, y la tabla con <K>precio editable</K> que simula el FC al instante antes de guardar. Exporta a CSV.</p>
           <p><K>Análisis:</K> simulador de impacto (&quot;¿y si el aguacate sube 15%?&quot;), alertas automáticas (subidas sobre el umbral, FC vencido, insumos en $0), tops de aumentos y bajadas, variación por familia de insumos, evolución semanal (foto de cada lunes 6 AM) e impacto en el menú.</p>
+          <p><K>🔬 Lectura de experto</K> (Panel): 5 ángulos que los promedios esconden — dinero en la mesa, platos a un paso del rojo, concentración del margen, Food Cost &quot;demasiado bueno&quot; (ficha incompleta) y la familia despareja. <K>📣 Lectura del período</K> (Análisis): los indicadores traducidos a decisiones con nombre propio.</p>
           <p>Cada sección tiene un <K>?</K> con la explicación y un ejemplo — para que cualquier jefe lea los números sin traductor.</p>
         </S>
 
         <S n="7" titulo="Configuración (solo Admin)">
           <p><K>Parámetros de costeo:</K> Food Cost objetivo (con excepciones por familia), impuesto y umbral de alertas. Guardarlos con cambios de precio <K>recalcula todo el menú automáticamente</K> y sincroniza la columna de margen.</p>
-          <p><K>Identidad</K> (nombre del negocio en recetario y PDF), <K>respaldo</K> del Sheet completo a Excel con un clic, y <K>rotación del token</K> de la API (se muestra una sola vez).</p>
+          <p><K>Identidad</K> (nombre del negocio en recetario y PDF), <K>🎨 Estilo del recetario</K> (6 paletas — Rocoto clásico, Malanga tropical, Pacífico, Ají amarillo, Carbón, Vino tinto — cada proyecto con su piel; cambia fondo, banda y títulos), <K>respaldo</K> del Sheet a Excel con un clic, y <K>rotación del token</K> de la API (se muestra una sola vez).</p>
         </S>
 
         <S n="8" titulo="Roles — quién puede qué">
