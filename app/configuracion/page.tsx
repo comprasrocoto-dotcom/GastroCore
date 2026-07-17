@@ -1,5 +1,6 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
+import { APP_VERSION } from '@/lib/version';
 import { TEMAS } from '@/lib/temasRecetario';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -37,6 +38,7 @@ export default function ConfiguracionPage() {
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="lg:col-span-2"><SeccionIdentidad /></div>
         <div className="lg:col-span-2"><SeccionEstiloRecetario /></div>
+        <div className="lg:col-span-2"><SeccionAcercaDe /></div>
         <div className="lg:col-span-2"><SeccionParametros /></div>
         <div className="lg:col-span-2"><SeccionMermas /></div>
         <SeccionRespaldo />
@@ -620,6 +622,32 @@ function SeccionEstiloRecetario() {
         className="btn-primary mt-3 disabled:opacity-40">
         {guardando ? 'Guardando…' : temaSel === original ? 'Estilo aplicado' : 'Aplicar este estilo'}
       </button>
+    </section>
+  );
+}
+
+/* ═══ v10: ACERCA DEL SISTEMA — la versión, con dignidad ═══ */
+function SeccionAcercaDe() {
+  const [backendVer, setBackendVer] = useState<string>('');
+  useEffect(() => {
+    fetch('/api/config/parametros', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => setBackendVer(String(j?.parametros?.backend_version || '')))
+      .catch(() => {});
+  }, []);
+  return (
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-salvia-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1E3A5F] font-display text-sm font-bold text-white">GC</span>
+        <div>
+          <p className="font-display text-sm font-bold text-ink">GastroCore <span className="text-salvia-500">·</span> Versión {APP_VERSION}</p>
+          <p className="text-[11px] text-salvia-500">Sistema de costeo y recetario · Restaurantes Rocoto</p>
+        </div>
+      </div>
+      <div className="text-right text-[11px] leading-relaxed text-salvia-500">
+        <p>Motor de datos: {backendVer ? <b className="text-salvia-700">v{backendVer}</b> : '…'} {backendVer && backendVer !== APP_VERSION && <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-amber-800">≠ revisar despliegue</span>}</p>
+        <p>Next.js + Apps Script sobre Google Sheets</p>
+      </div>
     </section>
   );
 }
