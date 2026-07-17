@@ -1,4 +1,5 @@
-import { getRecetario, getNombreNegocio } from '@/lib/recetario';
+import { getRecetario, getNombreNegocio, getTemaRecetarioId } from '@/lib/recetario';
+import { temaPorId } from '@/lib/temasRecetario';
 import RecetarioGaleria from '@/components/RecetarioGaleria';
 
 export async function generateMetadata() {
@@ -11,6 +12,7 @@ export async function generateMetadata() {
 export default async function RecetarioPage() {
   let recetas;
   const nombreNegocio = await getNombreNegocio();
+  const tema = temaPorId(await getTemaRecetarioId());
   try {
     recetas = await getRecetario();
   } catch {
@@ -40,7 +42,7 @@ export default async function RecetarioPage() {
         rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap"
       />
-      <RecetarioGaleria recetas={recetas} nombreNegocio={nombreNegocio} />
+      <RecetarioGaleria tema={tema} recetas={recetas} nombreNegocio={nombreNegocio} />
     </>
   );
 }

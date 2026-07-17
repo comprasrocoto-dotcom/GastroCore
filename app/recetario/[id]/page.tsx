@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getRecetaPublica } from '@/lib/recetario';
+import { getRecetaPublica, getTemaRecetarioId } from '@/lib/recetario';
+import { temaPorId } from '@/lib/temasRecetario';
 import { DetalleReceta } from '@/components/RecetarioGaleria';
 
 export async function generateMetadata() {
@@ -17,6 +18,7 @@ export async function generateMetadata() {
 export default async function RecetaPublicaPage({ params }: { params: { id: string } }) {
   const receta = await getRecetaPublica(params.id).catch(() => null);
   if (!receta) notFound();
+  const tema = temaPorId(await getTemaRecetarioId().catch(() => 'rocoto'));
 
   return (
     <main className="min-h-screen px-3 py-6 sm:px-6" style={{ background: '#F6F1E6' }}>
@@ -34,7 +36,7 @@ export default async function RecetaPublicaPage({ params }: { params: { id: stri
         >
           ← Volver al recetario
         </Link>
-        <DetalleReceta r={receta} />
+        <DetalleReceta tema={tema} r={receta} />
       </div>
     </main>
   );

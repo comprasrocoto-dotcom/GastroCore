@@ -17,11 +17,11 @@ import { fotoConAncho } from '@/lib/recetario';
    Paleta tomada de rocotorestaurante.com: verde botella del header (logo
    blanco sobre verde), crema natural de fondo, y rojo rocoto como acento.
    Si algún hex difiere del manual de marca oficial, se ajusta SOLO aquí. */
-const VERDE = '#1E3B2C';        // verde botella Rocoto (cabeceras, botones)
-const VERDE_HOJA = '#41654A';   // verde secundario (hovers, detalles)
-const CREMA = '#F6F1E6';        // fondo general crema natural
-const ROSA = '#EDE6D3';         // placeholder de tarjetas sin foto
-const ROJO = '#B93A2B';         // rojo rocoto (categorías y títulos de sección)
+import { TEMA_BASE, type TemaRecetario } from '@/lib/temasRecetario';
+
+// v9.13: el tema activo del recetario (se fija con aplicarTema desde las props).
+const T = { ...TEMA_BASE };
+function aplicarTema(t?: TemaRecetario) { if (t) Object.assign(T, t); }
 const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif"; // display del sitio
 
 /** Divide un texto multilínea en pasos no vacíos. */
@@ -32,7 +32,8 @@ function pasos(texto: string): string[] {
     .filter(Boolean);
 }
 
-export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: { recetas: RecetaPublica[]; nombreNegocio?: string }) {
+export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto', tema }: { recetas: RecetaPublica[]; nombreNegocio?: string; tema?: TemaRecetario }) {
+  aplicarTema(tema);
   const [busqueda, setBusqueda] = useState('');
   const [categoria, setCategoria] = useState<string>('TODAS');
   const [centro, setCentro] = useState<string>('TODOS'); // v9.5: filtro por centro de costo
@@ -116,9 +117,9 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
     categoria === 'TODAS' ? 'Recetario' : categoria.charAt(0) + categoria.slice(1).toLowerCase();
 
   return (
-    <main className="min-h-screen" style={{ background: CREMA, color: '#26291F' }}>
+    <main className="min-h-screen" style={{ background: T.fondo, color: '#26291F' }}>
       {/* Barra de marca: verde botella con el nombre en blanco, eco del header del sitio */}
-      <div className="w-full px-4 py-3 text-center" style={{ background: VERDE }}>
+      <div className="w-full px-4 py-3 text-center" style={{ background: `linear-gradient(135deg, ${T.acento}, ${T.acentoSuave})` }}>
         <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: SERIF }}>
           {nombreNegocio} <span className="mx-1.5 font-normal text-white/50">·</span>
           <span className="font-normal italic text-white/90">Recetario de Cocina</span>
@@ -127,7 +128,7 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-6">
         {/* Sidebar de categorías */}
         <nav className="hidden w-52 min-w-52 md:block">
-          <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: ROJO }}>
+          <p className="mb-2 px-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: T.titulo }}>
             Secciones
           </p>
           <CategoriaBtn activa={categoria === 'TODAS'} onClick={() => setCategoria('TODAS')} nombre="Todas" n={recetas.length} />
@@ -139,7 +140,7 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
               <button onClick={() => setCentro(centro === cc ? 'TODOS' : cc)}
                 title="Filtrar por este centro de costo"
                 className={'mb-0.5 flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-[10px] font-bold uppercase tracking-widest transition ' + (centro === cc ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:bg-neutral-100')}
-                style={centro === cc ? {} : { color: ROJO }}>
+                style={centro === cc ? {} : { color: T.titulo }}>
                 <span>🏷 {cc}</span>
                 <span className="font-normal text-neutral-400">{cats.reduce((a, [, n]) => a + n, 0)}</span>
               </button>
@@ -157,7 +158,7 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
           {/* Cabecera: título + contador + toggle */}
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: SERIF, color: VERDE }}>
+              <h1 className="text-3xl font-bold tracking-tight" style={{ fontFamily: SERIF, color: T.acento }}>
                 {titulo}
               </h1>
               <p className="mt-0.5 text-sm text-neutral-500">{visibles.length} recetas</p>
@@ -188,7 +189,7 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
           </div>
 
           {/* Buscador */}
-          <div className="mb-5 flex items-center gap-2 rounded-xl border bg-white px-4 py-2.5 shadow-sm" style={{ borderColor: '#DDD4C0' }}>
+          <div className="mb-5 flex items-center gap-2 rounded-xl border bg-white px-4 py-2.5 shadow-sm" style={{ borderColor: T.borde }}>
             <span>🔍</span>
             <input
               type="search"
@@ -215,7 +216,7 @@ export default function RecetarioGaleria({ recetas, nombreNegocio = 'Rocoto' }: 
               )}
               {seccionesCC.grupos.map(([cc, items]) => (
                 <div key={cc}>
-                  <h2 className="mb-2 flex items-center gap-2 border-b pb-1 text-sm font-bold uppercase tracking-wide" style={{ color: VERDE, borderColor: '#DDD4C0' }}>
+                  <h2 className="mb-2 flex items-center gap-2 border-b pb-1 text-sm font-bold uppercase tracking-wide" style={{ color: T.acento, borderColor: T.borde }}>
                     🏷 {cc} <span className="rounded-full bg-neutral-100 px-2 text-xs font-medium text-neutral-500">{items.length}</span>
                   </h2>
                   <div className={modo === 'grid' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5' : 'flex flex-col gap-3'}>
@@ -255,7 +256,7 @@ function Tarjeta({ r, modo, onOpen }: { r: RecetaPublica; modo: 'grid' | 'list';
           'flex items-center justify-center overflow-hidden ' +
           (horizontal ? 'h-24 w-28 min-w-28' : 'h-40 w-full')
         }
-        style={{ background: ROSA }}
+        style={{ background: T.borde }}
       >
         {r.ficha.foto_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -276,7 +277,7 @@ function Tarjeta({ r, modo, onOpen }: { r: RecetaPublica; modo: 'grid' | 'list';
       </div>
 
       <div className={'flex min-w-0 flex-1 flex-col ' + (horizontal ? 'px-4 py-2.5' : 'p-3.5')}>
-        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: ROJO }}>
+        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: T.titulo }}>
           {r.categoria}
         </p>
         <h2 className="mt-0.5 line-clamp-2 text-sm font-semibold uppercase leading-snug">{r.nombre}</h2>
@@ -290,7 +291,8 @@ function Tarjeta({ r, modo, onOpen }: { r: RecetaPublica; modo: 'grid' | 'list';
 }
 
 /* ============================ MODAL ====================================== */
-export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () => void }) {
+export function DetalleReceta({ r, onClose, tema }: { r: RecetaPublica; onClose?: () => void; tema?: TemaRecetario }) {
+  aplicarTema(tema);
   const [lupa, setLupa] = useState(false);   // v9.6: visor de foto en grande
   const [ampliada, setAmpliada] = useState(false);
   const prep = pasos(r.ficha.preparacion);
@@ -305,7 +307,7 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
       style={onClose ? { maxHeight: '88vh' } : undefined}
     >
       {/* Cabecera verde */}
-      <div className="flex shrink-0 items-start justify-between gap-4 px-6 py-4" style={{ background: VERDE }}>
+      <div className="flex shrink-0 items-start justify-between gap-4 px-6 py-4" style={{ background: T.acento }}>
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">{r.categoria}</p>
           <h2 className="mt-0.5 text-2xl font-bold leading-tight text-white" style={{ fontFamily: SERIF }}>
@@ -378,7 +380,7 @@ export function DetalleReceta({ r, onClose }: { r: RecetaPublica; onClose?: () =
                 <tr key={i} className="border-b border-neutral-100 last:border-0">
                   <td className="py-2 pr-2 font-medium uppercase">{ing.nombre}</td>
                   <td className="py-2 pr-2 text-neutral-500">{abreviarUnidad(ing.unidad)}</td>
-                  <td className="py-2 text-right font-semibold tabular-nums" style={{ color: VERDE_HOJA }}>
+                  <td className="py-2 text-right font-semibold tabular-nums" style={{ color: T.acentoSuave }}>
                     {ing.cantidad}
                   </td>
                 </tr>
@@ -429,7 +431,7 @@ function ModalReceta({ r, onClose }: { r: RecetaPublica; onClose: () => void }) 
 /* ============================ PIEZAS ===================================== */
 function TituloSeccion({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: ROJO }}>
+    <h3 className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: T.titulo }}>
       {children}
     </h3>
   );
@@ -444,7 +446,7 @@ function Pasos({ titulo, items }: { titulo: string; items: string[] }) {
           <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
             <span
               className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-              style={{ background: VERDE }}
+              style={{ background: T.acento }}
             >
               {i + 1}
             </span>
@@ -459,7 +461,7 @@ function Pasos({ titulo, items }: { titulo: string; items: string[] }) {
 function DatoOperativo({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3.5 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: VERDE }}>
+      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: T.acento }}>
         {etiqueta}
       </p>
       <p className="mt-0.5 text-sm font-semibold">{valor}</p>
@@ -484,7 +486,7 @@ function CategoriaBtn({ activa, onClick, nombre, n }: { activa: boolean; onClick
         'mb-1 flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium transition ' +
         (activa ? 'text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50 border border-neutral-200')
       }
-      style={activa ? { background: VERDE } : undefined}
+      style={activa ? { background: T.acento } : undefined}
     >
       <span className="truncate uppercase">{nombre}</span>
       <span className={activa ? 'text-white/70' : 'text-neutral-400'}>{n}</span>
@@ -500,7 +502,7 @@ function ChipCat({ activa, onClick, nombre }: { activa: boolean; onClick: () => 
         'shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase transition ' +
         (activa ? 'text-white' : 'bg-white text-neutral-600 border border-neutral-200')
       }
-      style={activa ? { background: VERDE } : undefined}
+      style={activa ? { background: T.acento } : undefined}
     >
       {nombre}
     </button>
@@ -516,7 +518,7 @@ function ToggleBtn({ activo, onClick, title, children }: { activo: boolean; onCl
         'flex h-9 w-9 items-center justify-center rounded-lg border text-base transition ' +
         (activo ? 'border-transparent text-white' : 'border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50')
       }
-      style={activo ? { background: VERDE } : undefined}
+      style={activo ? { background: T.acento } : undefined}
     >
       {children}
     </button>

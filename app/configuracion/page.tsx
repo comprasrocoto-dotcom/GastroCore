@@ -1,5 +1,6 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
+import { TEMAS } from '@/lib/temasRecetario';
 import { useEffect, useMemo, useState } from 'react';
 
 /**
@@ -35,6 +36,7 @@ export default function ConfiguracionPage() {
       </header>
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="lg:col-span-2"><SeccionIdentidad /></div>
+        <div className="lg:col-span-2"><SeccionEstiloRecetario /></div>
         <div className="lg:col-span-2"><SeccionParametros /></div>
         <div className="lg:col-span-2"><SeccionMermas /></div>
         <SeccionRespaldo />
@@ -543,3 +545,82 @@ function SeccionCarpetaFotos() {
     </section>
   );
 }
+
+/* ═══ v9.13: 🎨 ESTILO DEL RECETARIO — un tema por proyecto/marca ═══ */
+function SeccionEstiloRecetario() {
+  const [temaSel, setTemaSel] = useState('rocoto');
+  const [original, setOriginalTema] = useState('rocoto');
+  const [guardando, setGuardando] = useState(false);
+  const [msg, setMsg] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/config/parametros', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        const t = j?.parametros?.recetario_tema || 'rocoto';
+        setTemaSel(t); setOriginalTema(t);
+      })
+      .catch(() => {});
+  }, []);
+
+  async function guardarTema() {
+    setGuardando(true); setMsg(null);
+    try {
+      const r = await fetchEnCola('/api/config/parametros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recetario_tema: temaSel }),
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error((j.error && j.error.message) || j.error || 'No se pudo guardar');
+      setOriginalTema(temaSel);
+      setMsg({ tipo: 'ok', texto: '✓ Estilo aplicado. Abre el recetario y refresca para verlo.' });
+    } catch (e) {
+      setMsg({ tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo guardar.' });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <section className="card p-5">
+      <h2 className="mb-1 font-display text-lg font-bold text-ink">🎨 Estilo del recetario</h2>
+      <p className="mb-4 text-xs text-salvia-500">
+        Cada proyecto puede tener su identidad: el estilo cambia el fondo, la banda superior y los
+        colores de títulos del recetario público. Se guarda en la hoja Configuración.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {TEMAS.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTemaSel(t.id)}
+            className={'rounded-xl border-2 p-3 text-left transition ' +
+              (temaSel === t.id ? 'border-ambar-500 shadow-md' : 'border-salvia-100 hover:border-salvia-300')}
+            style={{ background: t.fondo }}
+          >
+            <div className="mb-2 h-7 w-full rounded-md"
+              style={{ background: `linear-gradient(135deg, ${t.acento}, ${t.acentoSuave})` }} />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold" style={{ color: t.acento }}>{t.nombre}</span>
+              {temaSel === t.id && <span className="text-ambar-600">✓</span>}
+            </div>
+            <div className="mt-1.5 flex items-center gap-1.5">
+              {[t.acento, t.acentoSuave, t.titulo, t.borde].map((c, i) => (
+                <span key={i} className="h-3.5 w-3.5 rounded-full ring-1 ring-black/10" style={{ background: c }} />
+              ))}
+              <span className="ml-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: t.titulo }}>Categoría</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      {msg && (
+        <p className={`mt-3 rounded-lg px-3 py-2 text-sm ${msg.tipo === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{msg.texto}</p>
+      )}
+      <button onClick={guardarTema} disabled={guardando || temaSel === original}
+        className="btn-primary mt-3 disabled:opacity-40">
+        {guardando ? 'Guardando…' : temaSel === original ? 'Estilo aplicado' : 'Aplicar este estilo'}
+      </button>
+    </section>
+  );
+}
+

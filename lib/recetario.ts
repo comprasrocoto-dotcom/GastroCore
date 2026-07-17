@@ -99,10 +99,9 @@ export function fotoConAncho(fotoUrl: string, ancho: number): string {
 
 
 /** Nombre del negocio (config), cacheado 5 min — para la marca del recetario público. */
-const nombreNegocioCache = unstable_cache(
-  async (): Promise<string> => {
-    // Si el backend no responde LANZAMOS: unstable_cache no cachea errores,
-    // así el fallback nunca queda grabado (lección del caché envenenado).
+const configPublicaCache = unstable_cache(
+  async (): Promise<{ nombre: string; tema: string }> => {
+    // Si el backend no responde LANZAMOS: unstable_cache no cachea errores.
     const res = await fetch(process.env.GASTROCORE_API_URL as string, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -110,17 +109,28 @@ const nombreNegocioCache = unstable_cache(
       cache: 'no-store',
     });
     const j = await res.json();
-    if (!j?.ok || !j.data?.nombre_negocio) throw new Error('parametros no disponibles');
-    return String(j.data.nombre_negocio);
+    if (!j?.ok || !j.data) throw new Error('parametros no disponibles');
+    return {
+      nombre: String(j.data.nombre_negocio || 'Rocoto'),
+      tema: String(j.data.recetario_tema || 'rocoto'), // v9.13
+    };
   },
-  ['nombre-negocio'],
-  { revalidate: 300 }
+  ['recetario-config-publica'],
+  { revalidate: 300, tags: ['recetario'] },
 );
 
 export async function getNombreNegocio(): Promise<string> {
   try {
-    return await nombreNegocioCache();
+    return (await configPublicaCache()).nombre;
   } catch {
     return 'Rocoto';
+  }
+}
+
+export async function getTemaRecetarioId(): Promise<string> {
+  try {
+    return (await configPublicaCache()).tema;
+  } catch {
+    return 'rocoto';
   }
 }
