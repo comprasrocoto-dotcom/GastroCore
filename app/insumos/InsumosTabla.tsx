@@ -61,8 +61,8 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], famili
     return lista.filter((i) => {
       const matchQ =
         !term ||
-        i.articulo?.toLowerCase().includes(term) ||
-        i.referencia?.toLowerCase().includes(term);
+        String(i.articulo ?? '').toLowerCase().includes(term) ||
+        String(i.referencia ?? '').toLowerCase().includes(term);
       const matchSub = !sub || i.subfamilia === sub;
       const matchCC = !ccSel || ccDeInsumo(i) === ccSel; // v9.2
       return matchQ && matchSub && matchCC;
