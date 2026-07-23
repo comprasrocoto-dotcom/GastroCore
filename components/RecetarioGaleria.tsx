@@ -364,6 +364,19 @@ export function DetalleReceta({ r, onClose, tema }: { r: RecetaPublica; onClose?
           </div>
         )}
 
+        {/* v10.2: SUB. RECETAS — el rendimiento como en el admin de fabricaciones,
+            solo el valor (sin registro, sin costos). Arriba de los ingredientes. */}
+        {r.es_subreceta && Number(r.rendimiento) > 0 && (
+          <div className="mb-5 rounded-xl border-2 p-4 text-center" style={{ borderColor: T.acento, background: T.fondo }}>
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: T.acentoSuave }}>Rendimiento producido</p>
+            <p className="mt-1 text-3xl font-extrabold" style={{ color: T.acento, fontFamily: SERIF }}>
+              {Number(r.rendimiento).toLocaleString('es-CO')} <span className="text-lg font-semibold">{r.unidad_rendimiento || ''}</span>
+            </p>
+            <p className="mt-1 text-[11.5px]" style={{ color: T.acentoSuave }}>
+              Esta preparación rinde {Number(r.rendimiento).toLocaleString('es-CO')} {r.unidad_rendimiento || 'unidades'} por tanda.
+            </p>
+          </div>
+        )}
         {/* Ingredientes: Artículo / Unidad de Medida / Cantidad (sin costos) */}
         <section>
           <TituloSeccion>Ingredientes</TituloSeccion>
