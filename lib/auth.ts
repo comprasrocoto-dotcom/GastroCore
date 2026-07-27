@@ -21,7 +21,7 @@ const SECRET = process.env.AUTH_SECRET || '';
 export const SESSION_COOKIE = 'gc_session';
 export const SESSION_MAX_AGE = 60 * 60 * 12; // 12 horas
 
-export type Session = { u: string; r: string; exp: number };
+export type Session = { u: string; r: string; exp: number; e?: string }; // v10.1: e=email (para cambio de clave)
 
 // ---------- base64url helpers ----------
 function bytesToB64url(bytes: ArrayBuffer | Uint8Array): string {
@@ -71,11 +71,12 @@ function timingSafeEqual(a: string, b: string): boolean {
  * Crea el valor firmado de la cookie de sesión para un usuario autenticado.
  * El rol viaja FIRMADO dentro de la cookie: el cliente no puede falsificarlo.
  */
-export async function createSessionValue(username: string, rol: string): Promise<string> {
+export async function createSessionValue(username: string, rol: string, email = ''): Promise<string> {
   const payload: Session = {
     u: username,
     r: rol || 'Usuario',
     exp: Date.now() + SESSION_MAX_AGE * 1000,
+    e: email, // v10.1: para el cambio de clave self-service
   };
   const payloadB64 = strToB64url(JSON.stringify(payload));
   const sig = await hmac(payloadB64);

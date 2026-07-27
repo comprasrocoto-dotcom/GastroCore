@@ -92,6 +92,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-salvia-500">Informacion general</h2>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm lg:grid-cols-3 xl:grid-cols-4">
               <Info label="Codigo" value={receta.id} mono />
+              <Info label="Referencia ERP" value={String((receta as { referencia?: string }).referencia || '—')} mono />
               <Info label="Familia" value={fam ? fam.nombre : 'General'} />
               <Info label="Rendimiento" value={`${num(rendimiento, 0)} porciones`} />
               <Info label="Creada" value={fecha(receta.creado_en)} />

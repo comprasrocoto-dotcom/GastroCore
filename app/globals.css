@@ -153,3 +153,21 @@
   .erp-table.recetas-table tbody tr:hover { background-color: #EFF6FF; }
 
 }
+
+/* ═══ v10.1: MODO OSCURO — el claro queda intacto; esto solo aplica bajo .dark ═══ */
+.dark body { background: #0F172A; color: #E2E8F0; }
+.dark .card, .dark section.card { background: #1E293B; border-color: #334155; }
+.dark header { background: rgba(15, 23, 42, 0.92) !important; border-color: #334155 !important; }
+.dark .bg-white { background-color: #1E293B !important; }
+.dark .bg-slate-50, .dark .bg-\[\#F8FAFC\] { background-color: #0F172A !important; }
+.dark .text-ink, .dark .text-slate-800, .dark .text-slate-700 { color: #E2E8F0 !important; }
+.dark .text-salvia-600, .dark .text-salvia-700, .dark .text-salvia-800, .dark .text-slate-500, .dark .text-slate-600 { color: #94A3B8 !important; }
+.dark .border-line, .dark .border-salvia-100, .dark .border-salvia-200, .dark .border-black\/5 { border-color: #334155 !important; }
+.dark input, .dark select, .dark textarea { background-color: #0F172A !important; border-color: #475569 !important; color: #E2E8F0 !important; }
+.dark input::placeholder, .dark textarea::placeholder { color: #64748B !important; }
+.dark table thead, .dark thead tr { background-color: #1E293B !important; }
+.dark tbody tr { border-color: #334155 !important; }
+.dark tbody tr:hover { background-color: #1E293B !important; }
+.dark .hover\:bg-slate-100:hover, .dark .hover\:bg-salvia-100:hover { background-color: #334155 !important; }
+.dark .bg-salvia-100 { background-color: #334155 !important; }
+.dark a.text-\[\#1E3A5F\], .dark .text-\[\#1E3A5F\] { color: #93C5FD !important; }

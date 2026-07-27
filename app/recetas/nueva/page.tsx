@@ -37,6 +37,7 @@ function NuevaRecetaInner() {
         setNombre(rec.nombre || '');
         setRendimiento(Number(rec.rendimiento) || 1);
         setDesvioPct(Number(rec.desvio_pct) || 0);
+        setRefErp(String((rec as { referencia?: string }).referencia || ''));
         setPrecioReal(Number(rec.precio_real) || 0);
         setIva(rec.iva !== undefined && rec.iva !== null && rec.iva !== '' ? Number(rec.iva) : 8);
         if (rec.familia_id) setFamiliaId(String(rec.familia_id)); // v9.4
@@ -58,6 +59,7 @@ function NuevaRecetaInner() {
   const [nombre, setNombre] = useState('');
   const [rendimiento, setRendimiento] = useState(1);
   const [desvioPct, setDesvioPct] = useState(0);
+  const [refErp, setRefErp] = useState(''); // v10.4: emparejamiento ERP
   const [precioReal, setPrecioReal] = useState(0);
   // v8.0: FC objetivo e impuesto vienen de Configuración (con excepción por familia).
   const [fcGlobal, setFcGlobal] = useState(35);
@@ -71,6 +73,42 @@ function NuevaRecetaInner() {
 
   const [familiaId, setFamiliaId] = useState('');
   const [familias, setFamilias] = useState<Cat[]>([]);
+  // v10.5b: este bloque DEBE vivir después de familiaId/familias (TDZ)
+  // v10.5: EL APOYO — referencias de todas las recetas para sugerir y validar
+  const [refsExistentes, setRefsExistentes] = useState<{ id: string; referencia: string }[]>([]);
+  const ultimaSugerida = useRef('');
+  useEffect(() => {
+    fetch('/api/recetas?all=true', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => setRefsExistentes(((j?.data || []) as { id: string; referencia?: string }[]).map((r2) => ({ id: r2.id, referencia: String(r2.referencia || '').trim().toUpperCase() }))))
+      .catch(() => {});
+  }, []);
+  // prefijo = 3 primeras letras de la familia (CEVICHES→CEV) + consecutivo libre
+  useEffect(() => {
+    if (modoEdicion) return;
+    const fam = familias.find((x) => String(x.id) === String(familiaId));
+    if (!fam) return;
+    const prefijo = String(fam.nombre || '').toUpperCase().replace(/[^A-ZÑ]/g, '').slice(0, 3);
+    if (!prefijo) return;
+    let mayor = 0;
+    refsExistentes.forEach(({ referencia: rf }) => {
+      const m = rf.match(new RegExp('^' + prefijo + '(\\d+)$'));
+      if (m) mayor = Math.max(mayor, parseInt(m[1], 10));
+    });
+    const sugerida = prefijo + String(mayor + 1).padStart(3, '0');
+    // solo se auto-escribe si el campo está vacío o trae la sugerencia anterior
+    if (!refErp.trim() || refErp === ultimaSugerida.current) {
+      setRefErp(sugerida);
+      ultimaSugerida.current = sugerida;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [familiaId, familias, refsExistentes]);
+  const refRepetida = useMemo(() => {
+    const rf = refErp.trim().toUpperCase();
+    if (!rf) return false;
+    return refsExistentes.some((x) => x.referencia === rf && x.id !== (editId || ''));
+  }, [refErp, refsExistentes, editId]);
+
 
   useEffect(() => {
     // v7: UNA sola llamada trae familias + subfamilias + unidades + catálogo
@@ -182,6 +220,7 @@ function NuevaRecetaInner() {
         rendimiento,
         merma_pct: 0,
         desvio_pct: desvioPct,
+        referencia: refErp.trim(), // v10.4: passthrough al ESQUEMA
         precio_real: precioReal,
         margen_objetivo: foodCostObjetivo,
         iva: Number(iva) || 0,
@@ -226,7 +265,12 @@ function NuevaRecetaInner() {
         <Link href="/recetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
       </div>
 
-      <div className="mb-4 grid gap-3 card p-4 sm:grid-cols-3">
+      <div className="mb-4 card p-4">
+        <p className="mb-3 flex items-center gap-2 border-b border-salvia-100 pb-2 text-[11px] font-bold uppercase tracking-widest text-salvia-500">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A5F] text-[10px] font-bold text-white">1</span>
+          📘 Datos del plato
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block sm:col-span-1">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Nombre de la receta</span>
           <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej: Ceviche clasico"
@@ -238,15 +282,24 @@ function NuevaRecetaInner() {
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
         <label className="block">
+          <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Referencia ERP <span className="normal-case text-salvia-400">(interna)</span></span>
+          <input value={refErp} onChange={(e) => setRefErp(e.target.value)} placeholder="Elige la familia y se sugiere sola"
+            className={'mt-1 w-full rounded-lg border px-3 py-2 font-mono text-sm uppercase text-ink transition focus:ring-2 focus:outline-none ' + (refRepetida ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-red-100' : 'border-line focus:border-[#2563EB] focus:ring-[#DBEAFE]')} />
+          {refRepetida
+            ? <span className="mt-1 block text-[11px] font-medium text-red-600">✘ Esa referencia ya la tiene otra receta</span>
+            : refErp && <span className="mt-1 block text-[11px] text-emerald-700">✓ Libre — prefijo de la familia + consecutivo (editable)</span>}
+        </label>
+        <label className="block">
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Desvio mercancia (%)</span>
           <CampoNumero valor={desvioPct} onCambio={setDesvioPct} decimales={1} sufijo="%"
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none" />
         </label>
+        </div>
       </div>
 
       <div className="mb-4 card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-salvia-500">Clasificacion</h2>
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-salvia-500"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1E3A5F] text-[10px] font-bold text-white">2</span> 🏷 Clasificacion</h2>
           <Link href="/recetas/familias" className="text-xs font-medium text-ambar-600 hover:underline">Administrar familias</Link>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

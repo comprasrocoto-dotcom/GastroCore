@@ -26,6 +26,14 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], famili
     return unidadesCat.filter((u) => act(u.activo)).map((u) => String(u.codigo || '').toUpperCase()).filter(Boolean);
   }, [unidadesCat]);
   const [lista, setLista] = useState<Insumo[]>(insumos);
+  // v10.3 (restaurada): crear subreceta DESDE insumos — ids ya enlazados
+  const [conSubreceta, setConSubreceta] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    fetch('/api/subrecetas?all=true', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => setConSubreceta(new Set(((j?.data || []) as { insumo_id?: string }[]).map((s) => String(s.insumo_id)))))
+      .catch(() => {});
+  }, []);
   const [q, setQ] = useState('');
   const [sub, setSub] = useState('');
   const [cargaAbierta, setCargaAbierta] = useState(false);
@@ -140,6 +148,16 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], famili
                 <td className="text-right text-salvia-600">{Number((i as { merma_std?: number }).merma_std) ? Number((i as { merma_std?: number }).merma_std) + '%' : '—'}</td>
                 <td className="text-right fin-value text-[#1E3A5F]">{money(i.coste)}</td>
                 <td className="text-right whitespace-nowrap">
+                  {String(i.articulo || '').toUpperCase().startsWith('SUB.') && !conSubreceta.has(i.id) && (
+                    <a href={'/subrecetas/nueva?insumo=' + encodeURIComponent(i.id)}
+                      title="Crear la subreceta de esta preparación (queda enlazada a este insumo)"
+                      className="mr-1 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100">
+                      🥣 Crear subreceta
+                    </a>
+                  )}
+                  {String(i.articulo || '').toUpperCase().startsWith('SUB.') && conSubreceta.has(i.id) && (
+                    <span className="mr-1 rounded bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700" title="Ya tiene su subreceta">🥣 ✓</span>
+                  )}
                   <button
                     onClick={() => esAdmin && setFormInsumo(i)}
                     hidden={!esAdmin}

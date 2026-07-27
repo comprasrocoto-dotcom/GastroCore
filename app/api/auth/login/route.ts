@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { nombre, rol } = j.data;
-    const value = await createSessionValue(nombre || email, rol || 'Usuario');
+    const value = await createSessionValue(nombre || email, rol || 'Usuario', email);
     const res = NextResponse.json({ ok: true, usuario: nombre, rol });
     res.cookies.set(SESSION_COOKIE, value, {
       httpOnly: true,

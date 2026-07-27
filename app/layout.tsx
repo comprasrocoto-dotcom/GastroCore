@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { TemaToggle } from '@/components/TemaToggle';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import Link from 'next/link';
 import { getSession } from '@/lib/session';
@@ -43,6 +44,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
+      <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('gc_tema')==='oscuro')document.documentElement.classList.add('dark')}catch(e){}" }} />
       <body>
         {session && (
           <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
@@ -63,6 +65,8 @@ export default async function RootLayout({
                 </Link>
               ))}
               <div className="ml-auto flex items-center gap-3 pl-3">
+                <TemaToggle />
+                <a href="/clave" title="Cambiar mi clave" className="rounded-lg px-2 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700">🔑</a>
                 <span className="hidden whitespace-nowrap text-sm text-slate-500 sm:inline">
                   {session.u}
                 </span>
