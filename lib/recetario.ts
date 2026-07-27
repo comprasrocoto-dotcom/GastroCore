@@ -36,6 +36,8 @@ export type RecetaPublica = {
   subcategoria: string;
   centro_costo?: string; // v9.5
   rendimiento: number;
+  unidad_rendimiento?: string; // v10.2: subrecetas
+  es_subreceta?: boolean;
   costo_total: number;
   costo_porcion: number;
   food_cost: number;
