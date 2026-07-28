@@ -154,23 +154,60 @@
 
 }
 
-/* ═══ v10.1: MODO OSCURO — el claro queda intacto; esto solo aplica bajo .dark ═══ */
+/* ═══ v11.7: MODO OSCURO DEFINITIVO — auditoría de paleta completa.
+   El claro queda intacto; TODO esto vive bajo .dark. Tokens: fondo #0F172A,
+   superficie #1E293B, sutil #16213A, borde #334155, texto #E2E8F0. ═══ */
+.dark { color-scheme: dark; }
 .dark body { background: #0F172A; color: #E2E8F0; }
-.dark .card, .dark section.card { background: #1E293B; border-color: #334155; }
 .dark header { background: rgba(15, 23, 42, 0.92) !important; border-color: #334155 !important; }
+
+/* superficies */
+.dark .card, .dark section.card { background: #1E293B; border-color: #334155; }
 .dark .bg-white { background-color: #1E293B !important; }
-.dark .bg-slate-50, .dark .bg-\[\#F8FAFC\] { background-color: #0F172A !important; }
-.dark .text-ink, .dark .text-slate-800, .dark .text-slate-700 { color: #E2E8F0 !important; }
+.dark .bg-slate-50, .dark .bg-\[\#F8FAFC\], .dark .bg-slate-100, .dark .bg-salvia-50 { background-color: #16213A !important; }
+.dark .bg-gray-50, .dark .bg-gray-100 { background-color: #16213A !important; }
+
+/* pasteles de estado → tintes translúcidos que conservan el matiz */
+.dark .bg-red-50 { background-color: rgba(239, 68, 68, 0.13) !important; }
+.dark .bg-emerald-50, .dark .bg-green-50 { background-color: rgba(16, 185, 129, 0.13) !important; }
+.dark .bg-ambar-50, .dark .bg-amber-50, .dark .bg-yellow-50 { background-color: rgba(245, 158, 11, 0.14) !important; }
+.dark .bg-blue-50, .dark .bg-indigo-50, .dark .bg-sky-50, .dark .bg-azul-50 { background-color: rgba(59, 130, 246, 0.13) !important; }
+
+/* tinta y jerarquía de texto */
+.dark .text-ink, .dark .text-slate-800, .dark .text-slate-900, .dark .text-slate-700 { color: #E2E8F0 !important; }
 .dark .text-salvia-600, .dark .text-salvia-700, .dark .text-salvia-800, .dark .text-slate-500, .dark .text-slate-600 { color: #94A3B8 !important; }
-.dark .border-line, .dark .border-salvia-100, .dark .border-salvia-200, .dark .border-black\/5 { border-color: #334155 !important; }
-.dark input, .dark select, .dark textarea { background-color: #0F172A !important; border-color: #475569 !important; color: #E2E8F0 !important; }
-.dark input::placeholder, .dark textarea::placeholder { color: #64748B !important; }
-.dark table thead, .dark thead tr { background-color: #1E293B !important; }
-.dark tbody tr { border-color: #334155 !important; }
-.dark tbody tr:hover { background-color: #1E293B !important; }
-.dark .hover\:bg-slate-100:hover, .dark .hover\:bg-salvia-100:hover { background-color: #334155 !important; }
-.dark .bg-salvia-100 { background-color: #334155 !important; }
-.dark a.text-\[\#1E3A5F\], .dark .text-\[\#1E3A5F\] { color: #93C5FD !important; }
+.dark .text-salvia-400, .dark .text-salvia-500, .dark .text-slate-400 { color: #7C8DA6 !important; }
+
+/* los colores de marca y estado, en su versión luminosa */
+.dark .text-\[\#1E3A5F\], .dark .text-azul-700, .dark .text-blue-700, .dark .text-blue-600, .dark .text-indigo-700 { color: #93C5FD !important; }
+.dark .text-red-700, .dark .text-red-600 { color: #FCA5A5 !important; }
+.dark .text-emerald-700, .dark .text-emerald-600, .dark .text-green-700 { color: #6EE7B7 !important; }
+.dark .text-ambar-700, .dark .text-ambar-600, .dark .text-amber-700, .dark .text-amber-600 { color: #FCD34D !important; }
+
+/* bordes: la regla que faltaba 89 veces */
+.dark .border-line, .dark .border-slate-200, .dark .border-slate-300, .dark .border-gray-200 { border-color: #334155 !important; }
+.dark .divide-slate-100 > *, .dark .divide-slate-200 > * { border-color: #2B3A55 !important; }
+
+/* formularios */
+.dark input, .dark select, .dark textarea { background-color: #0F1A2E; color: #E2E8F0; border-color: #334155; }
+.dark input::placeholder, .dark textarea::placeholder { color: #64748B; }
+.dark input:disabled, .dark select:disabled { background-color: #111C31; color: #7C8DA6; }
+.dark input[type='checkbox'] { accent-color: #60A5FA; }
+
+/* interacción */
+.dark .hover\:bg-slate-50:hover, .dark .hover\:bg-slate-100:hover, .dark .hover\:bg-salvia-50:hover { background-color: #1C2A44 !important; }
+.dark .hover\:bg-ambar-50:hover { background-color: rgba(245, 158, 11, 0.16) !important; }
+.dark .hover\:bg-red-50:hover { background-color: rgba(239, 68, 68, 0.16) !important; }
+.dark .hover\:bg-emerald-50:hover { background-color: rgba(16, 185, 129, 0.16) !important; }
+
+/* botones secundarios y sombras */
+.dark .btn-secondary { background-color: #1E293B !important; color: #E2E8F0 !important; border-color: #334155 !important; }
+.dark .btn-secondary:hover { background-color: #24334D !important; }
+.dark .shadow-sm, .dark .shadow, .dark .shadow-md, .dark .shadow-xl { --tw-shadow-color: rgba(0, 0, 0, 0.45); }
+
+/* tablas */
+.dark thead, .dark thead tr, .dark th { background-color: #16213A !important; color: #94A3B8 !important; }
+.dark tbody tr { border-color: #2B3A55 !important; }
 
 /* ═══ v11.0: MODO IMPRESIÓN — el PDF nace limpio ═══ */
 @media print {
