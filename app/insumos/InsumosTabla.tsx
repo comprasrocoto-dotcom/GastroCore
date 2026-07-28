@@ -1,7 +1,7 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import type { Insumo, HistorialInsumo, Dependencia } from '@/lib/api/gastrocore';
 
 const money = (n: number) =>
@@ -163,13 +163,14 @@ export function InsumosTabla({ insumos, subfamilias: subfamiliasCat = [], famili
                     hidden={!esAdmin}
                     className="mr-1 rounded border border-line px-2 py-1 text-xs hover:bg-neutral-50"
                     title="Editar datos del insumo"
-                  >✏️</button>
+                  >✏️ Editar</button>
                   <button
                     onClick={() => esAdmin && setEditando(i)}
                     hidden={!esAdmin}
                     className="rounded-md border border-line px-2 py-1 text-xs font-medium text-ambar-700 hover:bg-ambar-50"
+                    title="Cambiar el costo (pide motivo y queda en el historial)"
                   >
-                    Editar
+                    💲 Costo
                   </button>
                   <button
                     onClick={() => setViendo(i)}
@@ -310,7 +311,7 @@ function EditarInsumoModal({
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar.');
     } finally {
-      setGuardando(false);
+      setGuardando(false); cerrojo.current = false;
     }
   };
 
@@ -716,7 +717,10 @@ function FormularioInsumo({ insumo, existentes, subfamilias, codigosUnidad = [],
 
   const valido = Boolean(refNormal && articulo.trim() && unidad.trim() && subfamiliaId && !duplicada);
 
+  const cerrojo = useRef(false); // v10.9b: anti doble-clic (síncrono, no espera al render)
   async function guardar() {
+    if (cerrojo.current) return;
+    cerrojo.current = true;
     if (!valido) return;
     setGuardando(true);
     setError(null);
@@ -747,7 +751,7 @@ function FormularioInsumo({ insumo, existentes, subfamilias, codigosUnidad = [],
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error inesperado');
     } finally {
-      setGuardando(false);
+      setGuardando(false); cerrojo.current = false;
     }
   }
 
