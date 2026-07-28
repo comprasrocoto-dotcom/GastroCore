@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 /**
- * MANUAL DE GASTROCORE — v10.0 (versión de cierre)
+ * MANUAL DE GASTROCORE — v11.2 (exportación, referencias ERP y seguridad)
  * Esta es también la PORTADA de la aplicación: la raíz (/) redirige aquí.
  */
 
@@ -53,6 +53,7 @@ export default function ManualPage() {
           <p><K>✏️ Editar</K> cambia los datos del maestro. <K>💲 El costo se cambia aparte</K>: pide motivo, queda en el historial de precios y <K>recalcula en cascada</K> todas las recetas y calculadoras que lo usan.</p>
           <p><K>⇪ Carga por plano:</K> sube un CSV (descarga la plantilla con los costos actuales) y actualiza cientos de costos de un golpe — solo cambia lo que trae el archivo.</p>
           <p><K>Filtros:</K> por subfamilia y por 🏷 centro de costo. La <K>unidad</K> de cada insumo se define aquí y las recetas la heredan (no es editable en la línea).</p>
+          <p><K>🥣 Crear subreceta:</K> en las filas &quot;SUB.&quot; sin calculadora aparece el botón 🥣 — te lleva al editor con el maestro ya preseleccionado (✓ verde = ya la tiene). <K>Donde se usa:</K> muestra en qué recetas <K>y subrecetas</K> participa el insumo, con su tipo (🍽️/🥣).</p>
         </S>
 
         <S n="2" titulo="Subrecetas — la calculadora de preparaciones">
@@ -62,12 +63,14 @@ export default function ManualPage() {
           <p><K>EL PUENTE:</K> guardar ya no pregunta nada. La decisión vive dentro de la subreceta: la tarjeta del maestro muestra el costo actual y el calculado, y el botón <K>⇪ Actualizar el costo del insumo</K> lo empuja con historial y recálculo en cascada de las recetas que lo usan.</p>
           <p>Cada subreceta tiene su <K>📝 Ficha técnica</K> (sin foto): preparación, uso/montaje, notas, tiempo y rinde — y aparece en el Recetario en la sección <K>SUB. RECETAS</K>.</p>
           <p>Cuando cambia el precio de un ingrediente, la calculadora <K>se refresca sola</K> (sin tocar el maestro) — el estado siempre dice la verdad.</p>
+          <p><K>Referencia ERP:</K> cada subreceta hereda la referencia de su maestro (el sistema <K>sugiere la siguiente libre</K>, tipo SUB059 — editable). Las unidades del selector salen de la tabla <K>UnidadesMedida</K> del Sheet: agregas una fila allá y aparece acá. Y si al editar cambias la <K>unidad de rendimiento</K>, el insumo maestro se actualiza solo.</p>
         </S>
 
         <S n="3" titulo="Recetas — los platos de la carta">
           <p>Cada receta pertenece a <K>UNA familia</K> (la categoría de la carta: ENTRADAS, CEVICHES…). La lista se agrupa por familia — y si digitaste centros de costo, en bloques 🏷 por centro.</p>
           <p><K>El buscador de ingredientes:</K> escribe nombre o referencia (ignora tildes y mayúsculas), navega con ↑↓ y elige con Enter. Cada resultado muestra la referencia, la subfamilia y el costo <K>por su unidad</K>. Los repetidos se marcan &quot;ya en la receta&quot;.</p>
           <p><K>Costeo en vivo:</K> cantidad + % de merma por línea → cantidad real y costo; desvío global; el <K>precio sugerido</K> sale del Food Cost objetivo vigente (el global de Configuración, o la excepción de la familia si existe) más el impuesto.</p>
+          <p><K>Referencia ERP:</K> cada receta lleva su código para el ERP — el sistema sugiere el siguiente de la familia (COC001, COC002…) y rechaza duplicados.</p>
           <p>Cada guardado crea una <K>versión con snapshot</K> — desde Trazabilidad puedes comparar y restaurar. El botón <K>📖 Ver recetario completo</K> abre la vista de cocina.</p>
         </S>
 
@@ -79,6 +82,7 @@ export default function ManualPage() {
         <S n="5" titulo="Familias — las clasificaciones">
           <p>Dos mundos: <K>🍽 Familias de recetas</K> (las categorías de la carta, con su conteo de platos) y <K>📦 Clasificaciones de insumos</K> (FRUVER, ABARROTES…, con su conteo de insumos).</p>
           <p><K>🏷 Centro de costo:</K> se digita en la familia (y en las clasificaciones de insumos, que si están vacías heredan). Agrupa y filtra Recetas, Insumos y el Recetario. Crear y editar es en línea (nombre + CC juntos); desactivar avisa cuántos elementos quedan sin clasificar.</p>
+          <p><K>🔎 Ver usos:</K> cada familia y clasificación tiene su lupa — un modal con la lista real de platos (🍽️) o insumos (📦) que la usan. Los <K>nombres son únicos</K>: el sistema rechaza repetidos, sin importar mayúsculas.</p>
         </S>
 
         <S n="6" titulo="Panel ejecutivo y Análisis">
@@ -88,12 +92,17 @@ export default function ManualPage() {
           <p>Cada sección tiene un <K>?</K> con la explicación y un ejemplo — para que cualquier jefe lea los números sin traductor.</p>
         </S>
 
-        <S n="7" titulo="Configuración (solo Admin)">
+        <S n="7" titulo="⬇️ Exportar — Excel y PDF">
+          <p><K>Excel completo</K> (el ⬇️ de la barra): la relación entera — cada receta y subreceta como bloque con sus ingredientes, costos y food cost, con portada y hojas separadas. Dos chulitos: <K>incluir fichas técnicas</K> (solo texto) y <K>solo activas</K>.</p>
+          <p><K>PDF por preparación:</K> en el detalle de una receta (o al abrir una subreceta) el botón <K>⬇️ PDF</K> descarga su hoja de obra: banda de color, tabla de ingredientes, ficha técnica y paginación. Azul = receta, ámbar = subreceta.</p>
+        </S>
+
+        <S n="8" titulo="Configuración (solo Admin)">
           <p><K>Parámetros de costeo:</K> Food Cost objetivo (con excepciones por familia), impuesto y umbral de alertas. Guardarlos con cambios de precio <K>recalcula todo el menú automáticamente</K> y sincroniza la columna de margen.</p>
           <p><K>Identidad</K> (nombre del negocio en recetario y PDF), <K>🎨 Estilo del recetario</K> (6 paletas — Rocoto clásico, Malanga tropical, Pacífico, Ají amarillo, Carbón, Vino tinto — cada proyecto con su piel; cambia fondo, banda y títulos), <K>respaldo</K> del Sheet a Excel con un clic, y <K>rotación del token</K> de la API (se muestra una sola vez).</p>
         </S>
 
-        <S n="8" titulo="Roles — quién puede qué">
+        <S n="9" titulo="Roles — quién puede qué">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -112,9 +121,12 @@ export default function ManualPage() {
                 <tr><td>Familias, clasificaciones y centros de costo</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
                 <tr><td>Usuarios (la vista completa)</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
                 <tr><td>Configuración: parámetros, respaldo, credenciales</td><td className="text-center">✓</td><td className="text-center">—</td><td className="text-center">—</td></tr>
+                <tr><td>Exportar a Excel · PDF por preparación</td><td className="text-center">✓</td><td className="text-center">✓</td><td className="text-center">✓</td></tr>
+                <tr><td>🔑 Cambiar SU propia clave · 🌙 modo oscuro · salir</td><td className="text-center">✓</td><td className="text-center">✓</td><td className="text-center">✓</td></tr>
               </tbody>
             </table>
           </div>
+          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm">🔐 Las claves se guardan <K>cifradas</K> (hash): nadie — ni el Admin — puede leerlas; solo cambiarlas. Cada quien renueva la suya con el 🔑 de la barra.</p>
         </S>
 
         <S titulo="Glosario exprés">
