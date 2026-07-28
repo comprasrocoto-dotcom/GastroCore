@@ -171,3 +171,11 @@
 .dark .hover\:bg-slate-100:hover, .dark .hover\:bg-salvia-100:hover { background-color: #334155 !important; }
 .dark .bg-salvia-100 { background-color: #334155 !important; }
 .dark a.text-\[\#1E3A5F\], .dark .text-\[\#1E3A5F\] { color: #93C5FD !important; }
+
+/* ═══ v11.0: MODO IMPRESIÓN — el PDF nace limpio ═══ */
+@media print {
+  header, nav, .no-imprimir, button, a.btn-secondary, a.btn-primary { display: none !important; }
+  body { background: white !important; color: #111 !important; }
+  .card, section.card { border: none !important; box-shadow: none !important; break-inside: avoid; }
+  main { max-width: 100% !important; padding: 0 !important; }
+}

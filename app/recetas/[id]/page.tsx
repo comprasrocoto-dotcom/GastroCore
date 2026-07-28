@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BotonPDF } from './BotonPDF';
 import { notFound } from 'next/navigation';
 import { getReceta, getFamilias } from '@/lib/api/gastrocore';
 import { getRol } from '@/lib/session';
@@ -82,6 +83,7 @@ export default async function RecetaDetallePage({ params }: { params: Promise<{ 
         <div className="flex gap-2">
           <Link href="/recetas" className="btn-secondary">Volver</Link>
           <Link href={`/recetas/${receta.id}/ficha`} className="btn-secondary">📷 Ficha técnica</Link>
+          <BotonPDF />
           {(rol === 'Admin' || rol === 'Chef') && <Link href={`/recetas/nueva?edit=${receta.id}`} className="btn-primary">Editar receta</Link>}
         </div>
       </header>

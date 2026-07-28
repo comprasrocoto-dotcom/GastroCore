@@ -67,6 +67,7 @@ export default async function RootLayout({
               <div className="ml-auto flex items-center gap-3 pl-3">
                 <TemaToggle />
                 <a href="/clave" title="Cambiar mi clave" className="rounded-lg px-2 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700">🔑</a>
+                <a href="/exportar" title="Exportar recetario a Excel" className="rounded-lg px-2 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-700">⬇️</a>
                 <span className="hidden whitespace-nowrap text-sm text-slate-500 sm:inline">
                   {session.u}
                 </span>
