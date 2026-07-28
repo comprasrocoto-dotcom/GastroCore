@@ -18,7 +18,9 @@ const money = (n: number) =>
 const pct = (n: number) => (n || 0).toFixed(2) + '%';
 const num = (n: number) => new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(n || 0);
 
-const UNIDADES = ['GRAMOS', 'KILOS', 'ML', 'LITROS', 'ONZA', 'COPA', 'UNIDADES'];
+// v10.7: FALLBACK únicamente — la lista real sale de la tabla UnidadesMedida
+// (una sola fuente de verdad: lo que agregues/quites allá, aparece aquí).
+const UNIDADES_FALLBACK = ['GRAMOS', 'ONZA', 'COPA', 'UNIDADES'];
 
 function NuevaSubrecetaInner() {
   const router = useRouter();
@@ -77,6 +79,7 @@ function NuevaSubrecetaInner() {
   // el enlace al maestro (mismos campos, cero lógica nueva de guardado).
   const insumoParam = searchParams.get('insumo') || '';
   const [insumoEnlazado, setInsumoEnlazado] = useState(insumoParam);
+  const [unidadesCat, setUnidadesCat] = useState<string[]>([]); // v10.7: catálogo real
   const [busquedaSub, setBusquedaSub] = useState('');
   const [enlazadosIds, setEnlazadosIds] = useState<Set<string>>(new Set());
   const [referencia, setReferencia] = useState('');
@@ -86,6 +89,15 @@ function NuevaSubrecetaInner() {
 
   useEffect(() => {
     // v9: la clasificacion del maestro usa las subfamilias de INSUMOS.
+    fetch('/api/bootstrap', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) => {
+        const us = ((j?.data?.unidades || []) as { codigo?: string; activo?: boolean | string }[])
+          .filter((u) => u.activo === true || u.activo === 'TRUE' || u.activo === undefined || u.activo === '')
+          .map((u) => String(u.codigo || '').toUpperCase()).filter(Boolean);
+        if (us.length) setUnidadesCat(us);
+      })
+      .catch(() => {});
     fetch('/api/subfamilias', { cache: 'no-store' })
       .then((r) => r.json())
       .then((rs) => {
@@ -478,7 +490,7 @@ function NuevaSubrecetaInner() {
           <span className="text-xs font-medium uppercase tracking-wide text-salvia-600">Unidad de rendimiento</span>
           <select value={unidadRendimiento} onChange={(e) => setUnidadRendimiento(e.target.value)}
             className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm text-ink transition focus:border-[#2563EB] focus:ring-2 focus:ring-[#DBEAFE] focus:outline-none">
-            {UNIDADES.map((u) => (<option key={u} value={u}>{u}</option>))}
+            {(unidadesCat.length ? unidadesCat : UNIDADES_FALLBACK).map((u) => (<option key={u} value={u}>{u}</option>))}
           </select>
         </label>
         <label className="block">
