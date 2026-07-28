@@ -216,3 +216,33 @@
   .card, section.card { border: none !important; box-shadow: none !important; break-inside: avoid; }
   main { max-width: 100% !important; padding: 0 !important; }
 }
+
+/* ═══ v11.8: MODO OSCURO — los fugitivos del censo (hexes arbitrarios).
+   Cada color hallado en el código, mapeado por matiz a su versión nocturna. ═══ */
+/* fondos pastel en hex → tintes translúcidos del mismo matiz */
+.dark .bg-\[\#DCFCE7\], .dark .bg-\[\#ECFDF5\] { background-color: rgba(16, 185, 129, 0.13) !important; }
+.dark .bg-\[\#FEE2E2\], .dark .bg-\[\#FEF2F2\] { background-color: rgba(239, 68, 68, 0.13) !important; }
+.dark .bg-\[\#EFF6FF\], .dark .bg-\[\#DBEAFE\] { background-color: rgba(59, 130, 246, 0.13) !important; }
+.dark .bg-\[\#FEF3C7\], .dark .bg-\[\#FFFBEB\] { background-color: rgba(245, 158, 11, 0.14) !important; }
+.dark .bg-\[\#F1F5F9\], .dark .bg-\[\#F0FDF4\] { background-color: #16213A !important; }
+/* textos de estado en hex → su versión luminosa */
+.dark .text-\[\#16A34A\], .dark .text-\[\#15803D\] { color: #4ADE80 !important; }
+.dark .text-\[\#DC2626\], .dark .text-\[\#B91C1C\] { color: #F87171 !important; }
+.dark .text-\[\#B45309\], .dark .text-\[\#92400E\] { color: #FCD34D !important; }
+.dark .text-\[\#2563EB\], .dark .text-\[\#1D4ED8\] { color: #60A5FA !important; }
+.dark .text-\[\#0F172A\], .dark .text-\[\#111827\], .dark .text-\[\#334155\] { color: #E2E8F0 !important; }
+/* familias con nombre que faltaban */
+.dark .bg-salvia-100, .dark .bg-neutral-50, .dark .bg-neutral-100, .dark .bg-slate-200 { background-color: #16213A !important; }
+.dark .bg-ambar-100, .dark .bg-amber-100, .dark .bg-yellow-100 { background-color: rgba(245, 158, 11, 0.16) !important; }
+.dark .bg-red-100 { background-color: rgba(239, 68, 68, 0.16) !important; }
+.dark .bg-emerald-100, .dark .bg-green-100 { background-color: rgba(16, 185, 129, 0.16) !important; }
+.dark .bg-blue-100, .dark .bg-indigo-100 { background-color: rgba(59, 130, 246, 0.16) !important; }
+.dark .text-ambar-800, .dark .text-amber-800, .dark .text-yellow-800 { color: #FCD34D !important; }
+.dark .text-red-800, .dark .text-rose-800 { color: #FCA5A5 !important; }
+.dark .text-emerald-800, .dark .text-green-800 { color: #6EE7B7 !important; }
+.dark .text-blue-800, .dark .text-indigo-800, .dark .text-azul-800 { color: #93C5FD !important; }
+.dark .text-neutral-500, .dark .text-neutral-600, .dark .text-gray-500, .dark .text-gray-600 { color: #94A3B8 !important; }
+/* superficies blancas con opacidad */
+.dark .bg-white\/95, .dark .bg-white\/90, .dark .bg-white\/80 { background-color: rgba(30, 41, 59, 0.92) !important; }
+/* insignias y chips que quedaban claros */
+.dark .ring-slate-200, .dark .ring-slate-300 { --tw-ring-color: #334155 !important; }
