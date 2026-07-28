@@ -237,7 +237,10 @@ function NuevaSubrecetaInner() {
         desvio_pct: desvioPct,
         // v10.4b: la referencia ERP de la subreceta ES la del maestro — se
         // llena sola (enlazado: su referencia; nuevo: la digitada arriba).
-        referencia_erp: (insumoEnlazado ? String(insumoPorId[insumoEnlazado]?.referencia || '') : referencia.trim()),
+        // v10.6c: la referencia SOLO viaja al CREAR (donde el panel del maestro
+        // la define). En EDICIÓN no se envía → el backend preserva la existente
+        // (antes viajaba '' y cada guardado de edición la borraba).
+        ...(modoEdicion ? {} : { referencia_erp: (insumoEnlazado ? String(insumoPorId[insumoEnlazado]?.referencia || '') : referencia.trim()) }),
         unidad_rendimiento_id: unidadRendimiento,
         // v9: maestro — enlazar existente O crear con referencia+subfamilia
         insumo_id: !modoEdicion && insumoEnlazado ? insumoEnlazado : undefined,

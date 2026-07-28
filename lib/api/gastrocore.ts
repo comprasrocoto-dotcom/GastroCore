@@ -146,6 +146,11 @@ const VENTANA_GRACIA_MS = 10 * 60 * 1000; // hasta 10 min sirviendo viejo mientr
 /** Borra todo el caché de lecturas (se llama tras cada mutación). */
 export function limpiarCacheLecturas(): void {
   readCache.clear();
+  // v10.6: toda mutación purga también el caché de datos de Vercel del
+  // recetario — cantidades, valores e imágenes se ven al instante.
+  import('next/cache')
+    .then((m) => m.revalidateTag('recetario'))
+    .catch(() => { /* fuera de contexto server no aplica */ });
 }
 
 async function descargar<T>(
