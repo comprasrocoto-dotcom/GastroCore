@@ -16,7 +16,7 @@
  *   - Solo Admin muta; Chef y Lector ven todo en modo lectura.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useRef } from 'react';
 import Link from 'next/link';
 import { fetchEnCola } from '@/lib/colaGuardado';
 import { useRol } from '@/lib/useRol';
@@ -33,6 +33,9 @@ export default function FamiliasPage() {
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [subfamilias, setSubfamilias] = useState<Subfamilia[]>([]);
   const [usoRecetas, setUsoRecetas] = useState<Map<string, number>>(new Map());
+  // v10.9d: las listas crudas (no solo conteos) para el modal Dónde se usa
+  const [recetasLista, setRecetasLista] = useState<{ nombre: string; familia_id?: string }[]>([]);
+  const [insumosLista, setInsumosLista] = useState<{ articulo: string; subfamilia_id?: string }[]>([]);
   const [usoInsumos, setUsoInsumos] = useState<Map<string, number>>(new Map());
   const [cargando, setCargando] = useState(true);
   const [ocupado, setOcupado] = useState(false);
@@ -64,6 +67,8 @@ export default function FamiliasPage() {
       ]);
       setFamilias((rf?.data || []).filter((f: Familia) => esActivo(f.activo)));
       setSubfamilias((rs?.data || []).filter((s: Subfamilia) => esActivo(s.activo)));
+      setRecetasLista((rr?.data || []) as { nombre: string; familia_id?: string }[]);
+      setInsumosLista((ri?.data || []) as { articulo: string; subfamilia_id?: string }[]);
       const ur = new Map<string, number>();
       (rr?.data || []).forEach((x: { familia_id?: string }) => {
         const k = String(x.familia_id || ''); // v9.4: las recetas apuntan a la familia
@@ -98,7 +103,20 @@ export default function FamiliasPage() {
   const recetasDeFamilia = (fid: string) => usoRecetas.get(String(fid)) || 0; // v9.4: conteo directo
 
   // ─────────────────────────── acciones ───────────────────────────
+  // v10.9d: Dónde se usa — la lista real detrás del contador
+  const [verUsos, setVerUsos] = useState<{ titulo: string; items: string[] } | null>(null);
+  function usosDeFamilia(fid: string, nombre: string) {
+    const items = recetasLista.filter((r) => String(r.familia_id) === String(fid)).map((r) => '🍽️ ' + r.nombre);
+    setVerUsos({ titulo: 'Familia "' + nombre + '"', items });
+  }
+  function usosDeSubfamilia(sid: string, nombre: string) {
+    const items = insumosLista.filter((r) => String(r.subfamilia_id) === String(sid)).map((r) => '📦 ' + r.articulo);
+    setVerUsos({ titulo: 'Clasificación "' + nombre + '"', items });
+  }
+  const cerrojo = useRef(false); // v10.9b: anti doble-clic (un cerrojo para TODOS los botones)
   async function llamar(url: string, method: string, body: Record<string, unknown>, okTexto: string) {
+    if (cerrojo.current) return false;
+    cerrojo.current = true;
     setOcupado(true);
     setMsg(null);
     try {
@@ -111,6 +129,7 @@ export default function FamiliasPage() {
       return false;
     } finally {
       setOcupado(false);
+      cerrojo.current = false;
     }
   }
 
@@ -257,6 +276,7 @@ export default function FamiliasPage() {
                           {esAdmin && (
                             <div className="flex items-center gap-2">
                               {botonEditar('fam', f)}
+                              <button onClick={() => usosDeFamilia(f.id, f.nombre)} disabled={ocupado} className="mr-1 rounded border border-line px-2.5 py-1 text-xs text-salvia-700 hover:bg-salvia-50">🔎 Ver recetas</button>
                               <button onClick={() => desactivar('fam', f.id, f.nombre, nRec)} disabled={ocupado} className="rounded border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50">Desactivar</button>
                             </div>
                           )}
@@ -315,6 +335,7 @@ export default function FamiliasPage() {
                       {esAdmin && (
                         <div className="flex shrink-0 items-center gap-1.5">
                           {botonEditar('sub', s)}
+                          <button onClick={() => usosDeSubfamilia(s.id, s.nombre)} disabled={ocupado} className="mr-1 rounded border border-line px-2 py-1 text-xs text-salvia-700 hover:bg-salvia-50">🔎</button>
                           <button onClick={() => desactivar('sub', s.id, s.nombre, usoInsumos.get(s.id) || 0)} disabled={ocupado} className="rounded border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50">✕</button>
                         </div>
                       )}
@@ -324,6 +345,24 @@ export default function FamiliasPage() {
               ))}
             </ul>
           </section>
+        </div>
+      )}
+      {verUsos && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setVerUsos(null)}>
+          <div className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold text-ink">🔎 {verUsos.titulo}</h2>
+              <button onClick={() => setVerUsos(null)} className="rounded-lg px-2 py-1 text-sm hover:bg-slate-100">✕</button>
+            </div>
+            {verUsos.items.length === 0 ? (
+              <p className="text-sm text-salvia-600">No tiene elementos parametrizados todavía.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {verUsos.items.map((x, i) => (<li key={i} className="rounded-lg bg-slate-50 px-3 py-1.5 text-sm text-slate-800">{x}</li>))}
+              </ul>
+            )}
+            <p className="mt-3 text-right text-[11px] text-salvia-500">{verUsos.items.length} elemento(s)</p>
+          </div>
         </div>
       )}
     </main>
