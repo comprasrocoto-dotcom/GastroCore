@@ -56,6 +56,16 @@ export async function middleware(req: NextRequest) {
   //  Lector: solo lectura en toda la aplicación.
   const rol = sesion.r;
 
+  // v10.9e (auditoría de roles): DOS excepciones de sesión-propia que la
+  // zona Admin atrapaba por accidente —
+  //  · /api/usuarios/clave: cambiar MI clave (el email sale de la cookie;
+  //    Chef y Lector recibían 403 y el 🔑 solo servía al Admin).
+  //  · /api/auth/logout: cerrar MI sesión (todo no-Admin recibía 403 y
+  //    el botón Salir no funcionaba).
+  if (pathname === '/api/usuarios/clave' || pathname === '/api/auth/logout') {
+    return NextResponse.next(); // exigen sesión (ya validada arriba) y solo tocan lo propio
+  }
+
   // Usuarios y Configuración: exclusivos de Admin, incluso para VER.
   const zonaAdmin =
     pathname === '/usuarios' || pathname.startsWith('/usuarios/') ||
