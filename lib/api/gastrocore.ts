@@ -133,14 +133,18 @@ const enVuelo = new Map<string, Promise<unknown>>(); // dedupe de peticiones sim
 
 // Segundos de frescura por recurso. Catálogos casi estáticos: largos;
 // datos operativos: cortos. Cualquier mutación borra TODO el caché igual.
+// v11.4 (mesa de rendimiento): TTLs generosos SIN riesgo de datos viejos —
+// toda mutación purga el caché completo (revalidación central), así que la
+// frescura la garantizan las escrituras, no el reloj. TTL largo = las
+// lambdas calientes sirven al instante entre ediciones.
 const TTL_POR_RECURSO: Record<string, number> = {
-  familias: 300, subfamilias: 300, unidades: 300,
-  insumos: 120, catalogo: 120, bootstrap: 120,
-  analytics: 120, snapshots: 120,
-  recetas: 45, subrecetas: 45,
-  fichas: 20, historialRecetas: 30, ingredientes: 30, configfotos: 600, parametros: 300,
+  familias: 600, subfamilias: 600, unidades: 600,
+  insumos: 300, catalogo: 300, bootstrap: 300,
+  analytics: 300, snapshots: 300,
+  recetas: 300, subrecetas: 300,
+  fichas: 120, historialRecetas: 120, ingredientes: 120, configfotos: 900, parametros: 600,
 };
-const TTL_DEFAULT = 30;
+const TTL_DEFAULT = 120;
 const VENTANA_GRACIA_MS = 10 * 60 * 1000; // hasta 10 min sirviendo viejo mientras refresca
 
 /** Borra todo el caché de lecturas (se llama tras cada mutación). */
