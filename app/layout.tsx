@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { MarcaEnBarra } from '@/components/MarcaEnBarra';
 import { TemaToggle } from '@/components/TemaToggle';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import Link from 'next/link';
@@ -51,7 +52,7 @@ export default async function RootLayout({
             <nav className="app-shell flex items-center gap-1 py-2 overflow-x-auto">
               <Link href="/" className="mr-2 flex items-center gap-2 font-display text-lg font-bold text-[#1E3A5F]">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1E3A5F] text-sm font-bold text-white">GC</span>
-                GastroCore
+                GastroCore<MarcaEnBarra />
               </Link>
               <div className="mx-2 h-6 w-px bg-black/10" />
               {NAV.filter((n) => session?.r === 'Admin' || (n.href !== '/usuarios' && n.href !== '/configuracion')).map((n) => (

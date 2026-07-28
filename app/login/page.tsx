@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function LoginInner() {
@@ -14,6 +14,10 @@ function LoginInner() {
   const [cargando, setCargando] = useState(false);
 
   async function entrar(e: React.FormEvent) {
+  const [marca, setMarca] = useState('');
+  useEffect(() => {
+    fetch('/api/marca').then((r) => r.json()).then((j) => setMarca(j?.marca || '')).catch(() => {});
+  }, []);
     e.preventDefault();
     setError(null);
     setCargando(true);
@@ -50,6 +54,7 @@ function LoginInner() {
           </span>
           <div>
             <h1 className="font-display text-lg font-bold text-[#1E3A5F]">GastroCore</h1>
+            {marca && <p className="mt-0.5 font-display text-2xl font-bold tracking-tight text-ink">{marca}</p>}
             <p className="text-xs text-slate-500">Ingreso al panel de costeo</p>
           </div>
         </div>
