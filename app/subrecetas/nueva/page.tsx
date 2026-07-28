@@ -235,7 +235,10 @@ function NuevaSubrecetaInner() {
     return e;
   }
 
+  const cerrojo = useRef(false); // v10.9b: anti doble-clic (síncrono)
   async function guardar() {
+    if (cerrojo.current) return;
+    cerrojo.current = true;
     const e = validar();
     setErrores(e);
     setMsg(null);
@@ -284,7 +287,7 @@ function NuevaSubrecetaInner() {
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'Error inesperado al guardar.');
     } finally {
-      setGuardando(false);
+      setGuardando(false); cerrojo.current = false;
     }
   }
 
