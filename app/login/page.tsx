@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/';
+  // v11.6: la app SIEMPRE arranca en el Manual — la única vista que todos
+  // los roles pueden ver (los deep-links con ?next= se respetan).
+  const next = params.get('next') || '/manual';
 
   const [email, setEmail] = useState('');
   const [clave, setClave] = useState('');
@@ -33,7 +35,7 @@ function LoginInner() {
         return;
       }
       // Ruta segura: solo permitimos rutas internas.
-      router.replace(next.startsWith('/') ? next : '/');
+      router.replace(next.startsWith('/') ? next : '/manual');
       router.refresh();
     } catch {
       setError('Error de red al iniciar sesión');
