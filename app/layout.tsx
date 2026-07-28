@@ -44,9 +44,14 @@ export default async function RootLayout({
   const session = await getSession();
 
   return (
-    <html lang="es" className={`${inter.variable} ${jetbrains.variable}`}>
-      <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('gc_tema')==='oscuro')document.documentElement.classList.add('dark')}catch(e){}" }} />
+    <html lang="es" className={`${inter.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <body>
+        {/* v10.1.1: script de tema DENTRO de <body> (primer hijo). Antes vivía
+            entre <html> y <body> — HTML inválido: el navegador lo reubicaba,
+            React fallaba la hidratación en la raíz y re-renderizaba TODA la app
+            en el cliente (carga lenta/intermitente). Aquí es válido y se ejecuta
+            antes de pintar el contenido: el modo oscuro aplica sin destello. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('gc_tema')==='oscuro')document.documentElement.classList.add('dark')}catch(e){}" }} />
         {session && (
           <header className="sticky top-0 z-40 border-b border-black/5 bg-white/90 backdrop-blur">
             <nav className="app-shell flex items-center gap-1 py-2 overflow-x-auto">
