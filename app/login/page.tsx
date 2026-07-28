@@ -4,6 +4,10 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function LoginInner() {
+  const [marca, setMarca] = useState('');
+  useEffect(() => {
+    fetch('/api/marca').then((r) => r.json()).then((j) => setMarca(j?.marca || '')).catch(() => {});
+  }, []);
   const router = useRouter();
   const params = useSearchParams();
   // v11.6: la app SIEMPRE arranca en el Manual — la única vista que todos
@@ -16,10 +20,6 @@ function LoginInner() {
   const [cargando, setCargando] = useState(false);
 
   async function entrar(e: React.FormEvent) {
-  const [marca, setMarca] = useState('');
-  useEffect(() => {
-    fetch('/api/marca').then((r) => r.json()).then((j) => setMarca(j?.marca || '')).catch(() => {});
-  }, []);
     e.preventDefault();
     setError(null);
     setCargando(true);
