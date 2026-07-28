@@ -12,7 +12,8 @@ function LoginInner() {
   const params = useSearchParams();
   // v11.6: la app SIEMPRE arranca en el Manual — la única vista que todos
   // los roles pueden ver (los deep-links con ?next= se respetan).
-  const next = params.get('next') || '/manual';
+  const nextCrudo = params.get('next') || '/manual';
+  const next = nextCrudo === '/' ? '/manual' : nextCrudo; // '/' normalizado: al Manual sin escalas
 
   const [email, setEmail] = useState('');
   const [clave, setClave] = useState('');
