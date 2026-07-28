@@ -16,7 +16,7 @@
  *   - Solo Admin muta; Chef y Lector ven todo en modo lectura.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { fetchEnCola } from '@/lib/colaGuardado';
 import { useRol } from '@/lib/useRol';
