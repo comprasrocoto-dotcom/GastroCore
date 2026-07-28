@@ -1,5 +1,6 @@
 'use client';
 import { fetchEnCola } from '@/lib/colaGuardado';
+import { BotonPDF } from '@/components/BotonPDF';
 import { CampoNumero } from '@/components/CampoNumero';
 import { useRol } from '@/lib/useRol';
 
@@ -336,6 +337,7 @@ function NuevaSubrecetaInner() {
               ✏️ Editar
             </button>
           )}
+          {modoEdicion && editId && <BotonPDF id={editId} tipo="subreceta" />}
           <Link href="/subrecetas" className="text-sm text-salvia-700 hover:underline">Volver</Link>
         </div>
       </div>
