@@ -132,3 +132,51 @@ las usa con la service_role key), solo se les quitó el acceso público.
 Apps Script y Google Sheets **no se tocan** durante esta migración — siguen
 siendo el respaldo hasta que todo esté validado en producción (Fase 7, fuera
 de alcance por ahora).
+
+### Corrección importante: cuánto de la base de datos está realmente migrado
+
+Antes de escribir la capa de datos de la Fase 3 se volvió a verificar,
+tabla por tabla, cuántas filas tiene cada una hoy en Supabase (11-sep-2026).
+El resumen anterior solo mencionaba `ingredientes_receta` como hueco — la
+revisión completa muestra que el hueco es más grande:
+
+| Tabla | Filas | Estado |
+|---|---|---|
+| marcas | 1 | ✅ |
+| familias | 18 | ✅ |
+| subfamilias | 18 | ✅ |
+| insumos | 471 | ✅ |
+| recetas | 87 | ✅ (solo los datos base: nombre, costo, precio — ver abajo) |
+| unidades_medida | 4 | ✅ |
+| precios_historicos | 7 | ⚠️ parcial |
+| **subrecetas** | **0** | ❌ vacía |
+| **ingredientes_receta** | **0** | ❌ vacía |
+| **fichas_tecnicas** | **0** | ❌ vacía |
+| **historial_recetas** | **0** | ❌ vacía |
+| **configuracion** (parámetros: FC objetivo, impuesto, etc.) | **0** | ❌ vacía |
+| **usuarios** | **0** | ❌ vacía |
+| snapshot_detalle, snapshots_semanales | 0 | ❌ vacías (snapshots_semanales sí se usa en la app, hay que migrarla) |
+| Costos Restaurantes | 385 | sin uso confirmado en el código |
+
+En resumen: las 87 recetas existen en Supabase, pero **sin sus ingredientes,
+sin ficha técnica, sin historial de cambios**. Tampoco hay parámetros de
+negocio (Food Cost objetivo, impuesto) ni usuarios — el login y la
+configuración no podrían funcionar contra Supabase todavía.
+
+**Esto cambia el plan de la Fase 3:** en vez de reemplazar `lib/api/gastrocore.ts`
+de una sola vez, se migra recurso por recurso, empezando por los que ya
+tienen datos reales en Supabase (insumos, familias, subfamilias, unidades,
+catálogo) y dejando temporalmente en Apps Script los que dependen de tablas
+vacías (subrecetas, fichas técnicas, historial, parámetros, usuarios,
+analytics) hasta completar su migración de datos real.
+
+Para completar esa migración de datos correctamente (sin inventar valores)
+hace falta llamar a la misma API de Apps Script que ya usa la app hoy
+(`GASTROCORE_API_URL` / `GASTROCORE_API_TOKEN`, ya configuradas en
+producción) para traer los datos reales de Sheets y escribirlos en Supabase
+— así se completa `scripts/migrar-sheets-a-supabase.ts` con los datos
+verdaderos en vez de un esqueleto. Para eso, y para poder probar
+`lib/api/supabase.ts` contra la base real, esta sesión necesita las 4
+variables de entorno que la app ya usa en producción (no son nuevas, ya
+existen en Vercel): `GASTROCORE_API_URL`, `GASTROCORE_API_TOKEN`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
