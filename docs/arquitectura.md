@@ -40,3 +40,74 @@ Las páginas del recetario usan `dynamic = 'force-dynamic'`: render por petició
 - `/recetas` y los editores son client components: `curl` no ejecuta JS.
 - El detalle del recetario vive en `DetalleReceta` (el modal es solo el marco).
 - El fósil `getSubreceta→getReceta` durmió desde v9.0 hasta la primera subreceta real: **los bugs dormidos despiertan cuando el sistema se usa.**
+
+## 8. Migración a Supabase multi-marca (en curso, desde 11-sep-2026)
+
+_Resumen en español simple, para Diego y Mariluz. El detalle técnico completo de las migraciones SQL vive en `supabase/migrations/`._
+
+**Por qué:** pasar de Google Sheets a una base de datos real (Postgres/Supabase) y agregar soporte para 4 marcas compartiendo una sola base, cada una viendo solo lo suyo.
+
+**Lo que ya se hizo (lado Supabase, sesión 1):**
+
+- El proyecto de Supabase (`pnotebuwhcuqapynjgrk`) ya tenía los datos reales de
+  la marca **Rocoto** migrados desde antes (471 insumos, 87 recetas, 18
+  familias). No estaba vacío como se pensaba al empezar.
+- Se agregó una tabla `marcas` y una columna `marca_id` a las 13 tablas
+  operativas, con todo lo existente asignado a "Rocoto" automáticamente.
+- Se activó seguridad a nivel de base de datos (Row Level Security): cada fila
+  solo es visible para su propia marca, o para un Admin que ve varias marcas
+  a la vez.
+- Se crearon dos vistas públicas de solo lectura para el recetario de cocina
+  (`recetario_publico` y `recetario_publico_ingredientes`) que **nunca**
+  incluyen costos, precios ni márgenes — el recetario público solo debe leer
+  de ahí.
+- **Hallazgo pendiente de resolver:** la tabla `ingredientes_receta` tiene 0
+  filas en Supabase. Hay 87 recetas pero ninguna tiene todavía su detalle de
+  ingredientes ahí — ese detalle hoy solo vive en Google Sheets. Hay que
+  migrarlo antes de que el recetario público (Fase 6) pueda mostrar
+  ingredientes correctamente.
+
+**Lo que se confirmó revisando el código de este repo (sesión 2, búsqueda por
+grep en `lib/api/gastrocore.ts` y en todo `app/`/`lib/`):**
+
+- `precios_historicos` **sí se usa** — lo lee `getHistorialInsumo()` (llama al
+  recurso `preciosHistoricos` de Apps Script).
+- `snapshots_semanales` **sí se usa** — lo lee `getSnapshots()` (recurso
+  `snapshots`).
+- `Costos Restaurantes` y `snapshot_detalle` **no tienen ninguna referencia**
+  en el código de Next.js (`.ts`/`.tsx`). Todo indica que no están en uso hoy,
+  pero se dejaron con `marca_id` igual por seguridad, a confirmar con Diego.
+
+**Cómo funciona hoy la sesión de usuario (importante para las fases que
+faltan):** el login no usa Supabase Auth — es una cookie propia firmada con
+HMAC (`lib/auth.ts`, `AUTH_SECRET`), y hoy valida el email/clave contra Apps
+Script (`app/api/auth/login/route.ts`). La sesión guarda usuario, rol y
+(desde v10.1) el email, pero todavía no guarda `marca_id`. Para que las
+reglas de seguridad de Supabase (RLS) funcionen fuera de la `service_role
+key`, hace falta emitir un JWT con `rol`/`marca_id`/`usuario_id` — ese es el
+trabajo de la Fase 4.
+
+**Lo que falta (fases 3 a 6, este repo):**
+
+1. **Fase 3** — Reemplazar `lib/api/gastrocore.ts` por `lib/api/supabase.ts`
+   (mismas funciones, mismos nombres), leyendo directo de Postgres con la
+   `service_role key` y filtrando cada consulta por `marca_id` a mano.
+2. **Fase 4** — Validar login contra la tabla `usuarios` de Supabase, guardar
+   `marca_id` en la sesión, y emitir el JWT para RLS.
+3. **Fase 5** — Selector de marca en la UI, solo para el Admin que ve varias
+   marcas.
+4. **Fase 6** — Cambiar el recetario público a `/recetario/[marca]`, leyendo
+   solo de las vistas públicas. Bloqueado hasta resolver el hueco de
+   `ingredientes_receta`.
+
+**Preguntas todavía abiertas para Diego/Mariluz:**
+
+- ¿Las otras 3 marcas nuevas tienen sus propias hojas de Google Sheets para
+  importar, o arrancan vacías y se cargan desde la app?
+- ¿Qué algoritmo de hash usar para `usuarios.clave_hash` en Supabase? (hoy
+  esa columna no existe todavía; el login sigue pasando por Apps Script
+  mientras tanto).
+
+Apps Script y Google Sheets **no se tocan** durante esta migración — siguen
+siendo el respaldo hasta que todo esté validado en producción (Fase 7, fuera
+de alcance por ahora).
