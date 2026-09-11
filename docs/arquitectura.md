@@ -100,13 +100,34 @@ trabajo de la Fase 4.
    solo de las vistas públicas. Bloqueado hasta resolver el hueco de
    `ingredientes_receta`.
 
-**Preguntas todavía abiertas para Diego/Mariluz:**
+**Decisiones confirmadas con Mariluz (11-sep-2026, sesión 2):**
 
-- ¿Las otras 3 marcas nuevas tienen sus propias hojas de Google Sheets para
-  importar, o arrancan vacías y se cargan desde la app?
-- ¿Qué algoritmo de hash usar para `usuarios.clave_hash` en Supabase? (hoy
-  esa columna no existe todavía; el login sigue pasando por Apps Script
-  mientras tanto).
+- Las otras 3 marcas nuevas **arrancan vacías**: no tienen hojas de Sheets
+  propias que importar. Se cargan insumos/recetas manualmente desde la app
+  una vez esté lista. El script `scripts/migrar-sheets-a-supabase.ts` queda
+  como referencia pero no hace falta completarlo para esto.
+- El hash de `usuarios.clave_hash` (Fase 4) será **bcrypt**. Como las claves
+  actuales viven en texto plano en Sheets, cada usuario tendrá que
+  restablecer su clave una vez, al momento del cambio.
+
+**Hallazgo de seguridad encontrado y corregido en esta sesión (0004):**
+
+Al verificar el estado real de Supabase antes de escribir código nuevo se
+encontraron dos vistas que **ya existían antes de esta migración**
+(`v_insumos_completos`, `v_recetas_completas` — no están en el código de
+Next.js, no las creamos nosotros). Eran propiedad de `postgres` y el rol
+público `anon` tenía permiso de leer **y también insertar/editar/borrar**
+datos a través de ellas — como la vista corre con los permisos de su dueño,
+esto ignoraba por completo las reglas de "cada marca ve solo lo suyo" (RLS).
+En la práctica, cualquiera con la llave pública del proyecto (la misma que
+va en el navegador) podía ver los costos de todos los insumos/recetas de
+todas las marcas, y hasta modificar o borrar filas directamente.
+
+Se corrigió de inmediato con confirmación de Mariluz: migración
+`0004_revocar_acceso_publico_vistas.sql` le quita a `anon`/`authenticated`
+todo acceso a esas dos vistas. Ya se aplicó en producción y se verificó que
+el acceso quedó en cero. Las vistas siguen existiendo (por si algo interno
+las usa con la service_role key), solo se les quitó el acceso público.
 
 Apps Script y Google Sheets **no se tocan** durante esta migración — siguen
 siendo el respaldo hasta que todo esté validado en producción (Fase 7, fuera
