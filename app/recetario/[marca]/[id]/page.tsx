@@ -1,28 +1,39 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getRecetaPublica, getTemaRecetarioId } from '@/lib/recetario';
+import { getRecetaPublicaMarca, getMarcaPublica } from '@/lib/recetarioMarca';
 import { temaPorId } from '@/lib/temasRecetario';
 import { DetalleReceta } from '@/components/RecetarioGaleria';
 
-// v9.13.1: render por petición — los datos siguen cacheados 5 min por etiquetas,
-// pero al purgarse (guardar foto/ficha/estilo) el cambio se ve en el PRIMER refresco.
+// Render por petición: los datos siguen cacheados 5 min por etiquetas, pero al
+// purgarse (guardar foto, ficha o estilo) el cambio se ve en el PRIMER refresco.
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata() {
-  const { getNombreNegocio } = await import('@/lib/recetario');
-  return { title: 'Receta · ' + (await getNombreNegocio()) };
+export async function generateMetadata({ params }: { params: { marca: string } }) {
+  const marca = await getMarcaPublica(params.marca).catch(() => null);
+  return { title: 'Receta · ' + (marca?.nombre || 'GastroCore') };
 }
 
 /**
- * Detalle público por URL directa (/recetario/REC-000011).
+ * Detalle público por URL directa (/recetario/rocoto/REC-000011).
+ *
  * En la galería el detalle se abre como MODAL; esta página existe para los
  * enlaces directos — en especial el botón "👁 Ver como cocina" del admin — y
- * reutiliza EXACTAMENTE el mismo componente del modal con el tema Rocoto.
+ * reutiliza EXACTAMENTE el mismo componente del modal.
+ *
+ * La receta se busca SIEMPRE dentro de la marca de la URL: pedir
+ * /recetario/malanga/REC-000011 cuando esa receta es de Rocoto da 404, no la
+ * receta de otra marca. Ese es el aislamiento de la Fase 6.
  */
-export default async function RecetaPublicaPage({ params }: { params: { id: string } }) {
-  const receta = await getRecetaPublica(params.id).catch(() => null);
+export default async function RecetaPublicaPage({
+  params,
+}: {
+  params: { marca: string; id: string };
+}) {
+  const receta = await getRecetaPublicaMarca(params.marca, params.id).catch(() => null);
   if (!receta) notFound();
-  const tema = temaPorId(await getTemaRecetarioId().catch(() => 'rocoto'));
+
+  const marca = await getMarcaPublica(params.marca).catch(() => null);
+  const tema = temaPorId(marca?.tema || 'rocoto');
 
   return (
     <main className="min-h-screen px-3 py-6 sm:px-6" style={{ background: '#F6F1E6' }}>
@@ -34,7 +45,7 @@ export default async function RecetaPublicaPage({ params }: { params: { id: stri
       />
       <div className="mx-auto max-w-2xl">
         <Link
-          href="/recetario"
+          href={'/recetario/' + params.marca}
           className="mb-3 inline-block rounded-full border bg-white px-4 py-1.5 text-xs font-semibold shadow-sm hover:bg-neutral-50"
           style={{ color: '#1E3B2C', borderColor: '#DDD4C0' }}
         >
