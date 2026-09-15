@@ -180,3 +180,96 @@ verdaderos en vez de un esqueleto. Para eso, y para poder probar
 variables de entorno que la app ya usa en producción (no son nuevas, ya
 existen en Vercel): `GASTROCORE_API_URL`, `GASTROCORE_API_TOKEN`,
 `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+
+## 9. Chequeo de "qué falta para el despliegue" (15-sep-2026)
+
+_Resumen en español simple. Este chequeo se hizo a pedido de Mariluz para revisar juntos el estado antes de desplegar. No se cambió nada en producción — es solo una foto del estado actual._
+
+**Lo bueno: la app en vivo (`gastro-core.vercel.app`) sigue intacta y segura.**
+El último commit desplegado en producción (`13565e9`, rama `main`) no tiene
+ni una línea de código de Supabase todavía — sigue funcionando 100% contra
+Google Sheets, tal como siempre. Solo se sumó al repo un archivo de ejemplo
+(`.env.example`) con la lista de variables que hará falta configurar más
+adelante, nada más. El arreglo de seguridad de la sección 8 (quitarle acceso
+público a las dos vistas viejas) se volvió a verificar hoy directo en la
+base de datos y **sigue en cero accesos** — el hallazgo de seguridad sigue
+corregido.
+
+**Lo que se descubrió: hay dos ramas con el mismo nombre en GitHub, con
+trabajo distinto en cada una.** Mientras yo avanzaba en esta sesión (el
+script de migración de datos, la documentación del hueco de datos), en
+paralelo otra sesión de Claude hizo un trabajo más completo de la Fase 3
+(capa de datos) y la Fase 6 (recetario público por marca), y logró subirlo a
+GitHub con el mismo nombre de rama (`migracion-supabase-fase-3-6`). Esa otra
+versión ya tiene un "interruptor" (`GASTROCORE_BACKEND=appsscript|supabase`)
+para poder probar Supabase sin arriesgar producción — es un buen diseño — y
+ya se armó una vista previa de esa rama en Vercel que compiló sin errores.
+Pero mi rama local (con el arreglo de seguridad documentado y el script de
+migración de datos) nunca pudo subirse a GitHub por un problema de permisos
+de esta sesión (ver más abajo), así que las dos versiones nunca se juntaron.
+**Antes de avanzar hace falta decidir cómo se combinan ambas** — lo ideal es
+quedarse con la base más completa de la otra sesión (interruptor + Fase 6) y
+sumarle el arreglo de seguridad y la documentación honesta del hueco de
+datos que hizo esta rama. Esa decisión de reconciliar no se tomó todavía.
+
+**Se encontraron 3 errores concretos en el mapeo de columnas de la otra
+rama, ya confirmados contra la base de datos real de hoy** (antes de
+corregirlos hacía falta confirmarlos con datos frescos, y ya se hizo). Si se
+activara `GASTROCORE_BACKEND=supabase` hoy sin corregir esto, estas 3 cosas
+se romperían:
+
+| Archivo dice que existe la columna... | Columna real en Supabase | Tabla afectada |
+|---|---|---|
+| `unidad` | `subarticulo` | `insumos` |
+| `familia_id` (no existe) | — | `subrecetas` |
+| `costo_porcion` | `costo_unitario` | `subrecetas` |
+| `descripcion` (no existe) | — | `fichas_tecnicas` |
+
+Son correcciones puramente técnicas (nombres de columna mal escritos), no
+implican ninguna decisión de negocio — se pueden corregir en cuanto se
+decida qué rama es la base a usar.
+
+**Los datos siguen incompletos, verificado de nuevo hoy con conteos
+frescos** (no cambió nada respecto a la sección 8, se confirma que sigue
+igual):
+
+| Tabla | Filas hoy |
+|---|---|
+| marcas | 1 |
+| familias | 18 |
+| subfamilias | 18 |
+| insumos | 471 |
+| recetas | 87 |
+| unidades_medida | 4 |
+| precios_historicos | 7 |
+| subrecetas | 0 |
+| ingredientes_receta | 0 |
+| fichas_tecnicas | 0 |
+| historial_recetas | 0 |
+| configuracion | 0 |
+| usuarios | 0 |
+| snapshots_semanales | 0 |
+
+**Lo que bloquea seguir avanzando ahora mismo:**
+
+1. **Esta sesión no puede subir código a GitHub.** El intento de `git push`
+   de hoy dio exactamente el mismo error de permisos que en los intentos
+   anteriores, incluso después de varios días y de que Mariluz ajustó los
+   permisos de la app de GitHub. Confirma lo que ya se le había dicho: hace
+   falta abrir una sesión nueva (no seguir reintentando en esta) para que el
+   push funcione. Mientras tanto, los 4 commits de esta rama (arreglo de
+   seguridad documentado, mapa de datos real, script de migración) quedan
+   guardados localmente, listos para subir en cuanto se pueda.
+2. **Siguen faltando las credenciales** (`SUPABASE_SERVICE_ROLE_KEY`,
+   `GASTROCORE_API_TOKEN`, etc.) para poder correr el script de migración de
+   datos reales y probar `lib/api/supabase.ts` contra la base. Sin esto no se
+   puede migrar `fichas_tecnicas`, `historial_recetas`, `configuracion` ni
+   `usuarios`.
+
+**Conclusión — no está listo para desplegar todavía.** Producción sigue
+segura y sin cambios. Antes de poder activar Supabase en la app real hacen
+falta, en este orden: (1) una sesión nueva que pueda subir código a GitHub,
+(2) decidir cómo se combinan las dos ramas divergentes, (3) corregir los 3
+errores de columnas, (4) las credenciales para terminar de migrar los datos
+que todavía están vacíos, y (5) recién ahí conectar cualquier Route Handler
+a Supabase — nunca antes, para no mostrar datos a medias en la app real.
