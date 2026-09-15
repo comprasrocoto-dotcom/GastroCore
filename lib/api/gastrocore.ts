@@ -104,6 +104,20 @@ export type CatalogoItem = {
 
 export type Dependencia = { id: string; nombre: string; es_subreceta: boolean; activo: boolean | string };
 
+// v(migración Supabase): la app nunca listó usuarios desde aquí — el login
+// llama a Apps Script directo (ver app/api/auth/login/route.ts). Se agrega
+// este tipo/función SOLO para el script de migración de datos
+// (scripts/migrar-sheets-a-supabase.ts), reutilizando el mismo patrón de
+// lectura cacheada que el resto del archivo, en vez de reinventar la
+// llamada a Apps Script en el script de migración.
+export type Usuario = {
+  id: string;
+  email: string;
+  nombre: string;
+  rol: string;
+  activo?: boolean | string;
+};
+
 export type HistorialInsumo = {
   id: string;
   insumo_id: string;
@@ -467,6 +481,12 @@ export async function getDependencias(itemId: string): Promise<Dependencia[]> {
 // ---------- INSUMOS: edicion con trazabilidad ----------
 export async function actualizarInsumo(id: string, data: Partial<Insumo> & { motivo?: string; usuario?: string }) {
   return apiPost<Insumo>('insumos', 'update', { id, data });
+}
+
+// ---------- USUARIOS (solo lectura, para el script de migración) ----------
+export async function getUsuarios(): Promise<Usuario[]> {
+  const r = await apiGet<Usuario[]>('usuarios');
+  return r.ok && Array.isArray(r.data) ? r.data : [];
 }
 
 export async function getHistorialInsumo(insumoId: string): Promise<HistorialInsumo[]> {
